@@ -16,12 +16,15 @@ namespace RimworldExtractorGUI
 
         // La paleta depende del tema: sobre fondo oscuro los colores puros pierden
         // contraste, y sobre fondo claro los tonos claros se vuelven ilegibles.
-        private static bool Oscuro =>
-#pragma warning disable WFO5003
-            Application.IsDarkModeEnabled;
-#pragma warning restore WFO5003
+        //
+        // Se deduce del propio color de fondo y no de Application.IsDarkModeEnabled: asi
+        // el texto no puede quedar en desacuerdo con el fondo sobre el que se dibuja, sin
+        // importar en que momento se consulte ni si la API experimental cambia.
+        internal static Color ColorFondo => SystemColors.Window;
 
-        internal static Color ColorFondo => Oscuro ? Color.FromArgb(32, 32, 32) : Color.FromArgb(250, 250, 250);
+        private static bool Oscuro => Luminancia(ColorFondo) < 128;
+
+        private static double Luminancia(Color c) => 0.299 * c.R + 0.587 * c.G + 0.114 * c.B;
         private static Color ColorError => Oscuro ? Color.FromArgb(255, 110, 110) : Color.FromArgb(180, 30, 30);
         private static Color ColorWarning => Oscuro ? Color.FromArgb(255, 190, 90) : Color.FromArgb(150, 95, 0);
         private static Color ColorMessage => Oscuro ? Color.FromArgb(220, 220, 220) : Color.FromArgb(30, 30, 30);
