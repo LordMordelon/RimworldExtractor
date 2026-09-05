@@ -106,10 +106,13 @@ namespace RimworldExtractorGUI
                     IO.ToExcel(extraction, Path.Combine(outPath, outPath));
                     break;
                 case Prefabs.ExtractionMethod.Languages:
-                    IO.ToLanguageXml(extraction, false, false, outPath, outPath);
+                    IO.ToLanguageXml(extraction, false, XmlCommentStyle.None, outPath, outPath);
                     break;
                 case Prefabs.ExtractionMethod.LanguagesWithComments:
-                    IO.ToLanguageXml(extraction, false, true, outPath, outPath);
+                    IO.ToLanguageXml(extraction, false, XmlCommentStyle.Original, outPath, outPath);
+                    break;
+                case Prefabs.ExtractionMethod.LanguagesToTranslate:
+                    IO.ToLanguageXml(extraction, false, XmlCommentStyle.TranslationTemplate, outPath, outPath);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -152,7 +155,9 @@ namespace RimworldExtractorGUI
                 {
                     var path = openfileDialog.FileName;
                     var translations = IO.FromExcel(path);
-                    IO.ToLanguageXml(translations, true, Prefabs.CommentOriginal, Path.GetFileName(path), Path.GetDirectoryName(path) ?? "");
+                    IO.ToLanguageXml(translations, true,
+                        Prefabs.CommentOriginal ? XmlCommentStyle.Original : XmlCommentStyle.None,
+                        Path.GetFileName(path), Path.GetDirectoryName(path) ?? "");
                     if (MessageBox.Show(Strings.DoneOpenConvertedFolder, Strings.DialogTitleDone, MessageBoxButtons.YesNo) == DialogResult.Yes)
                     {
                         Process.Start("explorer.exe", Path.GetDirectoryName(path) ?? "");

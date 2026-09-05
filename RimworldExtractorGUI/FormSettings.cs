@@ -55,7 +55,8 @@ namespace RimworldExtractorGUI
             {
                 Strings.ExtractionMethodExcel,
                 Strings.ExtractionMethodXml,
-                Strings.ExtractionMethodXmlComments
+                Strings.ExtractionMethodXmlComments,
+                Strings.ExtractionMethodXmlToTranslate
             });
             comboBoxFileDuplication.Items.AddRange(new object[]
             {

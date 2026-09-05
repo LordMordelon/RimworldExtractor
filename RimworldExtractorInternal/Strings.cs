@@ -210,6 +210,13 @@
         public const string ExtractionMethodExcel = "Archivo Excel (.xlsx) para trabajar la traducción";
         public const string ExtractionMethodXml = "Archivo XML distribuible";
         public const string ExtractionMethodXmlComments = "Archivo XML distribuible (con comentarios)";
+        public const string ExtractionMethodXmlToTranslate = "Archivo XML para traducir a mano";
+
+        /// <summary>Valor que se escribe cuando la entrada todavia no esta traducida.</summary>
+        public const string UntranslatedPlaceholder = "TODO";
+
+        /// <summary>Prefijo del comentario que conserva el texto original.</summary>
+        public const string OriginalCommentPrefix = "EN:";
 
         public const string DuplicatePolicyAsk = "Frenar y preguntar";
         public const string DuplicatePolicyOverwrite = "Sobrescribir";

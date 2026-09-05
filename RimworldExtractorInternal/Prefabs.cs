@@ -282,7 +282,9 @@ namespace RimworldExtractorInternal
 
         public enum ExtractionMethod
         {
-            Excel = 0, Languages, LanguagesWithComments
+            // Los valores se guardan por nombre en Prefabs.dat, pero el combo de
+            // Ajustes se lee por indice: agregar siempre al final.
+            Excel = 0, Languages, LanguagesWithComments, LanguagesToTranslate
         }
     }
 }

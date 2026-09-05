@@ -10,6 +10,22 @@ using DocumentFormat.OpenXml.Office2016.Excel;
 
 namespace RimworldExtractorInternal
 {
+    /// <summary>Que se escribe en el XML junto a cada entrada.</summary>
+    public enum XmlCommentStyle
+    {
+        /// <summary>Solo el valor, sin comentario.</summary>
+        None,
+
+        /// <summary>El original como comentario, y el original tambien como valor.</summary>
+        Original,
+
+        /// <summary>
+        /// El original como comentario y un marcador como valor, para traducir sobre el
+        /// propio XML y poder distinguir de un vistazo lo que falta.
+        /// </summary>
+        TranslationTemplate
+    }
+
     public static class IO
     {
         private static readonly string HeaderClassNode = "Class+Node [(Identifier (Key)]";
@@ -20,6 +36,31 @@ namespace RimworldExtractorInternal
         private const string HeaderSuffixTranslated = "[Translation]";
         private static string HeaderOriginal => $"{Prefabs.OriginalLanguage} [Source string]";
         private static string HeaderTranslated => $"{Prefabs.TranslationLanguage} [Translation]";
+
+        /// <summary>
+        /// Comentario que conserva el texto original. Un comentario XML no puede contener
+        /// la secuencia "--", de eso se encarga EscapeXmlCommentDashes.
+        /// </summary>
+        private static string OriginalComment(XmlCommentStyle style, string original)
+        {
+            var texto = SecurityElement.Escape(original).EscapeXmlCommentDashes();
+            return style == XmlCommentStyle.TranslationTemplate
+                ? $" {Strings.OriginalCommentPrefix} {texto} "
+                : $"{Prefabs.OriginalLanguage}={texto}";
+        }
+
+        /// <summary>
+        /// Valor de la entrada. En el modo para traducir a mano, lo que no esta traducido
+        /// lleva un marcador en vez del original: si quedara el ingles no habria forma de
+        /// distinguir lo traducido de lo que falta.
+        /// </summary>
+        private static string ValueFor(XmlCommentStyle style, TranslationEntry translation)
+        {
+            if (style == XmlCommentStyle.TranslationTemplate && string.IsNullOrEmpty(translation.Translated))
+                return Strings.UntranslatedPlaceholder;
+
+            return translation.Translated ?? translation.Original;
+        }
         public static void ToExcel(List<TranslationEntry> translations, string outPath = "result",
             bool markNoTranslation = false)
         {
@@ -348,7 +389,7 @@ namespace RimworldExtractorInternal
             return translations;
         }
         
-        public static void ToLanguageXml(List<TranslationEntry> translations, bool skipNoTranslation, bool commentOriginal, string ModName, string rootDirPath)
+        public static void ToLanguageXml(List<TranslationEntry> translations, bool skipNoTranslation, XmlCommentStyle commentStyle, string ModName, string rootDirPath)
         {
             var languagesDir = PathCombineCreateDir(rootDirPath, "Languages");
             var translationDir = PathCombineCreateDir(languagesDir, Prefabs.TranslationLanguage);
@@ -493,15 +534,14 @@ namespace RimworldExtractorInternal
                     {
                         li.AppendAttribute("Class", "PatchOperationReplace");
                         li.AppendElement("success", "Always");
-                        if (commentOriginal)
-                            li.AppendComment(
-                                $"Original={SecurityElement.Escape(translation.Original).EscapeXmlCommentDashes()}");
+                        if (commentStyle != XmlCommentStyle.None)
+                            li.AppendComment(OriginalComment(commentStyle, translation.Original));
                         li.AppendElement("xpath", Utils.GetXpath(translation.ClassName[(translation.ClassName.IndexOf('.') + 1)..], translation.Node));
                         li.AppendElement("value", value =>
                         {
                             var lastNode = translation.Node.Split('.').Last();
                             if (int.TryParse(lastNode, out _)) lastNode = "li";
-                            value.AppendElement(lastNode, translation.Translated ?? translation.Original);
+                            value.AppendElement(lastNode, ValueFor(commentStyle, translation));
                         });
                     });
 
@@ -528,11 +568,11 @@ namespace RimworldExtractorInternal
 
                     doc.DocumentElement!.Append(languageData =>
                     {
-                        if (commentOriginal)
-                            languageData.AppendComment($"Original={SecurityElement.Escape(translation.Original).EscapeXmlCommentDashes()}");
+                        if (commentStyle != XmlCommentStyle.None)
+                            languageData.AppendComment(OriginalComment(commentStyle, translation.Original));
                         languageData.AppendElement(translation.Node, t =>
                         {
-                            t.InnerText = translation.Translated ?? translation.Original;
+                            t.InnerText = ValueFor(commentStyle, translation);
                             if (!t.InnerText.Contains("{*")) return;
                             t.InnerText = Regex.Replace(t.InnerText, "\\{\\*(.*?)\\}", match =>
                             {
@@ -580,11 +620,11 @@ namespace RimworldExtractorInternal
 
                     doc.DocumentElement!.Append(languageData =>
                     {
-                        if (commentOriginal)
-                            languageData.AppendComment($"Original={SecurityElement.Escape(translation.Original).EscapeXmlCommentDashes()}");
+                        if (commentStyle != XmlCommentStyle.None)
+                            languageData.AppendComment(OriginalComment(commentStyle, translation.Original));
                         languageData.AppendElement(translation.Node, t =>
                         {
-                            t.InnerText = translation.Translated ?? translation.Original;
+                            t.InnerText = ValueFor(commentStyle, translation);
                             if (!t.InnerText.Contains("{*")) return;
                             t.InnerText = Regex.Replace(t.InnerText, "\\{\\*(.*?)\\}", match =>
                             {
@@ -628,9 +668,9 @@ namespace RimworldExtractorInternal
 
                     doc.DocumentElement!.Append(languageData =>
                     {
-                        if (commentOriginal)
-                            languageData.AppendComment($"{Prefabs.OriginalLanguage}={SecurityElement.Escape(translation.Original).EscapeXmlCommentDashes()}");
-                        languageData.AppendElement(translation.Node, translation.Translated ?? translation.Original);
+                        if (commentStyle != XmlCommentStyle.None)
+                            languageData.AppendComment(OriginalComment(commentStyle, translation.Original));
+                        languageData.AppendElement(translation.Node, ValueFor(commentStyle, translation));
                     });
                 }
 
@@ -667,6 +707,28 @@ namespace RimworldExtractorInternal
             }
         }
 
+        /// <summary>
+        /// El marcador significa "todavia sin traducir". Sin esto, reimportar un XML del
+        /// modo para traducir a mano metería la palabra TODO como traduccion en la planilla.
+        /// </summary>
+        private static string? TranslatedFromXml(string innerText)
+            => innerText == Strings.UntranslatedPlaceholder ? null : innerText;
+
+        /// <summary>
+        /// Recupera el texto original del comentario que lo precede, si lo hay. Antes ese
+        /// dato se perdia al reimportar y la columna del original quedaba vacia.
+        /// </summary>
+        private static string OriginalFromComment(XmlNode node)
+        {
+            if (node.PreviousSibling is not XmlComment comment)
+                return string.Empty;
+
+            var texto = comment.Value?.Trim() ?? string.Empty;
+            return texto.StartsWith(Strings.OriginalCommentPrefix, StringComparison.Ordinal)
+                ? texto[Strings.OriginalCommentPrefix.Length..].Trim()
+                : string.Empty;
+        }
+
         public static List<TranslationEntry> FromLanguageXml(string rootPath)
         {
             var translationsDir = Path.Combine(rootPath, "Languages", Prefabs.TranslationLanguage);
@@ -685,22 +747,24 @@ namespace RimworldExtractorInternal
                 var className = Path.GetRelativePath(defInjectedDir, filePath).Split(Path.DirectorySeparatorChar).First();
                 try
                 {
-                    var doc = ReadXml(filePath);
-                    foreach (XmlElement node in doc.DocumentElement!.ChildNodes)
+                    var doc = ReadXmlKeepingComments(filePath);
+                    foreach (var node in doc.DocumentElement!.ChildNodes.OfType<XmlElement>())
                     {
                         var name = node.Name;
+                        var original = OriginalFromComment(node);
                         // Si es FullTranslation
                         if (node.ChildNodes.OfType<XmlNode>().All(x => x.NodeType == XmlNodeType.Element))
                         {
                             for (int i = 0; i < node.ChildNodes.Count; i++)
                             {
-                                translations.Add(new TranslationEntry(className, $"{name}.{i}", string.Empty,
-                                    node.ChildNodes[i]!.InnerText, null, null));
+                                translations.Add(new TranslationEntry(className, $"{name}.{i}", original,
+                                    TranslatedFromXml(node.ChildNodes[i]!.InnerText), null, null));
                             }
                         }
                         else
                         {
-                            translations.Add(new TranslationEntry(className, name, string.Empty, node.InnerText, null, null));
+                            translations.Add(new TranslationEntry(className, name, original,
+                                TranslatedFromXml(node.InnerText), null, null));
                         }
                     }
                 }
@@ -857,6 +921,26 @@ namespace RimworldExtractorInternal
                     defInjectedDoc.DocumentElement!.RemoveChild(xmlNode);
                 }
             }
+        }
+
+        /// <summary>
+        /// Como ReadXml pero conservando los comentarios, que es de donde se recupera el
+        /// texto original al reimportar. ReadXml los descarta a proposito, y lo usa el
+        /// extractor para leer los mods, asi que conviene no tocarlo.
+        /// </summary>
+        internal static XmlDocument ReadXmlKeepingComments(string filePath)
+        {
+            var readerSettings = new XmlReaderSettings
+            {
+                IgnoreComments = false,
+                IgnoreWhitespace = true,
+                CheckCharacters = false
+            };
+            using var stringReader = new StringReader(File.ReadAllText(filePath));
+            using var xmlReader = XmlReader.Create(stringReader, readerSettings);
+            var doc = new XmlDocument();
+            doc.Load(xmlReader);
+            return doc;
         }
 
         internal static XmlDocument ReadXml(string filePath)
