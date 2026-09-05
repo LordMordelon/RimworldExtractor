@@ -245,6 +245,16 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            // La columna de la derecha queda pegada al borde y la tabla ocupa lo que sobra.
+            listViewResults.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            buttonOpenSelectMod.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            label1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            comboBox1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            button2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button3.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
             Text = Strings.TitleTranslationAnalyzer;
             columnHeader1.Text = Strings.ColumnSelect;
             columnHeader2.Text = Strings.ColumnModInfo;

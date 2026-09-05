@@ -281,6 +281,14 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            // Anclajes: van antes de todo porque AutoAjuste ensancha la ventana, y con
+            // esto el panel de log se estira con ella en vez de dejar un hueco.
+            richTextBoxLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            labelSelectedMods.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            label1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            label2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            button1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
             Text = Strings.FormMainTitle;
             buttonSelectMod.Text = Strings.BtnSelectMod;
             buttonExtract.Text = Strings.BtnExtract;

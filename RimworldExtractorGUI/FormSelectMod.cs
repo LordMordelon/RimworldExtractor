@@ -422,6 +422,15 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            // La lista de mods conserva su ancho y la de carpetas crece: es la angosta
+            // y la que tiene los nombres largos. Los anclajes no reparten espacio entre
+            // dos controles, asi que hay que elegir cual de los dos se estira.
+            listBoxMods.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            listBoxExtractableFolders.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            buttonDone.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            label1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
             Text = Strings.TitleSelectMod;
             buttonDone.Text = Strings.BtnSelectionDone;
             label1.Text = Strings.LabelSelectModControls;

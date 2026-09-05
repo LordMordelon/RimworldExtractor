@@ -62,6 +62,13 @@ namespace RimworldExtractorGUI
             // 3. Recien al final se agranda lo que haga falta para que todo entre.
             foreach (var padre in movibles.Select(c => c.Parent).Where(p => p != null).Distinct())
                 AjustarContenedor(padre!);
+
+            // 4. Lo que quedo es el tamaño minimo con el que todo entra. Sin esto se
+            //    puede encoger la ventana hasta tapar los propios controles que se
+            //    acaban de acomodar.
+            var forma = movibles.Select(c => c.FindForm()).FirstOrDefault(f => f != null);
+            if (forma != null)
+                forma.MinimumSize = forma.Size;
         }
 
         /// <summary>
