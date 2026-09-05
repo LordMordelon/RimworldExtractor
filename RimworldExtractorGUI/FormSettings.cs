@@ -206,6 +206,24 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            // La columna izquierda queda fija y la derecha ocupa lo que sobra. No pueden
+            // crecer las dos: los anclajes no reparten espacio entre controles vecinos.
+            groupBox3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            buttonSaveAndClose.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            buttonCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            buttonReset.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+
+            // Los cuatro cuadros de etiquetas forman una rejilla de dos por dos, que los
+            // anclajes no saben repartir: se acomoda por codigo al cambiar el tamano.
+            Rejilla.EnDosColumnas(groupBox3,
+                new Rejilla.Fila(
+                    new Rejilla.Celda(label9, textBoxExtractableTags, buttonHelp1),
+                    new Rejilla.Celda(label10, textBoxTranslationHandles, buttonHelp2)),
+                new Rejilla.Fila(
+                    new Rejilla.Celda(label12, textBoxNodeReplacement, buttonHelp3),
+                    new Rejilla.Celda(label13, textBoxFullListTranslation, buttonHelp4),
+                    checkBox1));
+
             Text = Strings.TitleSettings;
             label1.Text = Strings.LabelRimworldPath;
             label2.Text = Strings.LabelWorkshopPath;
@@ -234,6 +252,10 @@ namespace RimworldExtractorGUI
             // formularios tienen medidas fijas: se ensancha lo que no entra.
             AutoAjuste.Ajustar(label1, label2, label3, label5, label6, label7, label8, label9, label10, label11, label12, label13, label14,
                 buttonAutoDetect, buttonSaveAndClose, buttonCancel, buttonReset, checkBox1);
+
+            // Los tres botones del pie estan uno al lado del otro: al ensancharse
+            // para que entre su texto se pisaban entre si.
+            Rejilla.FilaPegadaALaDerecha(this, buttonSaveAndClose, buttonReset, buttonCancel);
         }
     }
 }

@@ -362,7 +362,8 @@
         public const string LabelBaseRefListPath = "Ruta de la lista de mods de referencia por defecto:";
         public const string GroupAdvancedSettings = "Ajustes avanzados de extracción y guardado";
         public const string LabelFullListTags = "Etiquetas de Full-list Translation:";
-        public const string LabelNodeReplacement = "Palabras clave de reemplazo de nodos:";
+        // Corta a proposito: comparte columna con un boton de ayuda que ya la explica.
+        public const string LabelNodeReplacement = "Reemplazo de nodos:";
         public const string CheckBoxTkey = "(provisorio) Usar extracción de TKey";
 
         // --- FormSelectMod ---
