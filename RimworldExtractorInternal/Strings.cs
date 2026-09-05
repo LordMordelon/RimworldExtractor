@@ -427,6 +427,20 @@
 
         #endregion
 
+        #region Chequeo de version
+
+        public static string VersionUpToDate(string current) => $"{current} — es la última versión";
+
+        public static string VersionUpdateAvailable(string current, string latest)
+            => $"{current} < {latest} — hay una versión nueva";
+
+        public static string VersionCheckFailed(string message)
+            => $"No se pudo comprobar si hay una versión nueva: {message}";
+
+        public const string BtnReportProblem = "Si aparece una advertencia o un error";
+
+        #endregion
+
 
 
     }

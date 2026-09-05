@@ -86,7 +86,7 @@ def cleanup_portable():
 
 def convert_utf8(file_path):
     print(f'convert_utf8: {file_path}')
-    encodings_to_try = ['utf-8', 'cp949']
+    encodings_to_try = ['utf-8', 'cp1252']
     for encoding in encodings_to_try:
         try:
             with codecs.open(file_path, 'r', encoding=encoding) as f:

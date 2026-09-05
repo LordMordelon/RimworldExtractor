@@ -34,9 +34,34 @@ namespace RimworldExtractorGUI
                 Prefabs.Save();
             }
 
-            // El chequeo de version se quito al pasar el repositorio a privado:
-            // GetLatest() pide /releases/latest sin autenticar y recibe 404.
-            linkLabelLatestVersion.Visible = false;
+            Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    var latest = GithubVersionCheker.GetLatest();
+                    var current = Program.VERSION;
+
+                    void UpdateVersionText()
+                    {
+                        linkLabelLatestVersion.Text = latest == current
+                            ? Strings.VersionUpToDate(current)
+                            : Strings.VersionUpdateAvailable(current, latest);
+                    }
+
+                    if (linkLabelLatestVersion.InvokeRequired)
+                    {
+                        linkLabelLatestVersion.Invoke(UpdateVersionText);
+                    }
+                    else
+                    {
+                        UpdateVersionText();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Wrn(Strings.VersionCheckFailed(e.Message));
+                }
+            });
         }
 
         private static bool HasErrorAfter(string keyword)
@@ -169,7 +194,7 @@ namespace RimworldExtractorGUI
 
         private void linkLabelLatestVersion_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            // Sin destino: el repositorio es privado y /releases no es accesible.
+            Process.Start("explorer.exe", GithubVersionCheker.ReleasesUrl);
         }
 
         private void buttonConvertXlsx_Click(object sender, EventArgs e)
@@ -203,7 +228,7 @@ namespace RimworldExtractorGUI
 
         private void button1_Click(object sender, EventArgs e)
         {
-            // Sin destino: apuntaba al foro coreano de RMK.
+            Process.Start("explorer.exe", GithubVersionCheker.IssueUrl);
         }
 
         private void buttonOpenTranslationAnalyzer_Click(object sender, EventArgs e)
@@ -278,9 +303,7 @@ namespace RimworldExtractorGUI
             buttonOpenTranslationAnalyzer.Text = Strings.BtnOpenTranslationAnalyzer;
             labelSelectedMods.Text = Strings.LabelNoModSelected;
 
-            // Ambos botones apuntaban a URLs inalcanzables en un repositorio privado.
-            linkLabelLatestVersion.Visible = false;
-            button1.Visible = false;
+            button1.Text = Strings.BtnReportProblem;
         }
     }
 }

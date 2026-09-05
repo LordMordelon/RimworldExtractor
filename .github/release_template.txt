@@ -1,11 +1,18 @@
-Portable 버전과 Standard 버전이 있습니다.
+Hay dos descargas. Las dos hacen exactamente lo mismo; elegí una.
 
-- **Portable 버전:**
-  1. 단일 파일로 구성되어 있습니다.
-  2. 단독 실행이 가능한 대신, 파일 용량이 큽니다.
+- **Portable** (`RimworldExtractor-Portable.exe`) — **la recomendada si no sabés cuál elegir.**
+  1. Es un único archivo: lo descargás y lo abrís, no se instala nada.
+  2. A cambio pesa bastante (~160 MB), porque trae todo lo que necesita adentro.
 
-- **Standard 버전:**
-  1. 압축을 풀어 사용해야 합니다.
-  2. [**.NET 7.0 데스크톱 런타임**](https://dotnet.microsoft.com/ko-kr/download/dotnet/thank-you/runtime-desktop-7.0.16-windows-x64-installer)을 설치해야 실행이 가능하지만, 파일 용량이 작습니다.
- 
-애플리케이션의 기능은 같으므로 둘 중 하나를 선택하여 사용하면 됩니다.
+- **Standard** (`RimworldExtractor-Standard.zip`)
+  1. Hay que descomprimirlo antes de usarlo.
+  2. Pesa mucho menos, pero requiere tener instalado el
+     [**.NET 7.0 Desktop Runtime**](https://dotnet.microsoft.com/es-es/download/dotnet/7.0).
+
+---
+
+**Windows puede avisarte que el archivo no es seguro.** Es normal: el ejecutable no está firmado
+digitalmente. Si aparece la pantalla azul de SmartScreen, hacé clic en *Más información* y después
+en *Ejecutar de todas formas*.
+
+**¿Primera vez?** Leé la guía para traductores antes de empezar.
