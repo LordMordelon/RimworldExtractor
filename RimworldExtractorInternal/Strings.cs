@@ -18,6 +18,14 @@
         public const string PrefixWarning = "ADVERTENCIA";
         public const string PrefixMessage = "MENSAJE";
 
+        // Marcan el nivel en cada linea. Los mensajes normales llevan un espacio, para
+        // que el texto quede alineado con el de las advertencias y los errores.
+        public const string LogSymbolError = "✖";    // ✖
+        public const string LogSymbolWarning = "⚠";  // ⚠
+        public const string LogSymbolMessage = " ";
+
+        public const string LogCleanedUp = "— se limpio el log para no ocupar tanta memoria —";
+
         #endregion
 
         #region Utils / Excel

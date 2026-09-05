@@ -64,24 +64,6 @@ namespace RimworldExtractorGUI
             });
         }
 
-        private static bool HasErrorAfter(string keyword)
-        {
-            var messages = Log.Messages.ToList();
-            int i = messages.LastIndexOf(keyword);
-            if (i == -1)
-                return false;
-
-            for (; i < messages.Count; i++)
-            {
-                var cur = messages[i];
-                if (cur.Contains(Log.PrefixError))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
 
         private void buttonSelectMod_Click(object sender, EventArgs e)
         {
@@ -137,7 +119,7 @@ namespace RimworldExtractorGUI
             var (cntDefs, cntKeyed, cntStrings, cntPatches) = extraction.Count();
             Log.Msg(Strings.ExtractionSummary(extraction.Count, cntDefs, cntKeyed, cntStrings, cntPatches));
 
-            var hasError = HasErrorAfter(Strings.ExtractionStarted);
+            var hasError = Log.HasErrorSince(Strings.ExtractionStarted);
 
             if (hasError)
             {

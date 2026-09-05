@@ -14,11 +14,19 @@ namespace RimworldExtractorGUI
         private readonly object _lock = new object();
         public override Encoding Encoding { get; } = Encoding.UTF8;
 
+        // El panel tiene fondo oscuro (richTextBoxLog.BackColor = SystemColors.ControlText),
+        // asi que los colores puros quedan con poco contraste.
+        private static readonly Color ColorError = Color.FromArgb(255, 110, 110);
+        private static readonly Color ColorWarning = Color.FromArgb(255, 190, 90);
+        private static readonly Color ColorMessage = Color.FromArgb(220, 220, 220);
+        private static readonly Color ColorTimestamp = Color.FromArgb(130, 130, 130);
+
         public RichTextBoxWriter(RichTextBox richTextBox)
         {
             this._richTextBox = richTextBox;
             this._logFileWriter = File.CreateText("log.txt");
         }
+
         public override void WriteLine(string? value)
         {
             if (value == null)
@@ -31,14 +39,10 @@ namespace RimworldExtractorGUI
                 _logFileWriter.WriteLine(value);
                 _logFileWriter.Flush();
 
-
                 var line = value + Environment.NewLine;
                 if (_richTextBox.InvokeRequired)
                 {
-                    _richTextBox.Invoke(() =>
-                    {
-                        AppendToRichTextBox(line);
-                    });
+                    _richTextBox.Invoke(() => AppendToRichTextBox(line));
                 }
                 else
                 {
@@ -51,18 +55,45 @@ namespace RimworldExtractorGUI
         {
             if (_richTextBox.Text.Length + line.Length > 327670)
             {
-                _richTextBox.Clear(); // Clean up if text is too long
-                _richTextBox.AppendText("Log clean-up done!" + Environment.NewLine);
+                _richTextBox.Clear();
+                _richTextBox.SelectionColor = ColorTimestamp;
+                _richTextBox.AppendText(Strings.LogCleanedUp + Environment.NewLine);
             }
 
-            _richTextBox.SelectionColor = line.Split(Log.Separator).First() switch
+            // La hora va en gris y el resto en el color del nivel. Se deduce del texto
+            // porque TextWriter solo recibe la linea ya armada por Log.Format.
+            var split = line.StartsWith('[') ? Log.TimestampLength : 0;
+            if (split > 0 && line.Length > split)
             {
-                Log.PrefixError => Color.Red,
-                Log.PrefixWarning => Color.Yellow,
-                _ => Color.White
-            };
-            _richTextBox.AppendText(line);
+                _richTextBox.SelectionColor = ColorTimestamp;
+                _richTextBox.AppendText(line[..split]);
+                // +1 por el espacio que separa la hora del simbolo.
+                _richTextBox.SelectionColor = ColorFor(line, split + 1);
+                _richTextBox.AppendText(line[split..]);
+            }
+            else
+            {
+                _richTextBox.SelectionColor = ColorMessage;
+                _richTextBox.AppendText(line);
+            }
+
             _richTextBox.ScrollToCaret();
+        }
+
+        /// <summary>
+        /// El simbolo de nivel esta en una posicion fija: "[HH:mm:ss] X ...". Se mira
+        /// ahi y no con Contains, para que un mensaje que incluya el simbolo en su
+        /// propio texto no se pinte como si fuera un error.
+        /// </summary>
+        private static Color ColorFor(string line, int symbolIndex)
+        {
+            if (symbolIndex >= line.Length)
+                return ColorMessage;
+
+            var symbol = line[symbolIndex].ToString();
+            if (symbol == Strings.LogSymbolError) return ColorError;
+            if (symbol == Strings.LogSymbolWarning) return ColorWarning;
+            return ColorMessage;
         }
 
         protected override void Dispose(bool disposing)
