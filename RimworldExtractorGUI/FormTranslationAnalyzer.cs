@@ -28,6 +28,7 @@ namespace RimworldExtractorGUI
         public FormTranslationAnalyzer(string[] paths)
         {
             InitializeComponent();
+            ApplyStrings();
             _items = new List<ListViewItem>();
             Task.Factory.StartNew(() => { AnalyzeTranslation(paths); });
         }
@@ -39,11 +40,11 @@ namespace RimworldExtractorGUI
             {
                 if (labelTitle.InvokeRequired)
                 {
-                    labelTitle.Invoke(() => { labelTitle.Text = $"번역 데이터를 분석하고 있습니다... {i}/{paths.Length}"; });
+                    labelTitle.Invoke(() => { labelTitle.Text = Strings.AnalyzingProgress(i, paths.Length); });
                 }
                 else
                 {
-                    labelTitle.Text = $"번역 데이터를 분석하고 있습니다... {i}/{paths.Length}";
+                    labelTitle.Text = Strings.AnalyzingProgress(i, paths.Length);
                 }
 
                 var path = paths[i];
@@ -62,7 +63,7 @@ namespace RimworldExtractorGUI
                 }
             }
 
-            var doneText = "분석 완료!";
+            var doneText = Strings.AnalysisDone;
             if (labelTitle.InvokeRequired)
             {
                 labelTitle.Invoke(() => { labelTitle.Text = doneText; });
@@ -74,7 +75,7 @@ namespace RimworldExtractorGUI
 
             if (invailedCnt > 0)
             {
-                MessageBox.Show("몇몇 엑셀 파일들을 정상적으로 분석하지 못했습니다. 로그창 확인 후 다시 시도해주세요.");
+                MessageBox.Show(Strings.SomeFilesFailedToAnalyze);
             }
         }
 
@@ -101,7 +102,7 @@ namespace RimworldExtractorGUI
             {
                 analyzerEntry.Metadata?.Identifier ?? "UNKNOWN",
                 "...\\" + Path.Combine(Path.GetFileName(Path.GetDirectoryName(filePath) ?? ""), Path.GetFileName(filePath)), analyzerEntry.OriginalTranslations.Count.ToString(),
-                analyzerEntry.ChangesString, analyzerEntry.Metadata == null ? "지정 필요": "자동", "덧붙이기"
+                analyzerEntry.ChangesString, analyzerEntry.Metadata == null ? Strings.NeedsAssignment : Strings.Automatic, Strings.Append
             };
             item.SubItems.AddRange(rowTextData);
             item.Checked = analyzerEntry.HasChanges;
@@ -114,7 +115,7 @@ namespace RimworldExtractorGUI
             {
                 buttonOpenSelectMod.Enabled = false;
                 comboBox1.Enabled = false;
-                labelModTitle.Text = "수정할 모드를 선택하세요.";
+                labelModTitle.Text = Strings.SelectModToFix;
                 return;
             }
 
@@ -122,7 +123,7 @@ namespace RimworldExtractorGUI
             comboBox1.Enabled = true;
             var selected = listViewResults.SelectedItems[0];
             var analyzerEntry = (TranslationAnalyzerEntry)selected.Tag;
-            labelModTitle.Text = analyzerEntry.Metadata?.ToString() ?? "원본 모드를 찾을 수 없었습니다. 수동으로 지정해주세요.";
+            labelModTitle.Text = analyzerEntry.Metadata?.ToString() ?? Strings.OriginalModNotFound;
             comboBox1.SelectedIndex = (int)analyzerEntry.SaveMethod;
 
         }
@@ -146,7 +147,7 @@ namespace RimworldExtractorGUI
                 curSelected.SubItems[(int)Column.ChangesCount] = new ListViewItem.ListViewSubItem()
                 { Text = curEntry.ChangesString };
                 curSelected.SubItems[(int)Column.ExtractionMethod] = new ListViewItem.ListViewSubItem()
-                { Text = "수동" };
+                { Text = Strings.Manual };
                 curSelected.Selected = true;
             }
         }
@@ -155,7 +156,7 @@ namespace RimworldExtractorGUI
         {
             if (e.Item.Checked && ((TranslationAnalyzerEntry)e.Item.Tag).Metadata == null)
             {
-                MessageBox.Show("이 파일의 원본 모드를 알 수 없으므로 재추출 할 수 없습니다.");
+                MessageBox.Show(Strings.CannotReextractUnknownMod);
                 e.Item.Checked = false;
             }
         }
@@ -201,7 +202,7 @@ namespace RimworldExtractorGUI
             var entry = (TranslationAnalyzerEntry)item.Tag;
             var contextMenu = new ContextMenuStrip();
 
-            var menuItem1 = new ToolStripMenuItem("엑셀 파일을 파일 탐색기에서 열기");
+            var menuItem1 = new ToolStripMenuItem(Strings.MenuOpenXlsxInExplorer);
             menuItem1.Click += (o, args) =>
             {
                 Process.Start("explorer.exe", Path.GetDirectoryName(entry.FilePath) ?? "");
@@ -210,7 +211,7 @@ namespace RimworldExtractorGUI
 
             if (entry.Metadata != null)
             {
-                var menuItem2 = new ToolStripMenuItem("모드 루트 폴더를 파일 탐색기에서 열기");
+                var menuItem2 = new ToolStripMenuItem(Strings.MenuOpenModRootInExplorer);
                 menuItem2.Click += (o, args) =>
                 {
                     Process.Start("explorer.exe", Path.GetDirectoryName(entry.Metadata!.RootDir) ?? "");
@@ -236,6 +237,37 @@ namespace RimworldExtractorGUI
         private enum Column
         {
             ModName = 1, FilePath, OriginalCount, ChangesCount, ExtractionMethod, SaveMethod
+        }
+    
+        /// <summary>
+        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
+        /// y mantener limpios los merges con upstream.
+        /// </summary>
+        private void ApplyStrings()
+        {
+            columnHeader1.Text = Strings.ColumnSelect;
+            columnHeader2.Text = Strings.ColumnModInfo;
+            columnHeader4.Text = Strings.ColumnFileName;
+            columnHeader5.Text = Strings.ColumnOriginalCount;
+            columnHeader6.Text = Strings.ColumnChanges;
+            columnHeader7.Text = Strings.ColumnReextractMethod;
+            columnHeader8.Text = Strings.ColumnSaveMethod;
+            labelModTitle.Text = Strings.SelectModToFix;
+            buttonOpenSelectMod.Text = Strings.BtnSelectModManually;
+            button1.Text = Strings.BtnFixSelectedFiles;
+            button2.Text = Strings.BtnDeselectAll;
+            button3.Text = Strings.BtnSelectAllPossible;
+            label1.Text = Strings.LabelSaveMethod;
+
+            // El combo se lee por indice, asi que hay que conservar el orden.
+            comboBox1.Items.Clear();
+            comboBox1.Items.AddRange(new object[]
+            {
+                Strings.SaveMethodAppend,
+                Strings.SaveMethodRebuildOverwrite,
+                Strings.SaveMethodRebuildNew,
+                Strings.SaveMethodOnlyNewNodes
+            });
         }
     }
 }

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using RimworldExtractorGUI.Utils;
 using System.Diagnostics;
+using RimworldExtractorInternal;
 
 namespace RimworldExtractorGUI
 {
@@ -18,14 +19,15 @@ namespace RimworldExtractorGUI
         public FormImageFileCombiner()
         {
             InitializeComponent();
+            ApplyStrings();
         }
 
         private void buttonSelectPathImage_Click(object sender, EventArgs e)
         {
             var dialog = new OpenFileDialog();
-            dialog.Title = "이미지 파일을 지정해주세요.";
+            dialog.Title = Strings.SelectImageFile;
             dialog.FileName = "";
-            dialog.Filter = "이미지 파일|*.jpg;*.png;*.gif";
+            dialog.Filter = Strings.FilterImageFile;
             dialog.CheckFileExists = true;
             dialog.CheckPathExists = false;
 
@@ -38,8 +40,8 @@ namespace RimworldExtractorGUI
         private void buttonSelectPathFile_Click(object sender, EventArgs e)
         {
             var dialog = new CommonOpenFileDialog();
-            dialog.Title = "패키징할 압축파일의 경로를 지정해주세요.";
-            dialog.Filters.Add(new CommonFileDialogFilter("ZIP 압축파일", "*.zip"));
+            dialog.Title = Strings.SelectZipToPackage;
+            dialog.Filters.Add(new CommonFileDialogFilter(Strings.FilterZip, "*.zip"));
 
 
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
@@ -58,8 +60,7 @@ namespace RimworldExtractorGUI
 
             if (imgPath != null && !File.Exists(imgPath))
             {
-                MessageBox.Show("경로 상에 이미지 파일이 존재하지 않거나 엑세스 권한이 없습니다.\n" +
-                                "파일이 존재함에도 에러가 발생한다면 관리자 권한으로 실행하거나, 파일을 다른 위치로 옮긴 후 다시 시도해주세요.");
+                MessageBox.Show(Strings.ImageNotFoundOrNoAccess);
                 return;
             }
 
@@ -67,10 +68,10 @@ namespace RimworldExtractorGUI
             string? OpenDialogSelectDestPath()
             {
                 var dialog = new SaveFileDialog();
-                dialog.Title = "저장할 파일의 위치를 지정해주세요";
+                dialog.Title = Strings.SelectSaveLocation;
                 dialog.InitialDirectory = Path.GetDirectoryName(filePath) ?? "";
                 dialog.FileName = Path.GetFileNameWithoutExtension(filePath) + imgExtension;
-                dialog.Filter = "이미지 파일|*" + imgExtension;
+                dialog.Filter = Strings.FilterImageFile.Split('|')[0] + "|*" + imgExtension;
 
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
@@ -86,11 +87,11 @@ namespace RimworldExtractorGUI
                 var destPath = OpenDialogSelectDestPath();
                 if (destPath == null)
                 {
-                    MessageBox.Show("파일 위치 지정을 다시 해주세요.");
+                    MessageBox.Show(Strings.ReselectFileLocation);
                     return;
                 }
                 ImageFilePackageHelper.Package(filePath, destPath, imgPath);
-                if (MessageBox.Show("완료되었습니다! 패키징된 파일의 위치를 탐색기로 열까요?", "완료", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(Strings.DoneOpenPackagedFolder, Strings.DialogTitleDone, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     Process.Start("explorer.exe", Path.GetDirectoryName(destPath) ?? "");
                 }
@@ -109,20 +110,20 @@ namespace RimworldExtractorGUI
                 var destPath = OpenDialogSelectDestPath();
                 if (destPath == null)
                 {
-                    MessageBox.Show("파일 위치 지정을 다시 해주세요.");
+                    MessageBox.Show(Strings.ReselectFileLocation);
                     return;
                 }
                 ImageFilePackageHelper.Package(newFilePath, destPath, imgPath);
                 File.Delete(newFilePath);
-                if (MessageBox.Show("완료되었습니다! 패키징된 파일의 위치를 탐색기로 열까요?", "완료", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(Strings.DoneOpenPackagedFolder, Strings.DialogTitleDone, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     Process.Start("explorer.exe", Path.GetDirectoryName(destPath) ?? "");
                 }
             }
             else
             {
-                MessageBox.Show("경로 상에 파일/폴더가 존재하지 않거나 엑세스 권한이 없습니다.\n" +
-                                "파일이 존재함에도 에러가 발생한다면 관리자 권한으로 실행하거나, 파일을 다른 위치로 옮긴 후 다시 시도해주세요.");
+                MessageBox.Show(Strings.FileNotFoundOrNoAccess);
+                                
             }
         }
 
@@ -130,12 +131,26 @@ namespace RimworldExtractorGUI
         {
             var dialog = new CommonOpenFileDialog();
             dialog.IsFolderPicker = true;
-            dialog.Title = "패키징할 폴더의 경로를 지정해주세요.";
+            dialog.Title = Strings.SelectFolderToPackage;
 
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
                 textBoxPathFile.Text = dialog.FileName;
             }
+        }
+    
+        /// <summary>
+        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
+        /// y mantener limpios los merges con upstream.
+        /// </summary>
+        private void ApplyStrings()
+        {
+            buttonDone.Text = Strings.BtnDone;
+            label1.Text = Strings.LabelSelectImagePath;
+            label2.Text = Strings.LabelSelectFileToCombine;
+            label3.Text = Strings.LabelCombinerHelp;
+            buttonSelectPathFile.Text = Strings.BtnSelectFile;
+            buttonSelectPathDir.Text = Strings.BtnSelectFolder;
         }
     }
 }

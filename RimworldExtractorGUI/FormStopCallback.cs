@@ -19,6 +19,7 @@ namespace RimworldExtractorGUI
         public FormStopCallback(string path)
         {
             InitializeComponent();
+            ApplyStrings();
             label1.Text = path;
         }
 
@@ -46,7 +47,7 @@ namespace RimworldExtractorGUI
                 }
                 catch (IOException io)
                 {
-                    Log.Err($"파일이 이미 사용 중이기 때문에 파일을 저장할 수 없었습니다. {io.Message}");
+                    Log.Err(Strings.CouldNotSaveFileInUse(io.Message));
                 }
             }
             else
@@ -81,6 +82,17 @@ namespace RimworldExtractorGUI
             {
                 return;
             }
+        }
+    
+        /// <summary>
+        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
+        /// y mantener limpios los merges con upstream.
+        /// </summary>
+        private void ApplyStrings()
+        {
+            label2.Text = Strings.LabelDuplicateFileFound;
+            button1.Text = Strings.BtnOverwrite;
+            button2.Text = Strings.BtnSkip;
         }
     }
 }

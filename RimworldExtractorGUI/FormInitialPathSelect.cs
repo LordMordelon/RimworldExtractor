@@ -17,6 +17,7 @@ namespace RimworldExtractorGUI
         public FormInitialPathSelect()
         {
             InitializeComponent();
+            ApplyStrings();
             Prefabs.Init();
             textBoxPathRimworld.Text = Prefabs.PathRimworld;
             textBoxPathWorkshop.Text = Prefabs.PathWorkshop;
@@ -25,9 +26,9 @@ namespace RimworldExtractorGUI
         private void buttonSelectPathRimworld_Click(object sender, EventArgs e)
         {
             var dialog = new OpenFileDialog();
-            dialog.Title = "RimWorldWin64.exe를 지정해주세요";
+            dialog.Title = Strings.SelectRimworldExe;
             dialog.FileName = "";
-            dialog.Filter = "림월드 실행 파일|RimWorldWin64.exe";
+            dialog.Filter = Strings.FilterRimworldExe;
             dialog.CheckFileExists = true;
             dialog.CheckPathExists = false;
 
@@ -41,7 +42,7 @@ namespace RimworldExtractorGUI
         {
             var dialog = new CommonOpenFileDialog();
             dialog.IsFolderPicker = true;
-            dialog.Title = "림월드 창작마당 경로를 지정해주세요 => Steam\\steamapps\\workshop\\content\\294100";
+            dialog.Title = Strings.SelectWorkshopPath;
 
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
@@ -56,6 +57,17 @@ namespace RimworldExtractorGUI
             Prefabs.PathWorkshop = textBoxPathWorkshop.Text;
             Prefabs.Save();
             Close();
+        }
+    
+        /// <summary>
+        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
+        /// y mantener limpios los merges con upstream.
+        /// </summary>
+        private void ApplyStrings()
+        {
+            label1.Text = Strings.LabelRimworldPathShort;
+            label2.Text = Strings.LabelWorkshopPathShort;
+            buttonDone.Text = Strings.BtnDone;
         }
     }
 }

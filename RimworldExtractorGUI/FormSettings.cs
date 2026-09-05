@@ -19,6 +19,7 @@ namespace RimworldExtractorGUI
         public FormSettings()
         {
             InitializeComponent();
+            ApplyStrings();
             if (File.Exists("Prefabs.dat"))
             {
                 Prefabs.Load();
@@ -52,13 +53,13 @@ namespace RimworldExtractorGUI
             });
             comboBoxExtractionMethod.Items.AddRange(new object[]
             {
-                "번역 작업에 쓰일 엑셀(.xlsx) 파일",
-                "배포 가능한 XML 파일",
-                "배포 가능한 XML 파일(주석 포함)"
+                Strings.ExtractionMethodExcel,
+                Strings.ExtractionMethodXml,
+                Strings.ExtractionMethodXmlComments
             });
             comboBoxFileDuplication.Items.AddRange(new object[]
             {
-                "멈추고 묻기", "덮어씌우기", "건너뛰기"
+                Strings.DuplicatePolicyAsk, Strings.DuplicatePolicyOverwrite, Strings.DuplicatePolicySkip
             });
 
             FromPrefabs();
@@ -137,35 +138,30 @@ namespace RimworldExtractorGUI
 
         private void buttonHelp1_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("추출해야 하는 노드의 태그 목록을 정의합니다. '/' 문자로 구분하여 공백 없이 입력합니다. 특별한 일이 없는 이상 기본 상태로 두세요.");
+            MessageBox.Show(Strings.HelpExtractableTags);
         }
 
         private void buttonHelp2_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Translation Handle은 노드의 이름이 'li'인 리스트 노드를 추출할 때 특정 태그의 값을 리스트 번호 대신 사용하는 추출 방법입니다. https://ludeon.com/forums/index.php?topic=41942.0 참고\n" +
-                            "해당 노드에 Translation Handle 태그와 일치하는 노드가 있으면 그 노드의 값으로 리스트 노드의 이름을 결정합니다.\n" +
-                            "예) verbs.2.label => verbs.Verb_Shoot.label\n'/' 문자로 구분하여 공백 없이 입력합니다.\n" +
-                            "Translation Handle의 추출 방식은 그 태그의 타입이 Type 타입인지, 그 외인지에 따라 다릅니다. 따라서 Type 타입인 경우 앞에 접두어 '*'를 붙입니다.");
+            MessageBox.Show(Strings.HelpTranslationHandle);
         }
 
         private void buttonHelp3_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("일부 노드는 추출했을 때의 노드와 번역을 적용할 때의 노드가 다른데, 노드 대체 기능은 그러한 경우에 사용됩니다. " +
-                            "'(Def 타입)+(원본 노드)|(Def 타입)+(대체 노드)의 형식으로 입력하며, 이때 defName 부분은 생략하여 입력합니다. 여러 개인 경우 '/' 문자로 구분하여 공백 없이 입력합니다. " +
-                            "\n주의: 아직 'li' 노드가 포함된 경우는 지원하지 않습니다.");
+            MessageBox.Show(Strings.HelpNodeReplacement);
         }
 
         private void buttonHelp4_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Full-list Translation은 일부 경우에만 사용되는 리스트 노드 저장 방식입니다. https://ludeon.com/forums/index.php?topic=41942.0 참고\n '/' 문자로 구분하여 공백 없이 입력합니다.");
+            MessageBox.Show(Strings.HelpFullListTranslation);
         }
 
         private void buttonSelectPathRimworld_Click(object sender, EventArgs e)
         {
             var dialog = new OpenFileDialog();
-            dialog.Title = "RimWorldWin64.exe를 지정해주세요";
+            dialog.Title = Strings.SelectRimworldExe;
             dialog.FileName = "";
-            dialog.Filter = "림월드 실행 파일|RimWorldWin64.exe";
+            dialog.Filter = Strings.FilterRimworldExe;
             dialog.CheckFileExists = true;
             dialog.CheckPathExists = false;
 
@@ -179,7 +175,7 @@ namespace RimworldExtractorGUI
         {
             var dialog = new CommonOpenFileDialog();
             dialog.IsFolderPicker = true;
-            dialog.Title = "림월드 창작마당 경로를 지정해주세요 => Steam\\steamapps\\workshop\\content\\294100";
+            dialog.Title = Strings.SelectWorkshopPath;
 
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
@@ -190,9 +186,9 @@ namespace RimworldExtractorGUI
         private void buttonBaseRefList_Click(object sender, EventArgs e)
         {
             var openFileDialog = new OpenFileDialog();
-            openFileDialog.Title = "선택한 파일로부터 참조 모드의 목록을 불러옵니다.";
+            openFileDialog.Title = Strings.LoadRefModsFromFile;
             openFileDialog.InitialDirectory = Assembly.GetExecutingAssembly().Location;
-            openFileDialog.Filter = "참조 모드 리스트 파일|*.refMods";
+            openFileDialog.Filter = Strings.FilterRefModsList;
             openFileDialog.DefaultExt = "refMods";
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
@@ -202,5 +198,35 @@ namespace RimworldExtractorGUI
 
 
         private static string RemoveSep(string s) => s.Replace(" ", "").Replace("\r", "").Replace("\n", "");
+    
+        /// <summary>
+        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
+        /// y mantener limpios los merges con upstream.
+        /// </summary>
+        private void ApplyStrings()
+        {
+            label1.Text = Strings.LabelRimworldPath;
+            label2.Text = Strings.LabelWorkshopPath;
+            label3.Text = Strings.LabelVersionPattern;
+            label4.Text = Strings.LabelSettingsTip;
+            label5.Text = Strings.LabelRimworldVersion;
+            buttonAutoDetect.Text = Strings.BtnAutoDetect;
+            label6.Text = Strings.LabelOriginalLanguage;
+            label7.Text = Strings.LabelTranslationLanguage;
+            label8.Text = Strings.LabelExtractionFormat;
+            buttonSaveAndClose.Text = Strings.BtnSaveAndClose;
+            buttonCancel.Text = Strings.BtnCancel;
+            buttonReset.Text = Strings.BtnReset;
+            label9.Text = Strings.LabelExtractableTags;
+            label10.Text = Strings.LabelTranslationHandleTags;
+            label11.Text = Strings.LabelDuplicatePolicy;
+            label12.Text = Strings.LabelNodeReplacement;
+            label13.Text = Strings.LabelFullListTags;
+            label14.Text = Strings.LabelBaseRefListPath;
+            groupBox1.Text = Strings.GroupRimworldSettings;
+            groupBox2.Text = Strings.GroupBasicSettings;
+            groupBox3.Text = Strings.GroupAdvancedSettings;
+            checkBox1.Text = Strings.CheckBoxTkey;
+        }
     }
 }

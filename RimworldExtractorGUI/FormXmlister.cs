@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using RimworldExtractorInternal;
 
 namespace RimworldExtractorGUI
 {
@@ -17,6 +18,7 @@ namespace RimworldExtractorGUI
         public FormXmlister()
         {
             InitializeComponent();
+            ApplyStrings();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -24,7 +26,7 @@ namespace RimworldExtractorGUI
             var dialog = new CommonOpenFileDialog();
             dialog.IsFolderPicker = true;
             dialog.Multiselect = true;
-            dialog.Title = "Languages 폴더가 있는 루트 폴더를 지정해주세요.";
+            dialog.Title = Strings.SelectLanguagesRootFolder;
 
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
@@ -37,6 +39,16 @@ namespace RimworldExtractorGUI
             DialogResult = DialogResult.OK;
             FileNames = textBox1.Text.Split('|');
             Close();
+        }
+    
+        /// <summary>
+        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
+        /// y mantener limpios los merges con upstream.
+        /// </summary>
+        private void ApplyStrings()
+        {
+            button2.Text = Strings.BtnDone;
+            label1.Text = Strings.LabelSelectLanguagesRoot;
         }
     }
 }

@@ -1,4 +1,4 @@
-using DocumentFormat.OpenXml.Spreadsheet;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
 using RimworldExtractorInternal;
 using System.Diagnostics;
 using System.Xml;
@@ -16,6 +16,7 @@ namespace RimworldExtractorGUI
         public FormMain()
         {
             InitializeComponent();
+            ApplyStrings();
             Log.Out = new RichTextBoxWriter(richTextBoxLog);
             Prefabs.StopCallbackXlsx = FormStopCallback.StopCallbackXlsx;
             Prefabs.StopCallbackXml = FormStopCallback.StopCallbackXml;
@@ -26,45 +27,16 @@ namespace RimworldExtractorGUI
             }
             catch (Exception e)
             {
-                MessageBox.Show("Prefabs.dat 파일의 버전이 구버전이거나 손상되었습니다. 파일 삭제 후 다시 진행해주세요.\n" +
-                                $"에러메시지: {e.Message}");
-                Close();
-                throw;
+                MessageBox.Show(Strings.PrefabsDatOutdated + Strings.ErrorMessagePrefix(e.Message));
+                // Prefabs ya quedo con los valores por defecto de Init(), asi que se puede
+                // seguir. Upstream hacia Close() y relanzaba, y la app terminaba igual en el
+                // dialogo de excepcion no controlada.
+                Prefabs.Save();
             }
 
-            Task.Factory.StartNew(() =>
-            {
-                try
-                {
-                    var latest = GithubVersionCheker.GetLatest();
-                    var current = Program.VERSION;
-
-                    void UpdateVersionText()
-                    {
-                        if (latest == current)
-                        {
-                            linkLabelLatestVersion.Text = $"{current} 최신 버전입니다";
-                        }
-                        else
-                        {
-                            linkLabelLatestVersion.Text = $"{current} < {latest} 최신 버전 사용가능";
-                        }
-                    }
-
-                    if (linkLabelLatestVersion.InvokeRequired)
-                    {
-                        linkLabelLatestVersion.Invoke(UpdateVersionText);
-                    }
-                    else
-                    {
-                        UpdateVersionText();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log.Wrn($"최신 버전 확인에 실패하였습니다: {e.Message}");
-                }
-            });
+            // El chequeo de version se quito al pasar el repositorio a privado:
+            // GetLatest() pide /releases/latest sin autenticar y recibe 404.
+            linkLabelLatestVersion.Visible = false;
         }
 
         private static bool HasErrorAfter(string keyword)
@@ -97,14 +69,14 @@ namespace RimworldExtractorGUI
                 SelectedFolders = formSelectMod.SelectedFolders;
                 buttonExtract.Enabled = true;
 
-                labelSelectedMods.Text = $"선택된 모드: {SelectedMod.ModName}";
+                labelSelectedMods.Text = Strings.SelectedMod(SelectedMod.ModName);
                 if (ReferenceMods?.Count > 0)
                 {
                     var concatText = string.Join(", ", ReferenceMods.Select(x => x.ModName));
                     var stripedText = concatText.Substring(0, Math.Min(concatText.Length, 200));
                     if (concatText.Length > 200)
                         stripedText += "...";
-                    labelSelectedMods.Text += $"\n참조로 선택된 모드: {concatText}";
+                    labelSelectedMods.Text += Strings.SelectedReferenceMods(concatText);
                 }
             }
         }
@@ -116,7 +88,7 @@ namespace RimworldExtractorGUI
                 return;
             }
 
-            Log.Msg("추출 시작...");
+            Log.Msg(Strings.ExtractionStarted);
 
             var extraction = Extractor.ExtractTranslationData(SelectedMod, SelectedFolders, ReferenceMods);
 
@@ -138,20 +110,20 @@ namespace RimworldExtractorGUI
 
 
             var (cntDefs, cntKeyed, cntStrings, cntPatches) = extraction.Count();
-            Log.Msg($"번역 데이터 수: 총 {extraction.Count}개 중 Defs {cntDefs}개, Keyed {cntKeyed}개, Strings {cntStrings}개, Patches {cntPatches}개, 완료!");
+            Log.Msg(Strings.ExtractionSummary(extraction.Count, cntDefs, cntKeyed, cntStrings, cntPatches));
 
-            var hasError = HasErrorAfter("추출 시작...");
+            var hasError = HasErrorAfter(Strings.ExtractionStarted);
 
             if (hasError)
             {
-                if (MessageBox.Show("완료되었지만 추출 중 에러가 발생하였습니다. 아무튼 추출된 파일의 위치를 탐색기로 열까요?", "완료?", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(Strings.DoneWithErrorsOpenFolder, Strings.DialogTitleDoneQuestion, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     Process.Start("explorer.exe", outPath);
                 }
             }
             else
             {
-                if (MessageBox.Show("완료되었습니다! 추출된 파일의 위치를 탐색기로 열까요?", "완료", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (MessageBox.Show(Strings.DoneOpenFolder, Strings.DialogTitleDone, MessageBoxButtons.YesNo) == DialogResult.Yes)
                 {
                     Process.Start("explorer.exe", outPath);
                 }
@@ -163,9 +135,9 @@ namespace RimworldExtractorGUI
         private void buttonConvertXml_Click(object sender, EventArgs e)
         {
             var openfileDialog = new OpenFileDialog();
-            openfileDialog.Title = "림 추출기에서 생성한 엑셀 파일을 선택해주세요.";
+            openfileDialog.Title = Strings.SelectExtractorXlsx;
             openfileDialog.FileName = "";
-            openfileDialog.Filter = "번역 데이터 파일|*.xlsx";
+            openfileDialog.Filter = Strings.FilterTranslationData;
 
             if (openfileDialog.ShowDialog() == DialogResult.OK)
             {
@@ -174,7 +146,7 @@ namespace RimworldExtractorGUI
                     var path = openfileDialog.FileName;
                     var translations = IO.FromExcel(path);
                     IO.ToLanguageXml(translations, true, Prefabs.CommentOriginal, Path.GetFileName(path), Path.GetDirectoryName(path) ?? "");
-                    if (MessageBox.Show("완료되었습니다! 변환된 폴더의 위치를 탐색기로 열까요?", "완료", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    if (MessageBox.Show(Strings.DoneOpenConvertedFolder, Strings.DialogTitleDone, MessageBoxButtons.YesNo) == DialogResult.Yes)
                     {
                         Process.Start("explorer.exe", Path.GetDirectoryName(path) ?? "");
                     }
@@ -197,7 +169,7 @@ namespace RimworldExtractorGUI
 
         private void linkLabelLatestVersion_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Process.Start("explorer.exe", GithubVersionCheker.LatestUrl);
+            // Sin destino: el repositorio es privado y /releases no es accesible.
         }
 
         private void buttonConvertXlsx_Click(object sender, EventArgs e)
@@ -212,10 +184,10 @@ namespace RimworldExtractorGUI
                     var root = roots[i];
                     var translations = IO.FromLanguageXml(root);
                     IO.ToExcel(translations, Path.Combine(root, Path.GetFileNameWithoutExtension(root)));
-                    Log.Msg($"{i + 1}/{roots.Length}::수정 완료: {root}");
+                    Log.Msg(Strings.ProgressFixed(i + 1, roots.Length, root));
                 }
 
-                MessageBox.Show("변환이 완료되었습니다!");
+                MessageBox.Show(Strings.ConversionDone);
             }
         }
 
@@ -231,7 +203,7 @@ namespace RimworldExtractorGUI
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Process.Start("explorer.exe", GithubVersionCheker.DiscussionUrl);
+            // Sin destino: apuntaba al foro coreano de RMK.
         }
 
         private void buttonOpenTranslationAnalyzer_Click(object sender, EventArgs e)
@@ -265,30 +237,50 @@ namespace RimworldExtractorGUI
                                 analyzerEntry.MergeTranslation();
                                 newPath = Path.Combine(
                                     Path.GetDirectoryName(analyzerEntry.FilePath),
-                                    Path.GetFileNameWithoutExtension(analyzerEntry.FilePath) + "- 편집됨");
+                                    Path.GetFileNameWithoutExtension(analyzerEntry.FilePath) + Strings.EditedFileSuffix);
                                 IO.ToExcel(analyzerEntry.NewTranslations, newPath, true);
-                                Log.Msg($"{i + 1}/{analyzerEntries.Count}::수정 완료: {newPath}");
+                                Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, newPath));
                                 continue;
                             case TranslationAnalyzerEntry.SaveMethodEnum.New:
                                 newPath = Path.Combine(
                                     Path.GetDirectoryName(analyzerEntry.FilePath),
-                                    Path.GetFileNameWithoutExtension(analyzerEntry.FilePath) + "- 편집됨");
+                                    Path.GetFileNameWithoutExtension(analyzerEntry.FilePath) + Strings.EditedFileSuffix);
                                 IO.ToExcel(
                                     analyzerEntry.Changes
                                         .Where(x => x.Reason == TranslationAnalyzerEntry.ChangeReason.AddedNewly)
                                         .Select(x => x.New).ToList(), newPath);
-                                Log.Msg($"{i + 1}/{analyzerEntries.Count}::수정 완료: {newPath}");
+                                Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, newPath));
                                 continue;
                                 break;
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }
-                        Log.Msg($"{i + 1}/{analyzerEntries.Count}::수정 완료: {analyzerEntry.FilePath}");
+                        Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, analyzerEntry.FilePath));
                     }
 
-                    MessageBox.Show($"{analyzerEntries.Count}개의 파일에 대한 수정이 완료되었습니다.");
+                    MessageBox.Show(Strings.FilesFixed(analyzerEntries.Count));
                 }
             }
+        }
+    
+        /// <summary>
+        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
+        /// y mantener limpios los merges con upstream.
+        /// </summary>
+        private void ApplyStrings()
+        {
+            Text = Strings.FormMainTitle;
+            buttonSelectMod.Text = Strings.BtnSelectMod;
+            buttonExtract.Text = Strings.BtnExtract;
+            button2.Text = Strings.BtnOptions;
+            label1.Text = Strings.LabelMainDescription;
+            buttonJpgPackager.Text = Strings.BtnJpgPackager;
+            buttonOpenTranslationAnalyzer.Text = Strings.BtnOpenTranslationAnalyzer;
+            labelSelectedMods.Text = Strings.LabelNoModSelected;
+
+            // Ambos botones apuntaban a URLs inalcanzables en un repositorio privado.
+            linkLabelLatestVersion.Visible = false;
+            button1.Visible = false;
         }
     }
 }

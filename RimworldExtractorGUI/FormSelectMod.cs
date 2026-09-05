@@ -33,6 +33,7 @@ namespace RimworldExtractorGUI
         public FormSelectMod()
         {
             InitializeComponent();
+            ApplyStrings();
             ModLister.ResetCache();
             _officialModsCached = ModLister.OfficialMods.ToList();
             _localModsCached = ModLister.LocalMods.ToList();
@@ -166,13 +167,13 @@ namespace RimworldExtractorGUI
         {
             get
             {
-                var menuSaveRefModsList = new ToolStripMenuItem("(선택) 참조 모드 목록 저장");
+                var menuSaveRefModsList = new ToolStripMenuItem(Strings.MenuSaveRefModsList);
                 menuSaveRefModsList.Click += (sender, args) =>
                 {
                     var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-                    saveFileDialog.Title = "선택한 참조 모드의 목록을 저장합니다.";
+                    saveFileDialog.Title = Strings.SaveRefModsList;
                     saveFileDialog.InitialDirectory = Assembly.GetExecutingAssembly().Location;
-                    saveFileDialog.Filter = "참조 모드 리스트 파일|*.refMods";
+                    saveFileDialog.Filter = Strings.FilterRefModsList;
                     saveFileDialog.DefaultExt = "refMods";
                     if (saveFileDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -180,13 +181,13 @@ namespace RimworldExtractorGUI
                     }
                 };
                 yield return menuSaveRefModsList;
-                var menuLoadRefModsList = new ToolStripMenuItem("(선택) 참조 모드 목록 불러오기");
+                var menuLoadRefModsList = new ToolStripMenuItem(Strings.MenuLoadRefModsList);
                 menuLoadRefModsList.Click += (sender, args) =>
                 {
                     var openFileDialog = new OpenFileDialog();
-                    openFileDialog.Title = "선택한 파일로부터 참조 모드의 목록을 불러옵니다.";
+                    openFileDialog.Title = Strings.LoadRefModsFromFile;
                     openFileDialog.InitialDirectory = Assembly.GetExecutingAssembly().Location;
-                    openFileDialog.Filter = "참조 모드 리스트 파일|*.refMods";
+                    openFileDialog.Filter = Strings.FilterRefModsList;
                     openFileDialog.DefaultExt = "refMods";
                     if (openFileDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -214,7 +215,7 @@ namespace RimworldExtractorGUI
         private void listBoxMods_SelectedIndexChanged(object sender, EventArgs e)
         {
             var currentMod = SelectCurrentMod();
-            labelSelectedMod.Text = "추출할 모드를 선택하세요";
+            labelSelectedMod.Text = Strings.SelectModToExtract;
             buttonDone.Enabled = true;
             if (currentMod == null)
                 return;
@@ -222,7 +223,7 @@ namespace RimworldExtractorGUI
             labelSelectedMod.Text = currentMod.ModName;
             if (currentMod.ModDependencies is { Count: > 0 })
             {
-                labelSelectedMod.Text += $"\n[선행모드: {string.Join(';', currentMod.ModDependencies)}]";
+                labelSelectedMod.Text += Strings.ModDependenciesSuffix(string.Join(';', currentMod.ModDependencies));
             }
         }
         private void buttonDone_Click(object sender, EventArgs e)
@@ -243,7 +244,7 @@ namespace RimworldExtractorGUI
             if (item == null) return;
             var contextMenu = new ContextMenuStrip();
 
-            var menuItem1 = new ToolStripMenuItem("추출 모드로 선택");
+            var menuItem1 = new ToolStripMenuItem(Strings.MenuSelectAsExtractionTarget);
             menuItem1.Click += (o, args) =>
             {
                 listBoxMods.SelectedIndex = idx;
@@ -251,13 +252,13 @@ namespace RimworldExtractorGUI
             };
             contextMenu.Items.Add(menuItem1);
 
-            var menuItem2 = new ToolStripMenuItem("파일 탐색기에서 열기");
+            var menuItem2 = new ToolStripMenuItem(Strings.MenuOpenInFileExplorer);
             menuItem2.Click += (o, args) => { OpenWithExplorer(item); };
             contextMenu.Items.Add(menuItem2);
 
             if (ReferenceMods.Contains(item))
             {
-                var menuItem3 = new ToolStripMenuItem("참조 모드로 선택 해제");
+                var menuItem3 = new ToolStripMenuItem(Strings.MenuUnselectAsReference);
                 menuItem3.Click += (o, args) =>
                 {
                     ReferenceMods.Remove(item);
@@ -267,7 +268,7 @@ namespace RimworldExtractorGUI
             }
             else
             {
-                var menuItem3 = new ToolStripMenuItem("참조 모드로 선택");
+                var menuItem3 = new ToolStripMenuItem(Strings.MenuSelectAsReference);
                 menuItem3.Click += (o, args) =>
                 {
                     ReferenceMods.Add(item);
@@ -276,14 +277,14 @@ namespace RimworldExtractorGUI
                 contextMenu.Items.Add(menuItem3);
             }
 
-            var menuItem4 = new ToolStripMenuItem("이 모드와 관련된 모든 모드를 참조 모드로 선택");
+            var menuItem4 = new ToolStripMenuItem(Strings.MenuSelectAllRelatedAsReference);
             menuItem4.Click += (o, args) =>
             {
                 var requiredMods = item.ModDependencies?.Select(x => _allModsCached.Find(y => y.PackageId == x))
                     .ToList();
                 if (requiredMods == null)
                 {
-                    MessageBox.Show("이 모드는 선행 모드나 선택적 선행 모드가 없습니다!");
+                    MessageBox.Show(Strings.NoDependencies);
                     return;
                 }
 
@@ -357,7 +358,7 @@ namespace RimworldExtractorGUI
             var curMod = (ModMetadata)listBoxMods.Items[e.Index];
             var text = GetModDisplayText(curMod);
             if (ReferenceMods.Any(x => curMod.RootDir == x.RootDir))
-                text = $"(참조)" + text;
+                text = Strings.ReferencePrefix + text;
 
             e.DrawBackground();
             e.Graphics.DrawString(text,
@@ -410,6 +411,20 @@ namespace RimworldExtractorGUI
             if (prevToolTip == curToolTip)
                 return;
             toolTip1.SetToolTip(listBoxExtractableFolders, curToolTip);
+        }
+    
+        /// <summary>
+        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
+        /// y mantener limpios los merges con upstream.
+        /// </summary>
+        private void ApplyStrings()
+        {
+            buttonDone.Text = Strings.BtnSelectionDone;
+            label1.Text = Strings.LabelSelectModControls;
+            label2.Text = Strings.LabelSelectExtractionMode;
+            label3.Text = Strings.LabelSelectFolder;
+            labelSelectedMod.Text = Strings.LabelSelectExtractionMode;
+            checkBoxFilterSelected.Text = Strings.CheckBoxFilterSelected;
         }
     }
 }

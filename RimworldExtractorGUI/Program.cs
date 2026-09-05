@@ -1,5 +1,6 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reflection;
+using RimworldExtractorInternal;
 
 namespace RimworldExtractorGUI
 {
@@ -28,7 +29,7 @@ namespace RimworldExtractorGUI
                 formInitialPathSelect.StartPosition = FormStartPosition.CenterScreen;
                 if (formInitialPathSelect.ShowDialog() != DialogResult.OK)
                 {
-                    MessageBox.Show("폴더 지정을 완료해주세요.");
+                    MessageBox.Show(Strings.CompleteFolderSelection);
                     return;
                 }
                 // Application.Run();

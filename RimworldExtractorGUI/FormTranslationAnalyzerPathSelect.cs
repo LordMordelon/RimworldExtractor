@@ -18,13 +18,14 @@ namespace RimworldExtractorGUI
         public FormTranslationAnalyzerPathSelect()
         {
             InitializeComponent();
+            ApplyStrings();
         }
 
         private void buttonSelectSingleFile_Click(object sender, EventArgs e)
         {
             var dialog = new CommonOpenFileDialog();
-            dialog.Title = "엑셀 파일(.xlsx) 파일을 선택해주세요.";
-            dialog.Filters.Add(new CommonFileDialogFilter("림왈도 형식 엑셀 파일", "*.xlsx"));
+            dialog.Title = Strings.SelectXlsxFile;
+            dialog.Filters.Add(new CommonFileDialogFilter(Strings.FilterTranslationXlsx, "*.xlsx"));
             dialog.Multiselect = true;
 
 
@@ -39,8 +40,7 @@ namespace RimworldExtractorGUI
             var dialog = new CommonOpenFileDialog();
             dialog.IsFolderPicker = true;
             dialog.Multiselect = true;
-            dialog.Title = "엑셀 파일이 있는 루트 폴더를 선택해주세요.";
-
+            dialog.Title = Strings.SelectXlsxRootFolder;
             if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
             {
                 textBox1.Text = string.Join('|', dialog.FileNames);
@@ -62,6 +62,18 @@ namespace RimworldExtractorGUI
             }
             Paths = tokens;
             Close();
+        }
+    
+        /// <summary>
+        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
+        /// y mantener limpios los merges con upstream.
+        /// </summary>
+        private void ApplyStrings()
+        {
+            buttonSelectSingleFile.Text = Strings.BtnSelectSingleXlsx;
+            buttonSelectDir.Text = Strings.BtnSelectXlsxDir;
+            label1.Text = Strings.LabelAnalyzerFaq;
+            button1.Text = Strings.BtnSelectionDone;
         }
     }
 }
