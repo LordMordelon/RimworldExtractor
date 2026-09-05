@@ -51,8 +51,11 @@ namespace RimworldExtractorGUI
             if (assembly != null)
                 return assembly;
 
-            string filename = args.Name.Split(',')[0] + ".dll".ToLower();
-            var assemblyFilePath = Path.Combine("bin", filename);
+            string filename = args.Name.Split(',')[0] + ".dll";
+            // Relativo al ejecutable, no al directorio de trabajo: si no, lanzar la app
+            // desde otra carpeta (un acceso directo, por ejemplo) no encuentra el "bin"
+            // donde el PostBuild deja las dependencias, y revienta al arrancar.
+            var assemblyFilePath = Path.Combine(AppContext.BaseDirectory, "bin", filename);
 
             if (File.Exists(assemblyFilePath))
             {
