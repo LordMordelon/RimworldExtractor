@@ -1,4 +1,4 @@
-using RimworldExtractorInternal;
+﻿using RimworldExtractorInternal;
 using RimworldExtractorInternal.DataTypes;
 
 namespace RimworldExtractorTest
@@ -20,6 +20,7 @@ namespace RimworldExtractorTest
         /// </summary>
         private static ModMetadata? _mod;
 
+        /// <summary>Elige un mod real del workshop antes de correr los tests.</summary>
         [ClassInitialize]
         public static void Setup(TestContext _)
         {
@@ -29,6 +30,7 @@ namespace RimworldExtractorTest
                 !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.ModName));
         }
 
+        /// <summary>Las cuatro formas de nombre deben resolver al mismo mod.</summary>
         [TestMethod]
         public void ReconoceElModPorLasCuatroFormasDeNombre()
         {
@@ -58,6 +60,7 @@ namespace RimworldExtractorTest
             }
         }
 
+        /// <summary>Un nombre que no corresponde a ningun mod no debe resolver a uno cualquiera.</summary>
         [TestMethod]
         public void DevuelveNullCuandoElNombreNoCorrespondeANingunMod()
         {
