@@ -1,4 +1,4 @@
-using System.Xml;
+癤퓎sing System.Xml;
 using DocumentFormat.OpenXml.Office2013.PowerPoint.Roaming;
 using RimworldExtractorInternal.DataTypes;
 
@@ -71,7 +71,7 @@ internal static class PatchOperations
                     yield return translationEntry;
                 break;
             default:
-                Log.Msg($"지원하지 않는 PatchOperation 타입입니다: {operation}");
+                Log.Msg(Strings.UnsupportedPatchOperation(operation));
                 break;
         }
 
@@ -88,7 +88,7 @@ internal static class PatchOperations
         XmlNode? value = curNode["value"];
         if (xpath == null || value == null)
         {
-            Log.Wrn($"xpath 또는 value의 값이 없습니다. 잘못된 림월드 XML 포맷.");
+            Log.Wrn(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 
@@ -99,7 +99,7 @@ internal static class PatchOperations
             var parentNode = selectNode.ParentNode;
             if (parentNode == null)
             {
-                Log.Wrn($"선택된 노드 {selectNode.Name}의 부모 노드가 없습니다.");
+                Log.Wrn(Strings.SelectedNodeHasNoParent(selectNode.Name));
                 continue;
             }
             var rootDefNode = Extractor.GetRootDefNode(parentNode, out var nodeName);
@@ -134,7 +134,7 @@ internal static class PatchOperations
         XmlNode? value = curNode["value"];
         if (xpath == null || value == null)
         {
-            Log.Wrn($"xpath 또는 value의 값이 없습니다. 잘못된 림월드 XML 포맷.");
+            Log.Wrn(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 
@@ -177,7 +177,7 @@ internal static class PatchOperations
         XmlNode? value = curNode["value"];
         if (xpath == null || value == null)
         {
-            Log.Wrn($"xpath 또는 value의 값이 없습니다. 잘못된 림월드 XML 포맷.");
+            Log.Wrn(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 
@@ -196,7 +196,7 @@ internal static class PatchOperations
                 className = (selectNode?.Attributes?["Class"]?.Value ?? selectNode?.Name);
             }
             if (defName is null || className is null)
-                Log.Wrn($"defName 또는 className을 찾을 수 없는 Patch: xpath:{xpath}");
+                Log.Wrn(Strings.PatchWithoutDefNameOrClassName(xpath));
             foreach (XmlNode valueChildNode in value.ChildNodes)
             {
                 XmlNode selectNodeImported = parentNode.InsertBefore(Extractor.CombinedDefs!.ImportNode(valueChildNode, true), selectNode)!;
@@ -222,7 +222,7 @@ internal static class PatchOperations
         XmlNode? value = curNode["value"];
         if (xpath == null || value == null)
         {
-            Log.Wrn($"xpath 또는 value의 값이 없습니다. 잘못된 림월드 XML 포맷.");
+            Log.Wrn(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 
@@ -246,7 +246,7 @@ internal static class PatchOperations
                 if (defName == null)
                 {
 
-                    Log.Wrn($"defName이 없는 경우는 지원하지 않습니다. xpath={xpath}, value={value.InnerXml}");
+                    Log.Wrn(Strings.PatchWithoutDefNameUnsupported(xpath, value.InnerXml));
                     continue;
                 }
 
@@ -326,7 +326,7 @@ internal static class PatchOperations
         var attribute = curNode["attribute"]?.InnerText;
         if (xpath == null || (mode != PatchOperationAttributeMode.Remove && value == null) || attribute == null)
         {
-            Log.Wrn($"xpath 또는 value의 값이 없습니다. 잘못된 림월드 XML 포맷.");
+            Log.Wrn(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 

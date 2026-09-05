@@ -441,6 +441,26 @@
 
         #endregion
 
+        #region PatchOperations
+
+        public static string UnsupportedPatchOperation(string operation)
+            => $"Tipo de PatchOperation no soportado: {operation}";
+
+        public const string MissingXpathOrValue =
+            "Falta el valor de xpath o de value. Formato XML de RimWorld inválido.";
+
+        public static string SelectedNodeHasNoParent(string nodeName)
+            => $"El nodo elegido {nodeName} no tiene nodo padre.";
+
+        public static string PatchWithoutDefNameOrClassName(string xpath)
+            => $"Patch sin defName ni className: xpath:{xpath}";
+
+        public static string PatchWithoutDefNameUnsupported(string xpath, string value)
+            => $"No se admiten los casos sin defName. xpath={xpath}, value={value}";
+
+        #endregion
+
+
 
 
     }

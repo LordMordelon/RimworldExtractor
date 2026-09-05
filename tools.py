@@ -86,7 +86,10 @@ def cleanup_portable():
 
 def convert_utf8(file_path):
     print(f'convert_utf8: {file_path}')
-    encodings_to_try = ['utf-8', 'cp1252']
+    # cp949 es la ANSI coreana: upstream commitea algun .cs en esa codificacion.
+    # Se prueba antes que cp1252 porque cp1252 acepta casi cualquier byte y
+    # convertiria ese archivo en mojibake en vez de fallar.
+    encodings_to_try = ['utf-8', 'cp949', 'cp1252']
     for encoding in encodings_to_try:
         try:
             with codecs.open(file_path, 'r', encoding=encoding) as f:
