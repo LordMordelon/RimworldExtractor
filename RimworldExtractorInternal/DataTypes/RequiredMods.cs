@@ -184,17 +184,17 @@ namespace RimworldExtractorInternal.DataTypes
                 }
             }
             
-            // NOT만 있는 경우
+            // Solo hay clausulas NOT
             if (!str.Contains(AND_IDENTIFIER + NOT_IDENTIFIER) && str.Contains(NOT_IDENTIFIER))
             {
                 ParseDisallowed(str);
             }
-            // NOT만 없는 경우
+            // No hay ninguna clausula NOT
             else if (!str.Contains(NOT_IDENTIFIER))
             {
                 ParseAllowed(str);
             }
-            // 둘 다 있는 경우
+            // Hay de las dos
             else
             {
                 var splited = str.Split(AND_IDENTIFIER + NOT_IDENTIFIER);

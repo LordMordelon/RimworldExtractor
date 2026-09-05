@@ -14,12 +14,12 @@ namespace RimworldExtractorInternal
     public static class Prefabs
     {
         /// <summary>
-        /// Prefabs.dat의 호환성을 위해 존재합니다. Prefabs의 필드가 수정되었을 때 이 숫자를 1 증가시켜,
-        /// Prefabs.dat에 저장된 숫자가 이와 다르다면, 해당 데이터를 읽지 않도록 합니다.
+        /// Existe por compatibilidad de Prefabs.dat. Al modificar los campos de Prefabs se incrementa
+        /// este numero en 1, y si el guardado en Prefabs.dat no coincide, esos datos no se leen.
         /// </summary>
         private static readonly string Version = "10";
 
-        // 임시 기능 TODO: REMOVE THIS AFTER
+        // Funcion provisoria TODO: REMOVE THIS AFTER
         public static bool EnableTkey = false;
 
         public static string PathRimworld = string.Empty;
@@ -154,7 +154,7 @@ namespace RimworldExtractorInternal
 
         public static void Init()
         {
-            // 임시 기능 TODO: REMOVE THIS AFTER
+            // Funcion provisoria TODO: REMOVE THIS AFTER
             EnableTkey = false;
             PathRimworld = "D:\\SteamLibrary\\steamapps\\common\\RimWorld";
             PathWorkshop = "D:\\SteamLibrary\\steamapps\\workshop\\content\\294100";
@@ -220,7 +220,7 @@ namespace RimworldExtractorInternal
         }
 
 
-        /// <exception cref="SerializationException">Version 필드의 값이 달라서 생기는 에러</exception>
+        /// <exception cref="SerializationException">El campo Version no coincide</exception>
         public static void Load(string fileName = "Prefabs.dat")
         {
             var lines = File.ReadAllLines(fileName);

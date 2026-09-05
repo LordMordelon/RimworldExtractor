@@ -28,7 +28,7 @@ namespace RimworldExtractorInternal
             {
                 using var zip = ZipFile.Open(_tmpFilePath, ZipArchiveMode.Update);
 
-                // 파일명이 comments##.xml인 것 전부 삭제
+                // Borra todos los archivos llamados comments##.xml
                 List<ZipArchiveEntry> entryToRemove = new List<ZipArchiveEntry>();
                 foreach (ZipArchiveEntry entry in zip.Entries)
                 {
@@ -42,7 +42,7 @@ namespace RimworldExtractorInternal
                     entry.Delete();
                 }
                 
-                // 파일명이 sheet##.xml.rels인 것을 열어서, Target 어트리뷰트가 comments 파일인 노드 전부 삭제
+                // Abre los sheet##.xml.rels y borra todo nodo cuyo atributo Target sea un archivo comments
                 for (int i = zip.Entries.Count -1; i >= 0; i--)
                 {
                     ZipArchiveEntry entry = zip.Entries[i];
@@ -55,7 +55,7 @@ namespace RimworldExtractorInternal
                         using Stream relsStream = entry.Open();
                         relsXDoc = XDocument.Load(relsStream);
 
-                        // xml 트리에서 해당 노드 검색 및 삭제
+                        // Busca y borra ese nodo en el arbol xml
                         IEnumerable<XElement> elementsEnum = relsXDoc.Descendants();
                         for (int j = elementsEnum.Count() -1 ; j >= 0; j--)
                         {
@@ -72,8 +72,8 @@ namespace RimworldExtractorInternal
                         }
                     }
 
-                    /*기존 엔트리를 지우고 위에서 작업한 XDocument를 대체 엔트리에 저장
-                      원래 코드처럼 스트림 가지고 바로 어떻게 해보려고 했는데 뭔가 잘 모르겠어서 이렇게 해둠
+                    /*Borra la entrada original y guarda en su reemplazo el XDocument de arriba.
+                      Nota del autor original: intento hacerlo directo sobre el stream, no le salio, y lo dejo asi.
                     */
                     if (isEdited)
                     {

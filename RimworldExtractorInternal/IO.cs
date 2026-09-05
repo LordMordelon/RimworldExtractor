@@ -149,7 +149,7 @@ namespace RimworldExtractorInternal
                         curRow.Cell(colTranslated).Clear();
                     }
                 }
-                //var subSheet = xlsx.AddWorksheet($"{dateString}_삭제된 노드 목록");
+                //var subSheet = xlsx.AddWorksheet($"{dateString}_nodos eliminados");
                 //subSheet.Cell(1, 1).Value = HeaderClassNode;
                 //subSheet.Cell(1, 2).Value = HeaderClass;
                 //subSheet.Cell(1, 3).Value = HeaderNode;
@@ -323,7 +323,7 @@ namespace RimworldExtractorInternal
                 if (colRequiredMods != -1 && row.Cell(colRequiredMods).Value is { IsText: true } cellRequiredMods)
                 {
                     var textRequiredMods = cellRequiredMods.GetText();
-                    // 하위 호환성
+                    // Compatibilidad hacia atras
                     if (textRequiredMods != null && textRequiredMods.Contains('\n'))
                     {
                         requiredMods = new RequiredMods();
@@ -412,7 +412,7 @@ namespace RimworldExtractorInternal
 
                 var entryDict = new Dictionary<string, XmlElement>();
 
-                // RequiredMods에 따라 뼈대 사전 생성
+                // Arma el diccionario base segun RequiredMods
                 foreach (var translation in CompatManager.DoPostProcessing(patches))
                 {
                     var requiredMods = translation.RequiredMods;
@@ -689,7 +689,7 @@ namespace RimworldExtractorInternal
                     foreach (XmlElement node in doc.DocumentElement!.ChildNodes)
                     {
                         var name = node.Name;
-                        // FullTranslation일 경우
+                        // Si es FullTranslation
                         if (node.ChildNodes.OfType<XmlNode>().All(x => x.NodeType == XmlNodeType.Element))
                         {
                             for (int i = 0; i < node.ChildNodes.Count; i++)

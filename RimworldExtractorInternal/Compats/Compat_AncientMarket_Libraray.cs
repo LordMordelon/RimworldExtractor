@@ -9,7 +9,7 @@ using System.Xml;
 namespace RimworldExtractorInternal.Compats
 {
     /// <summary>
-    /// 어반루인 모드 호환성
+    /// Compatibilidad con el mod Urban Ruins
     /// </summary>
     internal class Compat_AncientMarket_Libraray : BaseCompat
     {

@@ -28,17 +28,17 @@ namespace RimworldExtractorInternal.DataTypes
                     var usedSet = new HashSet<TranslationEntry>();
                     foreach (var origEntry in OriginalTranslations)
                     {
-                        // 새 추출 결과에도 같은 노드가 있다면
+                        // Si el mismo nodo tambien esta en la nueva extraccion
                         var pairEntry = NewTranslations?.FirstOrDefault(x =>
                             x.ClassName == origEntry.ClassName && x.Node == origEntry.Node);
                         if (pairEntry != null)
                         {
-                            // 원본 원문과 재추출 원문이 다르다면
+                            // Si el texto original difiere del re-extraido
                             if (origEntry.Original.Length > 0 && origEntry.Original != pairEntry.Original)
                             {
                                 _changesCached.Add(new ChangeRecord(origEntry, pairEntry, ChangeReason.ChangedOriginal));
                             }
-                            // 원문 원본이 소실되었다면
+                            // Si se perdio el texto original
                             else if (origEntry.Original.Length == 0)
                             {
                                 _changesCached.Add(new ChangeRecord(origEntry, pairEntry, ChangeReason.FillOriginal));
@@ -46,7 +46,7 @@ namespace RimworldExtractorInternal.DataTypes
 
                             usedSet.Add(pairEntry);
                         }
-                        // 원문이 없다면
+                        // Si no hay texto original
                         else if (NewTranslations != null && !string.IsNullOrEmpty(origEntry.Translated))
                         {
                             _changesCached.Add(new ChangeRecord(origEntry, null, ChangeReason.RemoveNode));

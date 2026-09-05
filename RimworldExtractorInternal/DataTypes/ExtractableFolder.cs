@@ -11,7 +11,7 @@
     }
 
     /// <summary>
-    /// LoadFolder.xml로 인한 중복 폴더 방지
+    /// Evita carpetas duplicadas provenientes de LoadFolder.xml
     /// </summary>
     public class ExtractableFolderComparer : IEqualityComparer<ExtractableFolder>
     {

@@ -197,12 +197,12 @@ namespace RimworldExtractorInternal
             var tokens = nodeName[(defName.Length + 1)..].Split('.');
             for (int i = 0; i < tokens.Length; i++)
             {
-                // 리스트 노드일 경우
+                // Si es un nodo de lista
                 if (int.TryParse(tokens[i], out var k))
                 {
                     tokens[i] = $"li[{k + 1}]";
                 }
-                // TranslationHandle을 사용한 경우
+                // Si se uso un TranslationHandle
                 else if (!char.IsLower(tokens[i][0]))
                 {
                     tokens[i] = $"*[.//*[contains(text(), '{tokens[i]}')]]";

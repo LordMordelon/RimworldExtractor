@@ -3,13 +3,13 @@
 namespace RimworldExtractorInternal.DataTypes
 {
     /// <summary>
-    /// 번역 데이터
+    /// Datos de traduccion
     /// </summary>
-    /// <param name="ClassName">번역 데이터의 종류. ○○Def, Keyed, Strings, Patches.○○Def</param>
-    /// <param name="Node">위치</param>
-    /// <param name="Original">원문</param>
-    /// <param name="Translated">번역문</param>
-    /// <param name="RequiredMods">요구 모드</param>
+    /// <param name="ClassName">Tipo de dato de traduccion: ○○Def, Keyed, Strings, Patches.○○Def</param>
+    /// <param name="Node">Ubicacion</param>
+    /// <param name="Original">Texto original</param>
+    /// <param name="Translated">Texto traducido</param>
+    /// <param name="RequiredMods">Mods requeridos</param>
     public record TranslationEntry(string ClassName, string Node, string Original, string? Translated,
         RequiredMods? RequiredMods, string? SourceFile)
     {

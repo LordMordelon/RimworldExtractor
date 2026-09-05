@@ -10,7 +10,7 @@ namespace RimworldExtractorGUI
     internal static class Program
     {
         /// <summary>
-        /// Github Action에 의해 게시 전 자동으로 생성
+        /// Lo genera automaticamente la GitHub Action antes de publicar
         /// </summary>
         internal const string VERSION = "";
         /// <summary>

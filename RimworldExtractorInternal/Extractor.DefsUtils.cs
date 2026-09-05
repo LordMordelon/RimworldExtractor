@@ -383,14 +383,14 @@ namespace RimworldExtractorInternal
 
 
                 var existingChildNode = current[otherChildNode.Name];
-                // 1. 존재하지 않을 경우
+                // 1. Si no existe
                 if (existingChildNode == null)
                 {
                     current.AppendChild(current.OwnerDocument!.ImportNode(otherChildNode, true));
                     continue;
                 }
 
-                // 2. 상속을 원하지 않을 경우
+                // 2. Si no se quiere heredar
                 var inherit = otherChildNode.Attributes?["Inherit"]?.Value.ToLower() != "false";
                 if (!inherit)
                 {
@@ -399,14 +399,14 @@ namespace RimworldExtractorInternal
                     continue;
                 }
 
-                // 3. 텍스트 노드 하나일 경우
+                // 3. Si es un unico nodo de texto
                 if (existingChildNode.IsTextNode())
                 {
                     current.RemoveChild(existingChildNode);
                     current.AppendChild(current.OwnerDocument!.ImportNode(otherChildNode, true));
                     continue;
                 }
-                // 4. 리스트 노드일 경우
+                // 4. Si es un nodo de lista
                 if (existingChildNode.FirstChild.IsListNode())
                 {
                     foreach (XmlNode childNode in otherChildNode.ChildNodes)
