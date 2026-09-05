@@ -1,22 +1,66 @@
-# RimworldExtractor: An assistance tool for extracting translation data for RimWorld.
-### 림추출기: 림월드의 공식 컨텐츠나 모드의 번역 데이터를 추출하기 위한 번역 보조 툴입니다.
+# RimworldExtractor — español latino
 
-### [다운로드 (Downloads)](https://github.com/csh1668/RimworldExtractor/releases)
+Herramienta para extraer los datos de traducción del contenido oficial de RimWorld
+y de sus mods (`Defs`, `Keyed`, `Strings`, `Patches`), con la interfaz en español.
 
-![스크린샷 2024-02-25 184956](https://github.com/csh1668/RimworldExtractor/assets/18442452/75e36e73-3cc7-425d-9755-36c399f6ee34)
-기존에 존재하던 [알파 추출기](https://github.com/Han-ju/AlphaExtractor)의 여러 아쉬운 점을 보완하고자 개발하였습니다. \
-\
-예) Patches에 존재하는 번역 데이터를 제대로 처리하지 못하는 점, TranslationHandle이나 Full-List Translation을 지원하지 않는 점, XML 상속을 지원하지 않아 정확한 인덱싱이 불가한 점. TKey를 지원하지 않는 점 등
+Fork privado de [csh1668/RimworldExtractor](https://github.com/csh1668/RimworldExtractor),
+que está en coreano. Se usa junto con [RML](https://github.com/LordMordelon/RML),
+el mod que empaqueta las traducciones producidas con esta herramienta.
 
-## 주요 기능 (Main Features)
+## Qué cambia respecto del original
 
-- `Defs`, `Keyed`, `Strings`, `Patches`의 추출 가능
-  1. ParentDef을 고려하기 위한 `XML 상속`, `참조 모드` 기능 지원
-  2. 정확한 DefInjection을 위한 `TranslationHandle`, `Full-List Translation`, `TKey(SlateRef)` 기능 지원
-  3. XML Extension 모드의 `tKey`, `tToopTip`, 바익 프레임워크의 `MVCF` 등 여러 기반 모드의 추가 기능 지원
-  4. 심화된 `Patches` 지원: nomatch 지원, 패치 과정에서 생성되는 Def의 추출 지원, 추출 및 XML로 변환 시 요구 모드 등에 따라 `Patches` 파일 자동 생성.
-- 추출 시 `엑셀(림왈도 형식, .xlsx)`, `XML`, `XML(주석 포함)`의 저장 방식 지원
-- XML과 엑셀 파일 간 상호 변환 기능 (XLSX -> XML, XML -> XLSX)
-- 번역 분석기 기능
-- 알파 추출기 형식 사용 가능
-- 커뮤니티 배포를 위한 이미지 파일과 압축 파일을 하나로 합치는 기능
+- **Interfaz en español.** Todo el texto visible vive en
+  [`RimworldExtractorInternal/Strings.cs`](RimworldExtractorInternal/Strings.cs).
+  Los `.Designer.cs` quedan intactos: cada formulario traduce sus controles en
+  tiempo de ejecución desde su método `ApplyStrings()`, para que los merges con
+  upstream sigan siendo limpios.
+- **Idioma de destino por defecto:** `SpanishLatin (Español(Latinoamérica))`.
+- **Rutas por defecto** apuntando a `D:\SteamLibrary`.
+- **Los guiones ya no se corrompen.** El original reemplazaba cada `-` por `ー`
+  (un glifo katakana) para que la secuencia `--` no rompiera los comentarios XML.
+  En textos latinos eso destruía el original (`re-arm` → `reーarm`). Ahora se
+  escapa únicamente la secuencia ilegal.
+- **Fuente de las planillas:** Calibri en lugar de Malgun Gothic, que no existe en
+  un Windows en español.
+- **Cabeceras de Excel más tolerantes:** se acepta cualquier columna terminada en
+  `[Source string]` / `[Translation]`, así que una planilla vieja se puede
+  reimportar aunque se haya cambiado el idioma configurado.
+- **Sin chequeo de versión ni botón de soporte:** ambos apuntaban a URLs que no
+  son accesibles en un repositorio privado.
+
+## Compilar
+
+Requiere el **SDK de .NET 7 o superior** (probado con el 8; el proyecto apunta a
+`net7.0`, que ya está fuera de soporte).
+
+```
+dotnet build RimworldExtractor.sln -c Debug
+```
+
+Para el ejecutable de uso diario:
+
+```
+dotnet publish RimworldExtractorGUI/RimworldExtractorGUI.csproj -c Release -r win-x64 ^
+  --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true
+```
+
+Hay que nombrar el `.csproj` explícitamente: la carpeta contiene además un
+`RimworldExtractorGUI - Backup.csproj` que confunde a MSBuild.
+
+El resultado queda en `RimworldExtractorGUI/bin/Release/net7.0-windows/win-x64/publish/`.
+
+## Sincronizar con upstream
+
+```
+git fetch upstream
+git merge upstream/master
+```
+
+`origin` es el fork privado y `upstream` el repositorio original (sin push).
+
+## Créditos
+
+- [csh1668/RimworldExtractor](https://github.com/csh1668/RimworldExtractor) — proyecto original.
+- [Han-ju/AlphaExtractor](https://github.com/Han-ju/AlphaExtractor) — el extractor que lo precedió.
+
+Licencia MIT; ver [LICENSE.txt](LICENSE.txt).
