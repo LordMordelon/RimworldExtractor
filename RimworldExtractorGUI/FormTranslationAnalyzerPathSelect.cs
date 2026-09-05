@@ -70,6 +70,7 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            Text = Strings.TitleAnalyzerPathSelect;
             buttonSelectSingleFile.Text = Strings.BtnSelectSingleXlsx;
             buttonSelectDir.Text = Strings.BtnSelectXlsxDir;
             label1.Text = Strings.LabelAnalyzerFaq;

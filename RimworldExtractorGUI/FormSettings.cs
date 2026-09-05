@@ -205,6 +205,7 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            Text = Strings.TitleSettings;
             label1.Text = Strings.LabelRimworldPath;
             label2.Text = Strings.LabelWorkshopPath;
             label3.Text = Strings.LabelVersionPattern;

@@ -65,6 +65,7 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            Text = Strings.TitleInitialPathSelect;
             label1.Text = Strings.LabelRimworldPathShort;
             label2.Text = Strings.LabelWorkshopPathShort;
             buttonDone.Text = Strings.BtnDone;

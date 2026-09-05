@@ -90,6 +90,7 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            Text = Strings.TitleStopCallback;
             label2.Text = Strings.LabelDuplicateFileFound;
             button1.Text = Strings.BtnOverwrite;
             button2.Text = Strings.BtnSkip;

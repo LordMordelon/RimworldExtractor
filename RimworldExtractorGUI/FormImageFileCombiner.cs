@@ -145,6 +145,7 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            Text = Strings.TitleImageFileCombiner;
             buttonDone.Text = Strings.BtnDone;
             label1.Text = Strings.LabelSelectImagePath;
             label2.Text = Strings.LabelSelectFileToCombine;

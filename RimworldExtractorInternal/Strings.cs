@@ -414,6 +414,20 @@
 
         #endregion
 
+        #region Titulos de ventana
+
+        public const string TitleImageFileCombiner = "Unir imagen + archivo";
+        public const string TitleInitialPathSelect = "Indicá las rutas de RimWorld y del workshop";
+        public const string TitleSelectMod = "Elegí el mod que querés extraer";
+        public const string TitleSettings = "Ajustes";
+        public const string TitleStopCallback = "Archivo duplicado";
+        public const string TitleTranslationAnalyzer = "Analizador de traducciones";
+        public const string TitleAnalyzerPathSelect = "Elegí la ruta con los archivos Excel (se puede elegir más de una)";
+        public const string TitleXmlister = "Herramienta de extracción XML -> XLSX";
+
+        #endregion
+
+
 
     }
 }

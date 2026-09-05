@@ -419,6 +419,7 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            Text = Strings.TitleSelectMod;
             buttonDone.Text = Strings.BtnSelectionDone;
             label1.Text = Strings.LabelSelectModControls;
             label2.Text = Strings.LabelSelectExtractionMode;

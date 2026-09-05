@@ -245,6 +245,7 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            Text = Strings.TitleTranslationAnalyzer;
             columnHeader1.Text = Strings.ColumnSelect;
             columnHeader2.Text = Strings.ColumnModInfo;
             columnHeader4.Text = Strings.ColumnFileName;
