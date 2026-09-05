@@ -8,6 +8,10 @@
     <!-- This is a test project, so we don't produce a NuGet package. -->
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- El CI publica la solucion entera, asi que sin esto la salida de los tests
+         (incluidas las herramientas de cobertura para Linux, macOS y ARM) termina
+         dentro del zip que descarga el usuario. -->
+    <IsPublishable>false</IsPublishable>
 
     <!-- Minor enhancements -->
     <!-- Ensures the build is deterministic, helpful for reproducible builds. -->
