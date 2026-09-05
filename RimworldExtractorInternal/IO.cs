@@ -16,6 +16,8 @@ namespace RimworldExtractorInternal
         private static readonly string HeaderClass = "Class [Not chosen]";
         private static readonly string HeaderNode = "Node [Not chosen]";
         private static readonly string HeaderRequiredMods = "Required Mods [Not chosen]";
+        private const string HeaderSuffixOriginal = "[Source string]";
+        private const string HeaderSuffixTranslated = "[Translation]";
         private static string HeaderOriginal => $"{Prefabs.OriginalLanguage} [Source string]";
         private static string HeaderTranslated => $"{Prefabs.TranslationLanguage} [Translation]";
         public static void ToExcel(List<TranslationEntry> translations, string outPath = "result",
@@ -42,11 +44,11 @@ namespace RimworldExtractorInternal
                     cellRequiredMods.Value = combinedRequiredMods;
                     if (combinedRequiredMods.Contains("##packageId##") && entry.ClassName.StartsWith("Patches."))
                     {
-                        Log.WrnOnce($"Required Mods 열에 잘못된 값이 존재합니다. 추후 Patches의 올바른 생성을 위해 엑셀 파일에 있는 해당 문구: \"{combinedRequiredMods}\" 를 직접 모드 이름으로 바꿔야 합니다.",
-                            $"잘못된{combinedRequiredMods}경고".GetHashCode());
+                        Log.WrnOnce(Strings.InvalidRequiredModsValue(combinedRequiredMods),
+                            $"RequiredMods-warn-{combinedRequiredMods}".GetHashCode());
                         var comment = cellRequiredMods.GetComment();
                         comment.AddText(
-                            $"모드 이름 대신 패키지 이름({RequiredMods.PACKAGE_ID_PREFIX})이 있습니다. 모드 이름으로 올바르게 수정해주세요.");
+                            Strings.PackageIdInsteadOfModName(RequiredMods.PACKAGE_ID_PREFIX));
                         comment.Visible = true;
                     }
                 }
@@ -69,7 +71,7 @@ namespace RimworldExtractorInternal
                 }
             }
 
-            sheet.Style.Font.FontName = "맑은 고딕";
+            sheet.Style.Font.FontName = Strings.ExcelFontName;
             xlsx.SaveSafely(outPath + ".xlsx");
         }
         public static void ModifyExcel(List<TranslationAnalyzerEntry.ChangeRecord> changes, string targetPath)
@@ -94,12 +96,12 @@ namespace RimworldExtractorInternal
                 ?.WorksheetColumn().ColumnNumber() ?? -1;
             var colOriginal = headers.FirstOrDefault(x => x.StrVal() == HeaderOriginal)
                                   ?.WorksheetColumn().ColumnNumber() ??
-                              headers.FirstOrDefault(x => x.StrVal() == "EN [Source string]")
+                              headers.FirstOrDefault(x => x.StrVal().EndsWith(HeaderSuffixOriginal, StringComparison.Ordinal))
                                   ?.WorksheetColumn().ColumnNumber() ??
                               throw new XlsxHeaderReadingException(HeaderOriginal);
             var colTranslated = headers.FirstOrDefault(x => x.StrVal() == HeaderTranslated)
                                     ?.WorksheetColumn().ColumnNumber() ??
-                                headers.FirstOrDefault(x => x.StrVal() == "KO [Translation]")
+                                headers.FirstOrDefault(x => x.StrVal().EndsWith(HeaderSuffixTranslated, StringComparison.Ordinal))
                                     ?.WorksheetColumn().ColumnNumber() ??
                                 throw new XlsxHeaderReadingException(HeaderTranslated);
             
@@ -141,7 +143,7 @@ namespace RimworldExtractorInternal
                     if (pairEntry != null)
                     {
                         var origCell = curRow.Cell(colOriginal);
-                        origCell.GetComment().AddText($"{dateString}에 삭제됨. 삭제 이전 번역문: '{curRow.Cell(colTranslated).StrVal()}'\n");
+                        origCell.GetComment().AddText(Strings.CommentDeleted(dateString, curRow.Cell(colTranslated).StrVal()));
                         origCell.GetComment().Visible = true;
                         origCell.Style.Fill.SetBackgroundColor(XLColor.Red);
                         curRow.Cell(colTranslated).Clear();
@@ -193,7 +195,7 @@ namespace RimworldExtractorInternal
                     if (pairEntry != null)
                     {
                         var origCell = curRow.Cell(colOriginal);
-                        origCell.GetComment().AddText($"{dateString} 이전의 원문: '{curRow.Cell(colOriginal).StrVal()}'\n");
+                        origCell.GetComment().AddText(Strings.CommentPreviousOriginal(dateString, curRow.Cell(colOriginal).StrVal()));
                         origCell.Value = pairEntry.New!.Original;
                         origCell.GetComment().Visible = true;
                         origCell.Style.Fill.SetBackgroundColor(XLColor.Orange);
@@ -213,7 +215,7 @@ namespace RimworldExtractorInternal
                     {
                         var origCell = curRow.Cell(colOriginal);
                         origCell.GetComment()
-                            .AddText($"{dateString}에 소실되었던 원문이 추가되었습니다.\n");
+                            .AddText(Strings.CommentOriginalRestored(dateString));
                         origCell.Value = pairEntry.New!.Original;
                         origCell.GetComment().Visible = true;
                         origCell.Style.Fill.SetBackgroundColor(XLColor.Orange);
@@ -235,8 +237,8 @@ namespace RimworldExtractorInternal
                         mainSheet.Cell(2 + i + rows.Count, colRequiredMods).Value = combinedRequiredMods;
                         if (combinedRequiredMods.Contains("##packageId##") && entry.ClassName.StartsWith("Patches."))
                         {
-                            Log.WrnOnce($"Required Mods 열에 잘못된 값이 존재합니다. 추후 Patches의 올바른 생성을 위해 엑셀 파일에 있는 해당 문구: \"{combinedRequiredMods}\" 를 직접 모드 이름으로 바꿔야 합니다.",
-                                $"잘못된{combinedRequiredMods}경고".GetHashCode());
+                            Log.WrnOnce(Strings.InvalidRequiredModsValue(combinedRequiredMods),
+                                $"RequiredMods-warn-{combinedRequiredMods}".GetHashCode());
                         }
                     }
                     mainSheet.Cell(2 + i + rows.Count, colOriginal).Value = entry.Original;
@@ -258,13 +260,13 @@ namespace RimworldExtractorInternal
                     {
                         mainSheet.Cell(2 + i + rows.Count, colOriginal).Style.Fill.SetBackgroundColor(XLColor.SkyBlue);
                         var comment = mainSheet.Cell(2 + i + rows.Count, colOriginal).GetComment();
-                        comment.AddText($"{dateString}에 새로 추가된 노드들 ({addedNewlys.Count}개)");
+                        comment.AddText(Strings.CommentNewlyAdded(dateString, addedNewlys.Count));
                         comment.Visible = true;
                     }
                 }
             }
 
-            mainSheet.Style.Font.FontName = "맑은 고딕";
+            mainSheet.Style.Font.FontName = Strings.ExcelFontName;
             foreach (var cell in mainSheet.CellsUsed().Where(x => x.HasComment))
             {
                 var comment = cell.GetComment();
@@ -299,12 +301,12 @@ namespace RimworldExtractorInternal
                 ?.WorksheetColumn().ColumnNumber() ?? -1;
             var colOriginal = headers.FirstOrDefault(x => x.StrVal() == HeaderOriginal)
                                   ?.WorksheetColumn().ColumnNumber() ??
-                              headers.FirstOrDefault(x => x.StrVal() == "EN [Source string]")
+                              headers.FirstOrDefault(x => x.StrVal().EndsWith(HeaderSuffixOriginal, StringComparison.Ordinal))
                                   ?.WorksheetColumn().ColumnNumber() ??
                               throw new XlsxHeaderReadingException(HeaderOriginal);
             var colTranslated = headers.FirstOrDefault(x => x.StrVal() == HeaderTranslated)
                                     ?.WorksheetColumn().ColumnNumber() ??
-                                headers.FirstOrDefault(x => x.StrVal() == "KO [Translation]")
+                                headers.FirstOrDefault(x => x.StrVal().EndsWith(HeaderSuffixTranslated, StringComparison.Ordinal))
                                     ?.WorksheetColumn().ColumnNumber() ??
                                 throw new XlsxHeaderReadingException(HeaderTranslated);
 
@@ -360,7 +362,7 @@ namespace RimworldExtractorInternal
             var isOfficial = translations.Any(x => x.SourceFile != null);
             if (isOfficial)
             {
-                Log.Msg("공식 컨텐츠는 모드를 추출할 때와는 달리, 파일명을 보존해서 추출합니다.");
+                Log.Msg(Strings.OfficialContentKeepsFileNames);
             }
 
 
@@ -397,7 +399,7 @@ namespace RimworldExtractorInternal
             if (skipNoTranslation && patches.Count == 0 && defInjected.Count == 0 &&
                 keyed.Count == 0 && translations.Count > 0 && defInjectedFullListTranslations.Count == 0)
             {
-                Log.Wrn("번역 데이터가 존재하지 않아 아무것도 추출되지 않습니다. 팁) XLSX -> XML 기능의 경우 번역된 내용이 없으면 아무것도 저장되지 않습니다.");
+                Log.Wrn(Strings.NothingToExtract);
             }
 
             if (patches.Count > 0)
@@ -431,8 +433,8 @@ namespace RimworldExtractorInternal
                                     if (allowedModToken.Contains("##packageId##"))
                                     {
                                         Log.ErrOnce(
-                                            $"Required Mods 열에 잘못된 값이 존재합니다. Patches의 올바른 생성을 위해 엑셀 파일에 있는 해당 문구: \"{allowedModToken}\" 를 직접 모드 이름으로 바꿔야 합니다.",
-                                            $"잘못된{allowedModToken}에러".GetHashCode());
+                                            Strings.InvalidRequiredModsValue(allowedModToken),
+                                            $"RequiredMods-err-{allowedModToken}".GetHashCode());
                                     }
 
                                     mods.AppendElement("li", allowedModToken);
@@ -455,8 +457,8 @@ namespace RimworldExtractorInternal
                                     if (disallowedModToken.Contains("##packageId##"))
                                     {
                                         Log.ErrOnce(
-                                            $"Required Mods 열에 잘못된 값이 존재합니다. Patches의 올바른 생성을 위해 엑셀 파일에 있는 해당 문구: \"{disallowedModToken}\" 를 직접 모드 이름으로 바꿔야 합니다.",
-                                            $"잘못된{disallowedModToken}에러".GetHashCode());
+                                            Strings.InvalidRequiredModsValue(disallowedModToken),
+                                            $"RequiredMods-err-{disallowedModToken}".GetHashCode());
                                     }
 
                                     mods.AppendElement("li", disallowedModToken);
@@ -493,7 +495,7 @@ namespace RimworldExtractorInternal
                         li.AppendElement("success", "Always");
                         if (commentOriginal)
                             li.AppendComment(
-                                $"Original={SecurityElement.Escape(translation.Original).Replace('-', 'ー')}");
+                                $"Original={SecurityElement.Escape(translation.Original).EscapeXmlCommentDashes()}");
                         li.AppendElement("xpath", Utils.GetXpath(translation.ClassName[(translation.ClassName.IndexOf('.') + 1)..], translation.Node));
                         li.AppendElement("value", value =>
                         {
@@ -527,7 +529,7 @@ namespace RimworldExtractorInternal
                     doc.DocumentElement!.Append(languageData =>
                     {
                         if (commentOriginal)
-                            languageData.AppendComment($"Original={SecurityElement.Escape(translation.Original).Replace('-', 'ー')}");
+                            languageData.AppendComment($"Original={SecurityElement.Escape(translation.Original).EscapeXmlCommentDashes()}");
                         languageData.AppendElement(translation.Node, t =>
                         {
                             t.InnerText = translation.Translated ?? translation.Original;
@@ -538,7 +540,7 @@ namespace RimworldExtractorInternal
                                 var replacement = translations.FirstOrDefault(x => $"{x.ClassName}+{x.Node}" == targetIdentifier);
                                 if (replacement != null)
                                     return replacement.Translated ?? replacement.Original;
-                                Log.Err($"Pointer: {targetIdentifier}에 대한 원본 Identifier를 찾을 수 없습니다.");
+                                Log.Err(Strings.OriginalIdentifierNotFound(targetIdentifier));
                                 return "ERR";
                             });
                         });
@@ -579,7 +581,7 @@ namespace RimworldExtractorInternal
                     doc.DocumentElement!.Append(languageData =>
                     {
                         if (commentOriginal)
-                            languageData.AppendComment($"Original={SecurityElement.Escape(translation.Original).Replace('-', 'ー')}");
+                            languageData.AppendComment($"Original={SecurityElement.Escape(translation.Original).EscapeXmlCommentDashes()}");
                         languageData.AppendElement(translation.Node, t =>
                         {
                             t.InnerText = translation.Translated ?? translation.Original;
@@ -590,7 +592,7 @@ namespace RimworldExtractorInternal
                                 var replacement = translations.FirstOrDefault(x => $"{x.ClassName}+{x.Node}" == targetIdentifier);
                                 if (replacement != null)
                                     return replacement.Translated ?? replacement.Original;
-                                Log.Err($"Pointer: {targetIdentifier}에 대한 원본 Identifier를 찾을 수 없습니다.");
+                                Log.Err(Strings.OriginalIdentifierNotFound(targetIdentifier));
                                 return "ERR";
                             });
                         });
@@ -627,7 +629,7 @@ namespace RimworldExtractorInternal
                     doc.DocumentElement!.Append(languageData =>
                     {
                         if (commentOriginal)
-                            languageData.AppendComment($"{Prefabs.OriginalLanguage}={SecurityElement.Escape(translation.Original).Replace('-', 'ー')}");
+                            languageData.AppendComment($"{Prefabs.OriginalLanguage}={SecurityElement.Escape(translation.Original).EscapeXmlCommentDashes()}");
                         languageData.AppendElement(translation.Node, translation.Translated ?? translation.Original);
                     });
                 }
@@ -704,7 +706,7 @@ namespace RimworldExtractorInternal
                 }
                 catch (Exception e)
                 {
-                    Log.Err($"{filePath}를 읽는 중 에러 발생: {e.Message}");
+                    Log.Err(Strings.ErrorReadingFileColon(filePath, e.Message));
                     throw;
                 }
             }
@@ -743,7 +745,7 @@ namespace RimworldExtractorInternal
                     }
                     catch (IOException)
                     {
-                        Log.Err($"{Path.GetFileName(path)}: 파일이 이미 사용 중이기 때문에 파일을 저장할 수 없었습니다. 종료 후 재시도 해주세요.");
+                        Log.Err(Strings.FileInUse(Path.GetFileName(path)));
                     }
                     return;
                 case Prefabs.DuplicatesPolicy.KeepOriginal:

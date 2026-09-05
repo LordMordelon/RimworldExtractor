@@ -24,7 +24,7 @@ namespace RimworldExtractorInternal.Compats
                 var labelNode = root["label"];
                 if (labelNode == null)
                 {
-                    Log.Wrn($"Abstract가 아닌 Def 노드에 label 노드가 없습니다. {node.InnerXml}");
+                    Log.Wrn(Strings.LabelNodeMissing(node.InnerXml));
                     continue;
                 }
 

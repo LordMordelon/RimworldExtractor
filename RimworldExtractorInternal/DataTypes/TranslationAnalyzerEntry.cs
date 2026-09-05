@@ -110,12 +110,12 @@ namespace RimworldExtractorInternal.DataTypes
             }
             catch (XlsxHeaderReadingException e)
             {
-                Log.Err($"올바른 림왈도 서식을 가진 엑셀 파일이 아닙니다: {path}, {e.Message}");
+                Log.Err(Strings.NotAValidTranslationXlsx(path, e.Message));
                 OriginalTranslations = new List<TranslationEntry>();
             }
             catch (IOException e)
             {
-                Log.Err($"엑셀 파일이 열려 있어서 읽을 수 없었습니다. 닫고 다시 시도해주세요: {path}");
+                Log.Err(Strings.XlsxIsOpen(path));
                 OriginalTranslations = new List<TranslationEntry>();
             }
         }

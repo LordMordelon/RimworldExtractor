@@ -6,7 +6,7 @@
         public string FullPath => Path.Combine(Root.RootDir, FolderName);
         public override string ToString()
         {
-            return $"{VersionInfo}:::{Path.GetFileName(FolderName)}" + (RequiredPackageId != null ? $"\n[모드 의존성={RequiredPackageId}]" : "");
+            return $"{VersionInfo}:::{Path.GetFileName(FolderName)}" + (RequiredPackageId != null ? Strings.ModDependencySuffix(RequiredPackageId) : "");
         }
     }
 

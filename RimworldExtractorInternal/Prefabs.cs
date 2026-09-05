@@ -17,7 +17,7 @@ namespace RimworldExtractorInternal
         /// Prefabs.dat의 호환성을 위해 존재합니다. Prefabs의 필드가 수정되었을 때 이 숫자를 1 증가시켜,
         /// Prefabs.dat에 저장된 숫자가 이와 다르다면, 해당 데이터를 읽지 않도록 합니다.
         /// </summary>
-        private static readonly string Version = "9";
+        private static readonly string Version = "10";
 
         // 임시 기능 TODO: REMOVE THIS AFTER
         public static bool EnableTkey = false;
@@ -156,14 +156,14 @@ namespace RimworldExtractorInternal
         {
             // 임시 기능 TODO: REMOVE THIS AFTER
             EnableTkey = false;
-            PathRimworld = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld";
-            PathWorkshop = "C:\\Program Files (x86)\\Steam\\steamapps\\workshop\\content\\294100";
+            PathRimworld = "D:\\SteamLibrary\\steamapps\\common\\RimWorld";
+            PathWorkshop = "D:\\SteamLibrary\\steamapps\\workshop\\content\\294100";
             PathBaseRefList = "";
             CurrentVersion = "1.6";
             PatternVersion = @"^[1]\.\d+";
             PatternVersionWithV = @"^v[1]\.\d+";
             OriginalLanguage = "English";
-            TranslationLanguage = "Korean (한국어)";
+            TranslationLanguage = "SpanishLatin (Español(Latinoamérica))";
             CommentOriginal = false;
             ExtractableTags = new(
                 "label/rulesStrings/description/baseDesc/title/titleShort/customLabel/symbol/jobString/reportString/labelNoun/slateRef/verb/gerund/adjective/member/tips/ideoName/thoughtStageDescriptions/jobReportString/theme/labelShortAdj/labelPlural/letterText/deathMessage/labelShort/letterLabel/helpText/text/baseInspectLine/labelFemale/descriptionShort/beginLetter/ingestCommandString/ingestReportString/titleShortFemale/titleFemale/gerundLabel/pawnLabel/stageName/shortDescription/customEffectDescriptions/endMessage/leaderTitle/pawnSingular/pawnsPlural/desc/recoveryMessage/chargeNoun/cooldownGerund/type/potentialExtraOutcomeDesc/labelNounPretty/headerTip/rejectInputMessage/spectatorGerund/spectatorsLabel/fuelLabel/formatString/useLabel/RMBLabel/permanentLabel/name/missingDesc/worshipRoomLabel/labelAbstract/fuelGizmoLabel/destroyedLabel/outOfFuelMessage/summary/ritualExpectedDesc/customSummary/meatLabel/labelForFullStatList/tooltip/gizmoLabel/onMapInstruction/letterTitle/textEnemy/destroyedOutLabel/beginLetterLabel/labelMale/groupName/gizmoDescription/names/arrivalTextEnemy/letterLabelEnemy/arrivedLetter/calledOffMessage/finishedMessage/approachingReportString/approachOrderString/expectedThingLabelTip/skillLabel/extraPredictedOutcomeDescriptions/modNameReadable/descriptionFuture/textWillArrive/arrivalTextFriendly/letterLabelFriendly/helpTextController/successfullyRemovedHediffMessage/textFriendly/eventLabel/textController/descOverride/shortDescOverride/content/discoveredLetterText/discoveredLetterTitle/beginLetterContinue/resourceLabel/message/overrideLabel/extraTooltip/offMessage/successMessage/effectDesc/letterInfoText/categoryLabel/groupLabel/battleStateLabel/customizationTitle/fixedName/noun/lockedReason/descriptionExtra/labelPrefix/labelMechanoids/ingestReportStringEat/failMessage/valueFormat/structureLabel/labelSocial/labelInBracketsExtraForHediff/ChooseDesc/ChooseLabel/ritualExplanation/resourceDescription/discoverLetterText/countdownLabel/inspectString/completedLetterText/completedLetterTitle/leaderDescription/formatStringUnfinalized/jobReportOverride/discoverLetterLabel/instantlyPermanentLabel/notifyMessage/onCooldownString/invalidTargetPawn/noAssignablePawnsDesc/reportText/statLabel/visualLabel/commandDescriptions/successMessageNoNegativeThought/tipLabelOverride/mainPartAllThreatsLabel/customChildDisallowMessage/ritualExpectedDescNoAdjective/loweredName/cancelLabel/texName/labelOverride/messageText/proficiencyAdjective/stuffAdjective/unit/labelTendedWell/labelTendedWellInner/labelSolidTendedWell/overrideTooltip/royalFavorLabel/extraReportString/spawnInBackstories/customLetterLabel/customLetterText/confirmationDialogText/tip/outcomeDescription/generalDescription/generalTitle/dialogue/activateDescString/activateLabelString/completedLetter/completedLetterLabel/guiLabelString/gizmoDesc/activatedMessageKey/appendString/gizmoDesc1/gizmoDesc2/gizmoLabel1/gizmoLabel"
@@ -267,7 +267,7 @@ namespace RimworldExtractorInternal
             }
             catch (Exception e)
             {
-                Log.Err($"버전 자동 감지 중 에러 발생 {e.Message}");
+                Log.Err(Strings.ErrorAutoDetectingVersion(e.Message));
             }
 
             return CurrentVersion;

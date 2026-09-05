@@ -36,7 +36,7 @@ namespace RimworldExtractorInternal
                             {
                                 if (ParentNodeLookUp.ContainsKey(attributeName))
                                 {
-                                    Log.Wrn($"Parent 노드의 이름이 겹칩니다: {attributeName}. 나중 것으로 덮어씌웁니다.");
+                                    Log.Wrn(Strings.DuplicateParentNodeName(attributeName));
                                 }
                                 ParentNodeLookUp[attributeName] = newNode;
                             }
@@ -44,7 +44,7 @@ namespace RimworldExtractorInternal
                     }
                     catch (Exception e)
                     {
-                        Log.Err($"{filePath} 를 읽는 중 에러 발생, {e.Message}");
+                        Log.Err(Strings.ErrorReadingFile(filePath, e.Message));
                         throw;
                     }
                 }
@@ -321,7 +321,7 @@ namespace RimworldExtractorInternal
                         }
                         else
                         {
-                            Log.Wrn($"자식 노드={node["defName"]?.InnerText ?? "UNKNOWN"}의 부모 노드={parentName}를 찾을 수 없었습니다. ");
+                            Log.Wrn(Strings.ParentNodeNotFound(node["defName"]?.InnerText ?? "UNKNOWN", parentName));
                             break;
                         }
                     }

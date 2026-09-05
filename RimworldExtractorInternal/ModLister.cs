@@ -135,7 +135,7 @@ namespace RimworldExtractorInternal
                 }
                 catch (Exception e)
                 {
-                    Log.Err($"{pathAbout}에 있는 About.xml 파일을 읽을 수 없었습니다. {e.Message}");
+                    Log.Err(Strings.CouldNotReadAboutXml(pathAbout, e.Message));
                 }
             }
 
@@ -317,7 +317,7 @@ namespace RimworldExtractorInternal
                 case < 1:
                     modMetadata = null;
                     ModMetadataByPackageIdLookUp[packageId] = null;
-                    Log.Wrn($"모드 폴더에서 packageId가 {packageId}인 모드를 찾을 수 없었습니다.");
+                    Log.Wrn(Strings.ModNotFoundByPackageId(packageId));
                     return false;
                 case 1:
                     modMetadata = matches[0];
@@ -326,7 +326,7 @@ namespace RimworldExtractorInternal
                 case > 1:
                     modMetadata = matches[0];
                     ModMetadataByPackageIdLookUp[packageId] = modMetadata;
-                    Log.Msg($"중복되는 packageId={packageId}, 중복 갯수={matches.Count}.");
+                    Log.Msg(Strings.DuplicatePackageId(packageId, matches.Count));
                     return true;
             }
         }

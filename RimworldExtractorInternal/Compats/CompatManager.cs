@@ -29,7 +29,7 @@ namespace RimworldExtractorInternal.Compats
                 var right = (CompatPriorityAttribute?)y.GetType().GetCustomAttribute(typeof(CompatPriorityAttribute));
                 return (left?.Priority ?? 100).CompareTo(right?.Priority ?? 100);
             });
-            Log.Msg($"{compats.Count}개의 compat가 로드됨");
+            Log.Msg(Strings.CompatsLoaded(compats.Count));
         }
 
         public static IEnumerable<TranslationEntry> DoPostProcessing(IEnumerable<TranslationEntry> entries)

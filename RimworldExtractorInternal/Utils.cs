@@ -15,6 +15,28 @@ namespace RimworldExtractorInternal
 {
     public static partial class Utils
     {
+        /// <summary>
+        /// Un comentario XML no puede contener la secuencia "--", asi que hay que
+        /// neutralizarla antes de conservar el texto original dentro de un comentario.
+        ///
+        /// Upstream lo resolvia con Replace('-', 'ー'), sustituyendo TODO guion por
+        /// el prolongador katakana, que en fuentes CJK se parece a un guion. En textos
+        /// latinos eso corrompe el original ("re-arm" -> "reーarm") y rompe el
+        /// round-trip. Aca se separa unicamente la secuencia ilegal.
+        /// </summary>
+        public static string EscapeXmlCommentDashes(this string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            // Repetir hasta que no queden "--": "---" pasa a "- - -" en dos vueltas.
+            while (text.Contains("--"))
+                text = text.Replace("--", "- -");
+
+            // Un comentario XML tampoco puede terminar en guion.
+            return text.EndsWith('-') ? text + " " : text;
+        }
+
         public static string GenerateFileName(string ModName, string TypeName)
         {
             return ToBase36(GetDeterministicHash(ModName, TypeName));
@@ -202,7 +224,7 @@ namespace RimworldExtractorInternal
             }
             catch (Exception e)
             {
-                Log.Msg($"엑셀 파일 속 텍스트를 읽는 중 에러 발생: {cell.Address}-{e.Message}");
+                Log.Msg(Strings.ErrorReadingCell(cell.Address.ToString() ?? "?", e.Message));
             }
             return string.Empty;
         }

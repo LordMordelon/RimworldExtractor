@@ -66,7 +66,7 @@ namespace RimworldExtractorInternal
                         extraction.AddRange(ExtractPatches(extractableFolder));
                         break;
                     default:
-                        Log.Wrn($"지원하지 않는 폴더입니다. {extractableFolder.FolderName}");
+                        Log.Wrn(Strings.UnsupportedFolder(extractableFolder.FolderName));
                         continue;
                 }
             }
@@ -81,7 +81,7 @@ namespace RimworldExtractorInternal
                     if (pair.Item2 != entry.Original)
                     {
                         Log.Err(
-                            $"원문이 다른 중복되는 노드가 있습니다. 노드: {entry.ClassName}+{entry.Node}| {pair.Item2} | {entry.Original} ");
+                            Strings.DuplicateNodeWithDifferentOriginal(entry.ClassName, entry.Node, pair.Item2, entry.Original));
                     }
                 }
 
@@ -142,7 +142,7 @@ namespace RimworldExtractorInternal
                     }
                     catch (Exception e)
                     {
-                        Log.Err($"{filePath}를 읽는 중 에러 발생, {e.Message}");
+                        Log.Err(Strings.ErrorReadingFile(filePath, e.Message));
                     }
                 }
             });
@@ -203,7 +203,7 @@ namespace RimworldExtractorInternal
                 if (defName == null)
                 {
                     if (node.Name != "SongDef")
-                        Log.Wrn($"SongDef과 Abstract가 아닌 XML 요소 {node.Name}에서 'defName' 태그를 찾지 못했습니다. InnerXml: {node.InnerXml}");
+                        Log.Wrn(Strings.DefNameTagNotFound(node.Name, node.InnerXml));
                     continue;
                 }
 

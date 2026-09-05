@@ -104,7 +104,7 @@ namespace RimworldExtractorInternal.Compats
                             Node = string.Join('.', tokens),
                             Original = ""
                         });
-                        verbPropsDescription.AddExtension(Prefabs.ExtensionKeyExtraCommentTranslated, "해당 노드를 번역하면 gizmo에 표시되는 설명을 수정할 수 있습니다");
+                        verbPropsDescription.AddExtension(Prefabs.ExtensionKeyExtraCommentTranslated, Strings.MvcfGizmoDescriptionHint);
                         yield return verbPropsDescription;
                     }
                     else

@@ -27,13 +27,13 @@ namespace RimworldExtractorInternal.Compats
 
                 if (label == null || description == null)
                 {
-                    Log.Wrn($"ScenarioDef에 label이나 description 태그가 없습니다. defName: {node["defName"]?.InnerText}");
+                    Log.Wrn(Strings.ScenarioDefMissingLabelOrDescription(node["defName"]?.InnerText ?? "UNKNOWN"));
                     continue;
                 }
 
                 if (node["scenario"]?["name"] != null || node["scenario"]?["description"] != null)
                 {
-                    Log.Msg($"ScenarioDef에 이미 scenario.name이나 scenario.description 태그가 존재합니다. defName: {node["defName"]?.InnerText}");
+                    Log.Msg(Strings.ScenarioDefAlreadyHasTags(node["defName"]?.InnerText ?? "UNKNOWN"));
                     continue;
                 }
 

@@ -14,9 +14,9 @@ namespace RimworldExtractorInternal
         public static IEnumerable<string> Messages => _logQueue;
 
         public const string Separator = "::";
-        public const string PrefixError = "에러";
-        public const string PrefixWarning = "경고";
-        public const string PrefixMessage = "메시지";
+        public const string PrefixError = Strings.PrefixError;
+        public const string PrefixWarning = Strings.PrefixWarning;
+        public const string PrefixMessage = Strings.PrefixMessage;
 
         private static readonly Queue<string> _logQueue = new();
         private static readonly HashSet<int> _hashes = new();
