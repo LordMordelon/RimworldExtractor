@@ -75,6 +75,10 @@ namespace RimworldExtractorGUI
             buttonSelectDir.Text = Strings.BtnSelectXlsxDir;
             label1.Text = Strings.LabelAnalyzerFaq;
             button1.Text = Strings.BtnSelectionDone;
+
+            // Los textos en espanol son mas largos que los originales y los
+            // formularios tienen medidas fijas: se ensancha lo que no entra.
+            AutoAjuste.Ajustar(buttonSelectSingleFile, buttonSelectDir, button1, label1);
         }
     }
 }

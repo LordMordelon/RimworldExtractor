@@ -229,6 +229,11 @@ namespace RimworldExtractorGUI
             groupBox2.Text = Strings.GroupBasicSettings;
             groupBox3.Text = Strings.GroupAdvancedSettings;
             checkBox1.Text = Strings.CheckBoxTkey;
+
+            // Los textos en espanol son mas largos que los originales y los
+            // formularios tienen medidas fijas: se ensancha lo que no entra.
+            AutoAjuste.Ajustar(label1, label2, label3, label5, label6, label7, label8, label9, label10, label11, label12, label13, label14,
+                buttonAutoDetect, buttonSaveAndClose, buttonCancel, buttonReset, checkBox1);
         }
     }
 }

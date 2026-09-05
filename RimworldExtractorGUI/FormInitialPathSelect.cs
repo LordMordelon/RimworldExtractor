@@ -69,6 +69,10 @@ namespace RimworldExtractorGUI
             label1.Text = Strings.LabelRimworldPathShort;
             label2.Text = Strings.LabelWorkshopPathShort;
             buttonDone.Text = Strings.BtnDone;
+
+            // Los textos en espanol son mas largos que los originales y los
+            // formularios tienen medidas fijas: se ensancha lo que no entra.
+            AutoAjuste.Ajustar(label1, label2, buttonDone);
         }
     }
 }

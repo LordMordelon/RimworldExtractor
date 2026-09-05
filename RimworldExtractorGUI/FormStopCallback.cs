@@ -94,6 +94,10 @@ namespace RimworldExtractorGUI
             label2.Text = Strings.LabelDuplicateFileFound;
             button1.Text = Strings.BtnOverwrite;
             button2.Text = Strings.BtnSkip;
+
+            // Los textos en espanol son mas largos que los originales y los
+            // formularios tienen medidas fijas: se ensancha lo que no entra.
+            AutoAjuste.Ajustar(label2, button1, button2);
         }
     }
 }

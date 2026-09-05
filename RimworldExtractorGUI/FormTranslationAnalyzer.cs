@@ -269,6 +269,10 @@ namespace RimworldExtractorGUI
                 Strings.SaveMethodRebuildNew,
                 Strings.SaveMethodOnlyNewNodes
             });
+
+            // Los textos en espanol son mas largos que los originales y los
+            // formularios tienen medidas fijas: se ensancha lo que no entra.
+            AutoAjuste.Ajustar(buttonOpenSelectMod, button1, button2, button3, label1);
         }
     }
 }

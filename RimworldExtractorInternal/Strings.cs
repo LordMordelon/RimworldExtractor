@@ -375,8 +375,10 @@
 
         // --- FormImageFileCombiner ---
         public const string BtnDone = "Listo";
-        public const string LabelSelectFileToCombine = "Elegí la ruta del archivo o carpeta a unir";
-        public const string LabelSelectImagePath = "Elegí la ruta de la imagen (opcional)";
+        // Cortas a proposito: esta ventana tiene la etiqueta, el cuadro y el boton en una
+        // sola fila angosta, y la explicacion de abajo ya da el contexto.
+        public const string LabelSelectFileToCombine = "Archivo o carpeta:";
+        public const string LabelSelectImagePath = "Imagen (opcional):";
         public const string BtnSelectFile = "Elegir archivo";
         public const string BtnSelectFolder = "Elegir carpeta";
         public const string LabelCombinerHelp =

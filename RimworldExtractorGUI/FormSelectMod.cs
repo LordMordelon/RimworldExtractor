@@ -429,6 +429,10 @@ namespace RimworldExtractorGUI
             label3.Text = Strings.LabelSelectFolder;
             labelSelectedMod.Text = Strings.LabelSelectExtractionMode;
             checkBoxFilterSelected.Text = Strings.CheckBoxFilterSelected;
+
+            // Los textos en espanol son mas largos que los originales y los
+            // formularios tienen medidas fijas: se ensancha lo que no entra.
+            AutoAjuste.Ajustar(buttonDone, label2, label3, checkBoxFilterSelected);
         }
     }
 }

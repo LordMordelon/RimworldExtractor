@@ -50,6 +50,10 @@ namespace RimworldExtractorGUI
             Text = Strings.TitleXmlister;
             button2.Text = Strings.BtnDone;
             label1.Text = Strings.LabelSelectLanguagesRoot;
+
+            // Los textos en espanol son mas largos que los originales y los
+            // formularios tienen medidas fijas: se ensancha lo que no entra.
+            AutoAjuste.Ajustar(button2, label1);
         }
     }
 }

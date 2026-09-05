@@ -23,6 +23,13 @@ namespace RimworldExtractorGUI
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+
+            // Sigue el tema de Windows. La API es de .NET 9 y todavia esta marcada como
+            // experimental, de ahi el pragma; se acota a esta linea para no tapar otros
+            // avisos. Tiene que ir antes de crear cualquier ventana.
+#pragma warning disable WFO5003
+            Application.SetColorMode(SystemColorMode.System);
+#pragma warning restore WFO5003
             if (!File.Exists("Prefabs.dat"))
             {
                 var formInitialPathSelect = new FormInitialPathSelect();

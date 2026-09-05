@@ -152,6 +152,15 @@ namespace RimworldExtractorGUI
             label3.Text = Strings.LabelCombinerHelp;
             buttonSelectPathFile.Text = Strings.BtnSelectFile;
             buttonSelectPathDir.Text = Strings.BtnSelectFolder;
+
+            // Los textos en espanol son mas largos que los originales y los
+            // formularios tienen medidas fijas: se ensancha lo que no entra.
+            AutoAjuste.Ajustar(buttonDone, label1, label2, buttonSelectPathFile, buttonSelectPathDir);
+
+            // label3 ocupa todo el ancho y se superpone con estos botones desde
+            // upstream: sin esto quedan tapados por su fondo.
+            buttonSelectPathFile.BringToFront();
+            buttonSelectPathDir.BringToFront();
         }
     }
 }

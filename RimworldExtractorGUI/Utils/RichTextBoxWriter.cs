@@ -14,12 +14,18 @@ namespace RimworldExtractorGUI
         private readonly object _lock = new object();
         public override Encoding Encoding { get; } = Encoding.UTF8;
 
-        // El panel tiene fondo oscuro (richTextBoxLog.BackColor = SystemColors.ControlText),
-        // asi que los colores puros quedan con poco contraste.
-        private static readonly Color ColorError = Color.FromArgb(255, 110, 110);
-        private static readonly Color ColorWarning = Color.FromArgb(255, 190, 90);
-        private static readonly Color ColorMessage = Color.FromArgb(220, 220, 220);
-        private static readonly Color ColorTimestamp = Color.FromArgb(130, 130, 130);
+        // La paleta depende del tema: sobre fondo oscuro los colores puros pierden
+        // contraste, y sobre fondo claro los tonos claros se vuelven ilegibles.
+        private static bool Oscuro =>
+#pragma warning disable WFO5003
+            Application.IsDarkModeEnabled;
+#pragma warning restore WFO5003
+
+        internal static Color ColorFondo => Oscuro ? Color.FromArgb(32, 32, 32) : Color.FromArgb(250, 250, 250);
+        private static Color ColorError => Oscuro ? Color.FromArgb(255, 110, 110) : Color.FromArgb(180, 30, 30);
+        private static Color ColorWarning => Oscuro ? Color.FromArgb(255, 190, 90) : Color.FromArgb(150, 95, 0);
+        private static Color ColorMessage => Oscuro ? Color.FromArgb(220, 220, 220) : Color.FromArgb(30, 30, 30);
+        private static Color ColorTimestamp => Oscuro ? Color.FromArgb(130, 130, 130) : Color.FromArgb(140, 140, 140);
 
         public RichTextBoxWriter(RichTextBox richTextBox)
         {

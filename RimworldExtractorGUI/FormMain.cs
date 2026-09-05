@@ -290,7 +290,16 @@ namespace RimworldExtractorGUI
             buttonOpenTranslationAnalyzer.Text = Strings.BtnOpenTranslationAnalyzer;
             labelSelectedMods.Text = Strings.LabelNoModSelected;
 
+            // El Designer lo deja negro fijo; que acompanie al tema.
+            richTextBoxLog.BackColor = RichTextBoxWriter.ColorFondo;
+
             button1.Text = Strings.BtnReportProblem;
+
+            // Los textos en espanol son mas largos que los originales y los
+            // formularios tienen medidas fijas: se ensancha lo que no entra.
+            AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, buttonJpgPackager,
+                buttonOpenTranslationAnalyzer, buttonConvertXlsx, buttonConvertXml, button1,
+                labelSelectedMods, label1);
         }
     }
 }
