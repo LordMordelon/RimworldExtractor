@@ -1,31 +1,69 @@
 using RimworldExtractorInternal;
+using RimworldExtractorInternal.DataTypes;
 
 namespace RimworldExtractorTest
 {
+    /// <summary>
+    /// Cubre el reconocimiento del mod a partir del nombre del archivo.
+    ///
+    /// Importa mas de lo que parece: TRADUCIR.md le pide al traductor que devuelva
+    /// la planilla con el nombre exacto que recibio, y el motivo es justamente que
+    /// de ahi se deduce a que mod pertenece.
+    /// </summary>
     [TestClass]
-    public class UnitTest1
+    public class ModMetadataFromFilePathTests
     {
-        [TestMethod]
-        public void TestMethod1()
-        { 
+        /// <summary>
+        /// Un mod cualquiera del workshop del equipo donde corren los tests. Se elige
+        /// en tiempo de ejecucion en vez de fijarlo: antes estaba cableado uno que no
+        /// existia en esta maquina, asi que el test fallaba siempre.
+        /// </summary>
+        private static ModMetadata? _mod;
+
+        [ClassInitialize]
+        public static void Setup(TestContext _)
+        {
             Prefabs.Init();
-            Prefabs.PathRimworld = "C:\\Games\\Steam\\steamapps\\common\\RimWorld";
-            Prefabs.PathWorkshop = "C:\\Games\\Steam\\steamapps\\workshop\\content\\294100";
-            foreach (var path in new[]
-                     {
-                         "Data\\2997308585\\a.xlsx", 
-                         "Data\\test\\2997308585.xlsx",
-                         "Data\\Nephilim Xenotype - 2997308585\\a.xlsx",
-                         "Data\\test\\Nephilim Xenotype - 2997308585.xlsx"
-                     })
+            ModLister.ResetCache();
+            _mod = ModLister.WorkshopMods.FirstOrDefault(x =>
+                !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.ModName));
+        }
+
+        [TestMethod]
+        public void ReconoceElModPorLasCuatroFormasDeNombre()
+        {
+            if (_mod is null)
+                Assert.Inconclusive(
+                    $"No hay mods del workshop en {Prefabs.PathWorkshop}. " +
+                    "Este test necesita RimWorld instalado con al menos un mod suscrito.");
+
+            var nombre = _mod.ModName.StripInvaildChars();
+            var id = _mod.Id;
+
+            // Las cuatro formas que acepta GetModMetadataFromFilePath: por nombre de
+            // archivo y por nombre de la carpeta que lo contiene.
+            var rutas = new[]
             {
-                var modMetadata = TranslationAnalyzerTool.GetModMetadataFromFilePath(path);
-                Assert.IsNotNull(modMetadata);
-                Console.WriteLine(modMetadata);
+                $@"Data\{id}\a.xlsx",
+                $@"Data\cualquiera\{id}.xlsx",
+                $@"Data\{nombre} - {id}\a.xlsx",
+                $@"Data\cualquiera\{nombre} - {id}.xlsx"
+            };
+
+            foreach (var ruta in rutas)
+            {
+                var encontrado = TranslationAnalyzerTool.GetModMetadataFromFilePath(ruta);
+                Assert.IsNotNull(encontrado, $"No se reconocio el mod desde la ruta: {ruta}");
+                Assert.AreEqual(id, encontrado.Id, $"Se reconocio otro mod desde la ruta: {ruta}");
             }
-            var targetPath =
-                "Data\\2997308585\\a.xlsx";
-            
+        }
+
+        [TestMethod]
+        public void DevuelveNullCuandoElNombreNoCorrespondeANingunMod()
+        {
+            var encontrado = TranslationAnalyzerTool.GetModMetadataFromFilePath(
+                @"Data\esto-no-es-un-mod-000000\a.xlsx");
+            Assert.IsNull(encontrado);
         }
     }
 }

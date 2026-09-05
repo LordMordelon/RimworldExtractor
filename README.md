@@ -30,8 +30,9 @@ el mod que empaqueta las traducciones producidas con esta herramienta.
 
 ## Compilar
 
-Requiere el **SDK de .NET 7 o superior** (probado con el 8; el proyecto apunta a
-`net7.0`, que ya está fuera de soporte).
+Requiere el **SDK de .NET 10**. Los tres proyectos apuntan a `net10.0`, que es LTS
+con soporte hasta noviembre de 2028; es el mismo SDK que usan las herramientas del
+repositorio del mod, así que alcanza con uno solo para todo.
 
 ```
 dotnet build RimworldExtractor.sln -c Debug
@@ -47,7 +48,7 @@ dotnet publish RimworldExtractorGUI/RimworldExtractorGUI.csproj -c Release -r wi
 Hay que nombrar el `.csproj` explícitamente: la carpeta contiene además un
 `RimworldExtractorGUI - Backup.csproj` que confunde a MSBuild.
 
-El resultado queda en `RimworldExtractorGUI/bin/Release/net7.0-windows/win-x64/publish/`.
+El resultado queda en `RimworldExtractorGUI/bin/Release/net10.0-windows/win-x64/publish/`.
 
 ## Sincronizar con upstream
 

@@ -24,7 +24,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '7.0.x'
+        dotnet-version: '10.0.x'
 
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -50,7 +50,7 @@ jobs:
       run: |
         dotnet restore
         dotnet publish $env:Solution_Name -c Release -p:PublishDir=${{github.workspace}}/publish_standard
-        dotnet publish $env:Solution_Name -c Release -p:PublishDir=${{github.workspace}}/publish_portable -p:PublishProtocol=FileSystem -p:TargetFramework=net7.0-windows -r win-x64 --self-contained true  -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:PublishDir=${{github.workspace}}/publish_portable
+        dotnet publish $env:Solution_Name -c Release -p:PublishDir=${{github.workspace}}/publish_portable -p:PublishProtocol=FileSystem -p:TargetFramework=net10.0-windows -r win-x64 --self-contained true  -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:PublishDir=${{github.workspace}}/publish_portable
         python $env:Script_Path cleanup
     - name: Create Release
       id: create_release

@@ -2,12 +2,12 @@ Hay dos descargas. Las dos hacen exactamente lo mismo; elegí una.
 
 - **Portable** (`RimworldExtractor-Portable.exe`) — **la recomendada si no sabés cuál elegir.**
   1. Es un único archivo: lo descargás y lo abrís, no se instala nada.
-  2. A cambio pesa bastante (~160 MB), porque trae todo lo que necesita adentro.
+  2. A cambio pesa bastante (~175 MB), porque trae todo lo que necesita adentro.
 
 - **Standard** (`RimworldExtractor-Standard.zip`)
   1. Hay que descomprimirlo antes de usarlo.
   2. Pesa mucho menos, pero requiere tener instalado el
-     [**.NET 7.0 Desktop Runtime**](https://dotnet.microsoft.com/es-es/download/dotnet/7.0).
+     [**.NET 10.0 Desktop Runtime**](https://dotnet.microsoft.com/es-es/download/dotnet/10.0).
 
 ---
 

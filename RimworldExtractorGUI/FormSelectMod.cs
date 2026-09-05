@@ -23,6 +23,9 @@ namespace RimworldExtractorGUI
     {
         public ModMetadata? SelectedMod { get; private set; }
         public List<ExtractableFolder> SelectedFolders { get; private set; }
+        // Es estado de ejecucion, no del disenador. Sin este atributo el analizador
+        // WFO1000 de WinForms lo trata como error a partir de .NET 8.
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public List<ModMetadata> ReferenceMods { get; init; }
 
         private readonly List<ModMetadata> _officialModsCached;
