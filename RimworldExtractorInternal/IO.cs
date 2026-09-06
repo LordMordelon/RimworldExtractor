@@ -443,8 +443,15 @@ namespace RimworldExtractorInternal
                 Log.Wrn(Strings.NothingToExtract);
             }
 
-            if (patches.Count > 0)
+            // Un archivo por mod parcheado, para ver de un vistazo a que le aplica cada cosa
+            // y poder manejarlos por separado. El dueño de cada def se anota al cargar los
+            // defs de referencia; lo que no figure ahi es del propio mod.
+            foreach (var grupoDePatches in patches
+                         .GroupBy(x => Extractor.DuenioPorDefName.TryGetValue(x.Node.Split('.').First(), out var duenio)
+                             ? duenio
+                             : ModName))
             {
+                var patchesDelMod = grupoDePatches.ToList();
                 var outputPath = PathCombineCreateDir(rootDirPath, "Patches");
 
                 var docPatch = new XmlDocument();
@@ -454,7 +461,7 @@ namespace RimworldExtractorInternal
                 var entryDict = new Dictionary<string, XmlElement>();
 
                 // Arma el diccionario base segun RequiredMods
-                foreach (var translation in CompatManager.DoPostProcessing(patches))
+                foreach (var translation in CompatManager.DoPostProcessing(patchesDelMod))
                 {
                     var requiredMods = translation.RequiredMods;
                     if (requiredMods == null || entryDict.ContainsKey(requiredMods.ToString()))
@@ -517,7 +524,7 @@ namespace RimworldExtractorInternal
                     });
                 }
 
-                foreach (var translation in patches)
+                foreach (var translation in patchesDelMod)
                 {
                     var requiredMods = translation.RequiredMods;
                     XmlElement operation;
@@ -547,7 +554,10 @@ namespace RimworldExtractorInternal
 
                 }
 
-                docPatch.SaveSafely(Path.Combine(outputPath, Utils.GenerateFileName(ModName, "Patches") + ".xml"));
+                // Con el nombre del mod y no codificado: es lo que hace legible la carpeta, y
+                // sigue siendo estable —mismo mod, mismo archivo—, que es la propiedad por la
+                // que se codificaban, para que una re-extraccion sobrescriba en vez de duplicar.
+                docPatch.SaveSafely(Path.Combine(outputPath, grupoDePatches.Key.StripInvaildChars() + ".xml"));
             }
 
             if (defInjected.Count > 0)

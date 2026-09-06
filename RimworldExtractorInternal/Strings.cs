@@ -113,7 +113,7 @@
             "A diferencia de los mods, el contenido oficial se extrae conservando los nombres de archivo.";
 
         public static string PatchesWithoutTarget(int count)
-            => $"{count} operaciones de patch no encontraron su objetivo: modifican defs que no están cargados, así que su texto no se extrajo.";
+            => $"{count} operaciones de patch no encontraron su objetivo. Si alguna modificaba texto, ese texto no se extrajo; muchas apuntan a valores que no se traducen.";
 
         public static string PatchesMissingModsAre(string mods)
             => $"Los defs que faltan pertenecen a: {mods}";

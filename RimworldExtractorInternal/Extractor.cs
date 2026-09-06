@@ -23,7 +23,7 @@ namespace RimworldExtractorInternal
             if (modMetadata.IsOfficialContent)
                 _isOfficialContent = true;
 
-            var refDefs = new List<string>();
+            var refDefs = new List<ReferenceDefsRoot>();
             var prePatches = new List<ExtractableFolder>();
             if (referenceMods != null)
             {
@@ -34,7 +34,8 @@ namespace RimworldExtractorInternal
                                extractableFolder.VersionInfo == "Common" ||
                                extractableFolder.VersionInfo == Prefabs.CurrentVersion)
                               && Path.GetFileName(extractableFolder.FolderName) == "Defs"
-                        select Path.Combine(referenceMod.RootDir, extractableFolder.FolderName));
+                        select new ReferenceDefsRoot(referenceMod.ModName.Trim(),
+                            Path.Combine(referenceMod.RootDir, extractableFolder.FolderName)));
                     prePatches.AddRange(ModLister.GetExtractableFolders(referenceMod).Where(x =>
                         (x.VersionInfo == "default" || x.VersionInfo == "Common" ||
                          x.VersionInfo == Prefabs.CurrentVersion) && Path.GetFileName(x.FolderName) == "Patches"));
@@ -106,13 +107,14 @@ namespace RimworldExtractorInternal
             // Una vez por extraccion, no por carpeta de patches: un mod puede tener varias
             // y solo quedarian registrados los fallos de la ultima.
             PatchOperations.XpathsSinObjetivo.Clear();
+            DuenioPorDefName.Clear();
 
             CombinedDefs = new XmlDocument();
             CombinedDefs.AppendElement("Defs");
             ParentNodeLookUp.Clear();
         }
 
-        private static void PrepareDefs(List<ExtractableFolder> extracableFolders, List<string>? referenceDefsRoots, List<ExtractableFolder> prePatches)
+        private static void PrepareDefs(List<ExtractableFolder> extracableFolders, List<ReferenceDefsRoot>? referenceDefsRoots, List<ExtractableFolder> prePatches)
         {
 
             if (CombinedDefs == null)

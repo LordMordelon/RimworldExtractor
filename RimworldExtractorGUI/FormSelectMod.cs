@@ -255,21 +255,27 @@ namespace RimworldExtractorGUI
             DialogResult = DialogResult.OK;
             QuickUpdate = _checkBoxQuickUpdate.Checked;
 
-            // El contenido oficial entra como un mod de referencia mas, que es lo que ya
-            // sabe manejar el extractor: sus defs se cargan para resolver los patches pero
-            // no se traducen. No se agrega si lo que se extrae es contenido oficial.
-            if (_checkBoxFullExtraction.Checked && SelectedMod?.IsOfficialContent != true)
-            {
-                foreach (var oficial in ModLister.OfficialMods)
-                {
-                    if (!ReferenceMods.Contains(oficial))
-                        ReferenceMods.Add(oficial);
-                }
-            }
             foreach (ExtractableFolder extractableFolder in listBoxExtractableFolders.SelectedItems)
             {
                 SelectedFolders.Add(extractableFolder);
             }
+
+            // Los mods de los que el mod elegido necesita defs entran como referencia: sus
+            // defs se cargan para resolver los patches, pero no se traducen. Son dos
+            // fuentes, las dos declaradas por el propio mod: el contenido oficial mas sus
+            // dependencias, y los mods que sus patches nombran en PatchOperationFindMod.
+            if (_checkBoxFullExtraction.Checked && SelectedMod?.IsOfficialContent != true && SelectedMod != null)
+            {
+                var declarados = ModLister.FindAllReferenceMods(SelectedMod)
+                    .Concat(ModLister.FindModsNamedInPatches(SelectedFolders));
+
+                foreach (var mod in declarados)
+                {
+                    if (mod != SelectedMod && !ReferenceMods.Contains(mod))
+                        ReferenceMods.Add(mod);
+                }
+            }
+
             Close();
         }
         private void listBoxMods_MouseDown(object sender, MouseEventArgs e)

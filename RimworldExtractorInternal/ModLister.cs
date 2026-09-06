@@ -331,6 +331,53 @@ namespace RimworldExtractorInternal
             }
         }
 
+        /// <summary>
+        /// Los mods a los que apuntan los patches de estas carpetas.
+        ///
+        /// Un patch que modifica algo de otro mod se envuelve en PatchOperationFindMod, que
+        /// nombra a ese mod. O sea que el propio mod declara de que necesita los defs para
+        /// que sus patches se puedan extraer, y no hace falta adivinarlo.
+        ///
+        /// Los nombres que no correspondan a un mod instalado se descartan: no hay nada que
+        /// cargar y no es un error, simplemente ese patch no aplica en esta maquina.
+        /// </summary>
+        public static IEnumerable<ModMetadata> FindModsNamedInPatches(IEnumerable<ExtractableFolder> patchFolders)
+        {
+            var nombres = new HashSet<string>();
+
+            foreach (var carpeta in patchFolders.Where(x => Path.GetFileName(x.FolderName) == "Patches"))
+            {
+                foreach (var filePath in IO.DescendantFiles(carpeta.FullPath)
+                             .Where(x => x.ToLower().EndsWith(".xml")))
+                {
+                    try
+                    {
+                        var doc = IO.ReadXml(filePath);
+                        foreach (XmlNode mods in doc.SelectNodes("//Operation[@Class='PatchOperationFindMod']/mods")!)
+                        {
+                            foreach (XmlNode li in mods.ChildNodes)
+                            {
+                                var nombre = li.InnerText.Trim();
+                                if (!string.IsNullOrEmpty(nombre))
+                                    nombres.Add(nombre);
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Wrn(Strings.ErrorReadingFileColon(filePath, e.Message));
+                    }
+                }
+            }
+
+            foreach (var nombre in nombres)
+            {
+                var mod = GetModMetadataByModName(nombre);
+                if (mod != null)
+                    yield return mod;
+            }
+        }
+
         internal static ModMetadata? GetModMetadataByModName(string modName)
         {
             if (ModMetadataByModNameLookUp.TryGetValue(modName, out var value))

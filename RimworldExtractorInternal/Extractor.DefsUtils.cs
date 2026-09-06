@@ -7,7 +7,16 @@ namespace RimworldExtractorInternal
 {
     public static partial class Extractor
     {
-        private static void LoadReferenceDefs(List<string> referenceDefsRoots)
+        /// <summary>
+        /// De que mod es cada def de referencia. Sirve para archivar cada patch bajo el mod
+        /// al que le aplica, en vez de amontonarlos todos en un solo archivo.
+        ///
+        /// Se llena aca porque es el unico momento en que se sabe: mas adelante los defs ya
+        /// estan todos mezclados en un mismo documento.
+        /// </summary>
+        internal static readonly Dictionary<string, string> DuenioPorDefName = new();
+
+        private static void LoadReferenceDefs(List<ReferenceDefsRoot> referenceDefsRoots)
         {
             if (CombinedDefs == null)
             {
@@ -17,7 +26,7 @@ namespace RimworldExtractorInternal
 
             foreach (var referenceDefsRoot in referenceDefsRoots)
             {
-                foreach (var filePath in IO.DescendantFiles(referenceDefsRoot)
+                foreach (var filePath in IO.DescendantFiles(referenceDefsRoot.Path)
                              .Where(x => x.ToLower().EndsWith(".xml")))
                 {
                     try
@@ -30,6 +39,10 @@ namespace RimworldExtractorInternal
                             var newAttribute = CombinedDefs.CreateAttribute("Reference");
                             newAttribute.Value = "True";
                             newNode.Attributes?.Append(newAttribute);
+
+                            var defName = node["defName"]?.InnerText?.Trim();
+                            if (!string.IsNullOrEmpty(defName))
+                                DuenioPorDefName[defName] = referenceDefsRoot.ModName;
                             CombinedDefs.DocumentElement!.AppendChild(newNode);
                             var attributeName = node.Attributes?["Name"]?.Value;
                             if (attributeName != null)
@@ -466,4 +479,10 @@ namespace RimworldExtractorInternal
         }
 
     }
+}
+
+namespace RimworldExtractorInternal
+{
+    /// <summary>Una carpeta Defs de referencia, y de que mod es.</summary>
+    internal readonly record struct ReferenceDefsRoot(string ModName, string Path);
 }
