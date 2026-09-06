@@ -49,6 +49,10 @@ namespace RimworldExtractorInternal
                 prePatches.AddRange(selectedFolders.Where(x => Path.GetFileName(x.FolderName) == "Patches").ToList());
                 PrepareDefs(defs, refDefs, prePatches);
                 extraction.AddRange(ExtractDefs());
+
+                // Aca la base de defs esta completa. Mas adelante, al procesar los patches,
+                // se reemplaza por una que solo tiene los defs que estos agregaron.
+                PatchesSinObjetivo.RegistrarDefsCargados(CombinedDefs);
             }
             foreach (var extractableFolder in selectedFolders)
             {
@@ -90,11 +94,19 @@ namespace RimworldExtractorInternal
 
             _isOfficialContent = false;
 
+            // Si algun patch apunto a un def que no estaba cargado, se dice: la extraccion
+            // termina bien igual, solo que con menos texto del que deberia.
+            PatchesSinObjetivo.Informar(modMetadata);
+
             return extraction.DistinctBy(x => $"{x.ClassName}+{x.Node}").ToList();
         }
 
         private static void Reset()
         {
+            // Una vez por extraccion, no por carpeta de patches: un mod puede tener varias
+            // y solo quedarian registrados los fallos de la ultima.
+            PatchOperations.XpathsSinObjetivo.Clear();
+
             CombinedDefs = new XmlDocument();
             CombinedDefs.AppendElement("Defs");
             ParentNodeLookUp.Clear();

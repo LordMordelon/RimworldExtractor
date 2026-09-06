@@ -79,6 +79,32 @@ internal static class PatchOperations
     }
 
 
+    /// <summary>
+    /// Los xpath que no encontraron a que apuntar, en la ultima extraccion.
+    ///
+    /// Un patch cuyo objetivo no esta cargado no produce nada, y hasta ahora eso pasaba en
+    /// silencio: SelectNodesSafe solo avisa si el xpath esta mal escrito, no si no coincide
+    /// con nada. Se registran para poder decirle al usuario que le falta cargar.
+    /// </summary>
+    internal static readonly List<string> XpathsSinObjetivo = new();
+
+    /// <summary>
+    /// Resuelve un xpath contra la base de defs y anota los que no encuentran nada.
+    /// </summary>
+    private static XmlNodeList? SeleccionarObjetivo(string? xpath, bool prePatchMode)
+    {
+        var nodos = Extractor.CombinedDefs.SelectNodesSafe(xpath);
+
+        // Solo se anota en la pasada que extrae texto. En la previa, la que prepara los
+        // defs, tambien se aplican los patches de los mods de referencia, y sus fallos no
+        // son del mod que se esta extrayendo: contarlos hacia que el aviso culpara a Core
+        // o a un DLC que en realidad estaba bien cargado.
+        if (!prePatchMode && xpath != null && (nodos == null || nodos.Count == 0))
+            XpathsSinObjetivo.Add(xpath);
+
+        return nodos;
+    }
+
     private static IEnumerable<TranslationEntry> PatchOperationInsert(XmlNode curNode, RequiredMods? requiredMods, bool prePatchMode = false)
     {
         if (prePatchMode)
@@ -92,7 +118,7 @@ internal static class PatchOperations
             yield break; // yield break;
         }
 
-        var selectNodes = Extractor.CombinedDefs.SelectNodesSafe(xpath);
+        var selectNodes = SeleccionarObjetivo(xpath, prePatchMode);
         if (selectNodes == null) yield break;
         foreach (XmlNode selectNode in selectNodes)
         {
@@ -138,7 +164,7 @@ internal static class PatchOperations
             yield break; // yield break;
         }
 
-        var selectNodes = Extractor.CombinedDefs.SelectNodesSafe(xpath);
+        var selectNodes = SeleccionarObjetivo(xpath, prePatchMode);
         if (selectNodes == null) yield break;
         foreach (XmlElement selectNode in selectNodes)
         {
@@ -181,7 +207,7 @@ internal static class PatchOperations
             yield break; // yield break;
         }
 
-        var selectNodes = Extractor.CombinedDefs.SelectNodesSafe(xpath);
+        var selectNodes = SeleccionarObjetivo(xpath, prePatchMode);
         if (selectNodes == null) yield break;
         foreach (XmlNode selectNode in selectNodes)
         {
@@ -226,7 +252,7 @@ internal static class PatchOperations
             yield break; // yield break;
         }
 
-        var selectNodes = Extractor.CombinedDefs.SelectNodesSafe(xpath);
+        var selectNodes = SeleccionarObjetivo(xpath, prePatchMode);
         if (selectNodes == null) yield break;
         foreach (XmlNode selectNode in selectNodes)
         {
@@ -330,7 +356,7 @@ internal static class PatchOperations
             yield break; // yield break;
         }
 
-        var selectNodes = Extractor.CombinedDefs.SelectNodesSafe(xpath);
+        var selectNodes = SeleccionarObjetivo(xpath, prePatchMode);
         if (selectNodes == null) yield break;
         foreach (XmlNode selectNode in selectNodes)
         {

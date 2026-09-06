@@ -145,6 +145,11 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
 
 ## Publicación
 
+**El número de versión sale de los mensajes de commit.** `mathieudutour/github-tag-action`
+sube el último número por defecto; un commit que empiece con `feat:` sube el del medio
+(`0.0.35` → `0.1.0`). Es la única convención de este tipo en el repositorio, y se usa sólo
+cuando se quiere marcar una versión: el resto de los mensajes van en prosa.
+
 `.github/workflows/publish.yml` corre en cada push a `master`: etiqueta la versión,
 compila las dos variantes (estándar y portable) y crea la release. `tools.py` es la
 herramienta auxiliar que usa para normalizar codificaciones, escribir la versión y

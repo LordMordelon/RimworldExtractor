@@ -112,6 +112,21 @@
         public const string OfficialContentKeepsFileNames =
             "A diferencia de los mods, el contenido oficial se extrae conservando los nombres de archivo.";
 
+        public static string PatchesWithoutTarget(int count)
+            => $"{count} operaciones de patch no encontraron su objetivo: modifican defs que no están cargados, así que su texto no se extrajo.";
+
+        public static string PatchesMissingModsAre(string mods)
+            => $"Los defs que faltan pertenecen a: {mods}";
+
+        public static string PatchesUnidentifiedDefs(string defNames)
+            => $"No se pudo identificar de qué mod son estos defs: {defNames}";
+
+        public static string PatchesTargetNodeMissing(int count)
+            => $"Otras {count} apuntan a defs que sí están cargados, pero a un nodo interno que no existe: probablemente lo agregue otro mod.";
+
+        public const string PatchesWithoutTargetHint =
+            "Marcá «Extracción completa» al elegir el mod para cargar el contenido oficial, o elegí esos mods como referencia con la tecla 'S', y volvé a extraer.";
+
         public static string UnusedTranslationsSaved(int count, string path)
             => $"{count} traducciones quedaron sin uso porque su nodo ya no existe en el mod. Se guardaron en {path}";
 
@@ -428,6 +443,19 @@
         public const string LabelSelectExtractionMode = "Elegí el mod que querés extraer";
         public const string LabelSelectFolder = "Elegí la carpeta que querés extraer";
         public const string CheckBoxQuickUpdate = "Traducción rápida";
+
+        public const string CheckBoxFullExtraction = "Extracción completa";
+
+        public const string TooltipFullExtraction =
+            """
+            Carga el contenido oficial (Core y los DLC) como referencia antes de extraer.
+
+            Hace falta para los mods que modifican cosas del juego base: un patch que le cambia
+            el nombre a un objeto de Core solo se puede extraer si Core está cargado. Sin esto,
+            esas líneas no aparecen y el log te avisa cuántas fueron.
+
+            A cambio, la extracción tarda bastante más.
+            """;
 
         /// <summary>
         /// La ayuda emergente de la casilla. Es larga a proposito: describe todo lo que

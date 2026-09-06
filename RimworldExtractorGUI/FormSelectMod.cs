@@ -37,6 +37,12 @@ namespace RimworldExtractorGUI
         /// <summary>Si hay que actualizar sobre RML en vez de dejar una carpeta suelta.</summary>
         public bool QuickUpdate { get; private set; }
 
+        /// <summary>
+        /// Casilla de la extraccion completa: carga el contenido oficial como referencia.
+        /// </summary>
+        private readonly System.Windows.Forms.CheckBox _checkBoxFullExtraction =
+            new() { Name = "checkBoxFullExtraction", AutoSize = true };
+
         private readonly List<ModMetadata> _officialModsCached;
         private readonly List<ModMetadata> _localModsCached;
         private readonly List<ModMetadata> _workshopModsCached;
@@ -248,6 +254,18 @@ namespace RimworldExtractorGUI
         {
             DialogResult = DialogResult.OK;
             QuickUpdate = _checkBoxQuickUpdate.Checked;
+
+            // El contenido oficial entra como un mod de referencia mas, que es lo que ya
+            // sabe manejar el extractor: sus defs se cargan para resolver los patches pero
+            // no se traducen. No se agrega si lo que se extrae es contenido oficial.
+            if (_checkBoxFullExtraction.Checked && SelectedMod?.IsOfficialContent != true)
+            {
+                foreach (var oficial in ModLister.OfficialMods)
+                {
+                    if (!ReferenceMods.Contains(oficial))
+                        ReferenceMods.Add(oficial);
+                }
+            }
             foreach (ExtractableFolder extractableFolder in listBoxExtractableFolders.SelectedItems)
             {
                 SelectedFolders.Add(extractableFolder);
@@ -537,6 +555,12 @@ namespace RimworldExtractorGUI
             _checkBoxQuickUpdate.Left = checkBoxFilterSelected.Right + 24;
             Controls.Add(_checkBoxQuickUpdate);
             toolTip1.SetToolTip(_checkBoxQuickUpdate, Strings.TooltipQuickUpdate);
+
+            _checkBoxFullExtraction.Text = Strings.CheckBoxFullExtraction;
+            _checkBoxFullExtraction.Top = checkBoxFilterSelected.Top;
+            _checkBoxFullExtraction.Left = _checkBoxQuickUpdate.Right + 24;
+            Controls.Add(_checkBoxFullExtraction);
+            toolTip1.SetToolTip(_checkBoxFullExtraction, Strings.TooltipFullExtraction);
 
             AcomodarModElegido();
             Shown += (_, _) => AcomodarModElegido();
