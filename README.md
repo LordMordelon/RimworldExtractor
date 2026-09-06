@@ -1,4 +1,4 @@
-# RimworldExtractor — español latino
+# RimworldExtractor — Español latino
 
 Herramienta para extraer los datos de traducción del contenido oficial de RimWorld
 y de sus mods (`Defs`, `Keyed`, `Strings`, `Patches`), con la interfaz en español.
@@ -9,8 +9,8 @@ el mod que empaqueta las traducciones producidas con esta herramienta.
 
 > **No es un fork de GitHub**, aunque comparta su historia. Se creó clonando y
 > empujando a un repositorio nuevo, que es la única manera de tener una copia privada
-> de un repositorio público —lo fue al principio—, y por eso no figura en la red de
-> forks del original. El remoto `upstream` sigue apuntando ahí para mezclar sus cambios.
+> de un repositorio público —lo fue al principio, ya no—, y por eso no figura en la red de
+> forks del original, pero en esencia lo es. El remoto `upstream` sigue apuntando ahí para mezclar sus cambios.
 
 ## Descargar
 
