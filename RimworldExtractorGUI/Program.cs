@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using RimworldExtractorInternal;
 
 namespace RimworldExtractorGUI
@@ -20,6 +21,35 @@ namespace RimworldExtractorGUI
         static void Main()
         {
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainOnAssemblyResolve;
+
+            try
+            {
+                Arrancar();
+            }
+            catch (Exception e)
+            {
+                // Ultimo recurso: la aplicacion no tiene consola, asi que una excepcion
+                // aca la cierra sin decir absolutamente nada. Se usa MessageBox y no el
+                // Aviso propio porque este es el camino para cuando no se puede dar por
+                // sentado que el resto del programa funcione.
+                MessageBox.Show(e.ToString(), Strings.TitleStartupError);
+            }
+        }
+
+        /// <summary>
+        /// El arranque de verdad. Vive en su propio metodo porque <see cref="Main"/> no puede
+        /// nombrar nada de RimworldExtractorInternal: el JIT resuelve las referencias de un
+        /// metodo justo antes de ejecutarlo, y esa DLL no esta al lado del ejecutable —el
+        /// PostBuild la mueve a "bin"—, asi que se carga gracias al manejador que registra
+        /// Main en su primera linea. Nombrarla dentro de Main hace que se intente cargar
+        /// antes de que ese manejador exista, y la aplicacion muere antes de abrir nada.
+        ///
+        /// El atributo no es decorativo: sin el, el JIT puede incorporar este metodo dentro
+        /// de Main y el problema vuelve tal cual.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Arrancar()
+        {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();

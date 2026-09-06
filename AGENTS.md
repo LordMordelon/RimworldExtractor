@@ -120,7 +120,17 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   secuencia ilegal; no volver atrás.
 - **El `PostBuild` mueve las DLL a un subdirectorio `bin/`.** Por eso `Program.cs`
   resuelve los ensamblados desde `AppContext.BaseDirectory`, y no desde el directorio
-  de trabajo: si no, la aplicación se cae al lanzarla desde otra carpeta.
+  de trabajo: si no, la aplicación se cae al lanzarla desde otra carpeta. `tools.py`
+  arma el zip publicado con esa misma disposición.
+- **`Main` no puede nombrar nada de `RimworldExtractorInternal`.** Es consecuencia de lo
+  anterior y ya rompió la aplicación una vez. El JIT resuelve las referencias de un
+  método justo antes de ejecutarlo, así que mencionar `Prefabs` dentro de `Main` intenta
+  cargar esa DLL —que no está al lado del ejecutable— **antes** de que la primera línea
+  registre el manejador que sabe dónde buscarla. El arranque real vive en `Arrancar()`,
+  marcado `[MethodImpl(MethodImplOptions.NoInlining)]` para que el JIT no lo incorpore de
+  vuelta. Las `const` no cuentan: se incrustan como literal y no dejan referencia.
+  Compila igual y **falla en silencio**, porque al ser `WinExe` no hay consola donde
+  aparezca la excepción; el rastro queda en el visor de eventos de Windows.
 - **`Prefabs.dat` se lee por posición**, no por nombre de campo. Un campo nuevo va
   **al final** y se lee sólo si está (`idx < lines.Length`): así un archivo viejo sigue
   sirviendo. Meterlo en el medio obliga a subir `Version`, y eso descarta el archivo

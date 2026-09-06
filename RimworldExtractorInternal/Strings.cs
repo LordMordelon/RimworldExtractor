@@ -466,6 +466,11 @@
 
         #region Titulos de ventana
 
+        // Se nombra desde Main, que es el unico lugar del programa donde no se puede usar
+        // nada de este proyecto. Funciona porque es const: el compilador la incrusta como
+        // literal y no queda ninguna referencia que resolver en tiempo de ejecucion.
+        public const string TitleStartupError = "No se pudo abrir el extractor";
+
         public const string TitleImageFileCombiner = "Unir imagen + archivo";
         public const string TitleInitialPathSelect = "Indicá las rutas de RimWorld y del workshop";
         public const string TitleSelectMod = "Elegí el mod que querés extraer";
