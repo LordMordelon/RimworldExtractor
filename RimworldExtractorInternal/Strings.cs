@@ -484,6 +484,14 @@
         public static string VersionUpdateAvailable(string current, string latest)
             => $"{current} < {latest} — hay una versión nueva";
 
+        /// <summary>
+        /// Cuando la aplicacion no sabe su propia version. Pasa en toda compilacion local:
+        /// el numero lo escribe la CI justo antes de publicar, asi que en el repositorio
+        /// esta vacio. Sin este caso el rotulo mostraria una comparacion contra la nada.
+        /// </summary>
+        public static string VersionDevBuild(string latest)
+            => $"compilación local — la última publicada es {latest}";
+
         public static string VersionCheckFailed(string message)
             => $"No se pudo comprobar si hay una versión nueva: {message}";
 

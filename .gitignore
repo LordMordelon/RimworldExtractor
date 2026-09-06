@@ -365,3 +365,8 @@ FodyWeavers.xsd
 
 # JetBrains
 .idea/
+# Archivos que escribe la propia aplicacion al ejecutarse: la configuracion
+# (con las rutas de cada maquina) y el log de la ultima corrida. No los usa ni
+# la compilacion ni el flujo de publicacion.
+Prefabs.dat
+log.txt

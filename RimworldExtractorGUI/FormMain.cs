@@ -49,9 +49,11 @@ namespace RimworldExtractorGUI
 
                     void UpdateVersionText()
                     {
-                        linkLabelLatestVersion.Text = latest == current
-                            ? Strings.VersionUpToDate(current)
-                            : Strings.VersionUpdateAvailable(current, latest);
+                        linkLabelLatestVersion.Text = string.IsNullOrEmpty(current)
+                            ? Strings.VersionDevBuild(latest)
+                            : latest == current
+                                ? Strings.VersionUpToDate(current)
+                                : Strings.VersionUpdateAvailable(current, latest);
                     }
 
                     if (linkLabelLatestVersion.InvokeRequired)

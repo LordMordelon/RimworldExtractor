@@ -3,7 +3,7 @@
 Herramienta para extraer los datos de traducción del contenido oficial de RimWorld
 y de sus mods (`Defs`, `Keyed`, `Strings`, `Patches`), con la interfaz en español.
 
-Fork privado de [csh1668/RimworldExtractor](https://github.com/csh1668/RimworldExtractor),
+Fork de [csh1668/RimworldExtractor](https://github.com/csh1668/RimworldExtractor),
 que está en coreano. Se usa junto con [RML](https://github.com/LordMordelon/RML),
 el mod que empaqueta las traducciones producidas con esta herramienta.
 
@@ -25,9 +25,9 @@ el mod que empaqueta las traducciones producidas con esta herramienta.
 - **Cabeceras de Excel más tolerantes:** se acepta cualquier columna terminada en
   `[Source string]` / `[Translation]`, así que una planilla vieja se puede
   reimportar aunque se haya cambiado el idioma configurado.
-- **Chequeo de versión y enlaces apuntando a este fork**, no al original. Mientras
-  el repositorio siga siendo privado la consulta falla y la aplicación lo avisa en
-  la franja del log, sin que eso afecte a nada más.
+- **Chequeo de versión y enlaces apuntando a este fork**, no al original. Al abrir
+  la aplicación se consulta la última release publicada acá y se muestra abajo a la
+  izquierda; si la consulta falla, queda un aviso en el log y nada más.
 
 ## Compilar
 
@@ -58,7 +58,7 @@ git fetch upstream
 git merge upstream/master
 ```
 
-`origin` es el fork privado y `upstream` el repositorio original (sin push).
+`origin` es este fork y `upstream` el repositorio original (sin push).
 
 ## Créditos
 
