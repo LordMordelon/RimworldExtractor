@@ -473,7 +473,11 @@ namespace RimworldExtractorGUI
             listBoxExtractableFolders.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             buttonDone.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             label1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            // El panel del mod elegido acompaña a la lista de carpetas, que es la que se
+            // estira. Con el anclaje original —arriba y a la derecha, con ancho fijo— la
+            // lista se ensanchaba y el panel no, asi que el nombre del mod terminaba
+            // arrancando mucho mas a la derecha que el rotulo de la carpeta.
+            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             Text = Strings.TitleSelectMod;
             buttonDone.Text = Strings.BtnSelectionDone;
@@ -506,6 +510,12 @@ namespace RimworldExtractorGUI
             // Y el de la columna izquierda, que venia igual de indentado.
             label2.TextAlign = ContentAlignment.MiddleLeft;
             label2.Left = listBoxMods.Left;
+
+            // El panel arranca y termina donde la lista que tiene debajo, para que el
+            // nombre del mod quede sobre la misma vertical que el rotulo de la carpeta.
+            panel1.SetBounds(
+                listBoxExtractableFolders.Left, panel1.Top,
+                listBoxExtractableFolders.Width, panel1.Height);
 
             AcomodarModElegido();
             Shown += (_, _) => AcomodarModElegido();
