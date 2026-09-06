@@ -25,8 +25,9 @@ el mod que empaqueta las traducciones producidas con esta herramienta.
 - **Cabeceras de Excel más tolerantes:** se acepta cualquier columna terminada en
   `[Source string]` / `[Translation]`, así que una planilla vieja se puede
   reimportar aunque se haya cambiado el idioma configurado.
-- **Sin chequeo de versión ni botón de soporte:** ambos apuntaban a URLs que no
-  son accesibles en un repositorio privado.
+- **Chequeo de versión y enlaces apuntando a este fork**, no al original. Mientras
+  el repositorio siga siendo privado la consulta falla y la aplicación lo avisa en
+  la franja del log, sin que eso afecte a nada más.
 
 ## Compilar
 

@@ -286,10 +286,8 @@ namespace RimworldExtractorGUI
             richTextBoxLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             labelSelectedMods.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             label1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            label2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-
-            // El rotulo del log ocupa todo el ancho y el Designer lo centra, asi que
-            // quedaba en el medio de la ventana.
+            label2.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            linkLabelLatestVersion.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             label2.TextAlign = ContentAlignment.MiddleLeft;
             button1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
@@ -322,6 +320,20 @@ namespace RimworldExtractorGUI
             AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, buttonJpgPackager,
                 buttonOpenTranslationAnalyzer, buttonConvertXlsx, buttonConvertXml, button1,
                 labelSelectedMods, label1);
+
+            // La franja del log la comparten tres cosas: el rotulo, el enlace de version
+            // y el boton de reportar problemas. En el diseño original las tres arrancaban
+            // en la misma columna, superpuestas, y solo se salvaba porque el rotulo estaba
+            // centrado; al alinearlo a la izquierda el enlace lo tapaba, que va delante en
+            // el orden Z. Se reparte a mano: el rotulo se queda con lo que mide su palabra
+            // y el enlace ocupa el resto, que ademas le viene bien porque el aviso de
+            // "no se pudo comprobar la version" no entraba en su ancho original.
+            // Va despues del autoajuste, que es lo que fija el ancho final de la ventana.
+            const int separacion = 6;
+            label2.Width = AutoAjuste.AnchoNecesario(label2);
+            linkLabelLatestVersion.Left = label2.Right + separacion;
+            linkLabelLatestVersion.Width = Math.Max(
+                0, button1.Left - separacion - linkLabelLatestVersion.Left);
         }
     }
 }
