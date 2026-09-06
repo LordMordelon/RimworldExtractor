@@ -350,11 +350,15 @@ namespace RimworldExtractorGUI
             if (e.Index == -1)
                 return;
 
+            // e.ForeColor sale del tema y ya contempla si el renglon esta seleccionado.
+            // Antes era Brushes.Black fijo, y sobre fondo oscuro no se leia.
+            using var pincel = new SolidBrush(e.ForeColor);
+
             if (listBoxMods.Items[e.Index] is string sep)
             {
                 e.DrawBackground();
                 e.Graphics.DrawString(sep,
-                    e.Font, Brushes.Black, e.Bounds, new StringFormat(StringFormatFlags.NoWrap));
+                    e.Font, pincel, e.Bounds, new StringFormat(StringFormatFlags.NoWrap));
                 e.DrawFocusRectangle();
                 return;
             }
@@ -365,7 +369,7 @@ namespace RimworldExtractorGUI
 
             e.DrawBackground();
             e.Graphics.DrawString(text,
-                e.Font, Brushes.Black, e.Bounds, new StringFormat(StringFormatFlags.NoWrap));
+                e.Font, pincel, e.Bounds, new StringFormat(StringFormatFlags.NoWrap));
             e.DrawFocusRectangle();
         }
         private void listBoxExtractableFolders_DrawItem(object sender, DrawItemEventArgs e)
@@ -373,8 +377,9 @@ namespace RimworldExtractorGUI
             if (e.Index == -1)
                 return;
             e.DrawBackground();
+            using var pincel = new SolidBrush(e.ForeColor);
             e.Graphics.DrawString(listBoxExtractableFolders.Items[e.Index].ToString(),
-                e.Font, Brushes.Black, e.Bounds, StringFormat.GenericDefault);
+                e.Font, pincel, e.Bounds, StringFormat.GenericDefault);
             e.DrawFocusRectangle();
         }
         private void checkBoxFilterSelected_CheckedChanged(object sender, EventArgs e)
