@@ -13,6 +13,12 @@ namespace RimworldExtractorGUI
         public List<ExtractableFolder>? SelectedFolders { get; private set; }
         public List<ModMetadata>? ReferenceMods { get; private set; }
 
+        /// <summary>
+        /// Boton para elegir el tema. Se crea en codigo y no en el Designer, como todo lo
+        /// que agrega el fork, para no tocar los archivos generados.
+        /// </summary>
+        private readonly Button _buttonTema = new();
+
         public FormMain()
         {
             InitializeComponent();
@@ -27,7 +33,7 @@ namespace RimworldExtractorGUI
             }
             catch (Exception e)
             {
-                MessageBox.Show(Strings.PrefabsDatOutdated + Strings.ErrorMessagePrefix(e.Message));
+                Aviso.Mostrar(Strings.PrefabsDatOutdated + Strings.ErrorMessagePrefix(e.Message));
                 // Prefabs ya quedo con los valores por defecto de Init(), asi que se puede
                 // seguir. Upstream hacia Close() y relanzaba, y la app terminaba igual en el
                 // dialogo de excepcion no controlada.
@@ -126,14 +132,14 @@ namespace RimworldExtractorGUI
 
             if (hasError)
             {
-                if (MessageBox.Show(Strings.DoneWithErrorsOpenFolder, Strings.DialogTitleDoneQuestion, MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (Aviso.Preguntar(Strings.DoneWithErrorsOpenFolder, Strings.DialogTitleDoneQuestion) == DialogResult.Yes)
                 {
                     Process.Start("explorer.exe", outPath);
                 }
             }
             else
             {
-                if (MessageBox.Show(Strings.DoneOpenFolder, Strings.DialogTitleDone, MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (Aviso.Preguntar(Strings.DoneOpenFolder, Strings.DialogTitleDone) == DialogResult.Yes)
                 {
                     Process.Start("explorer.exe", outPath);
                 }
@@ -158,7 +164,7 @@ namespace RimworldExtractorGUI
                     IO.ToLanguageXml(translations, true,
                         Prefabs.CommentOriginal ? XmlCommentStyle.Original : XmlCommentStyle.None,
                         Path.GetFileName(path), Path.GetDirectoryName(path) ?? "");
-                    if (MessageBox.Show(Strings.DoneOpenConvertedFolder, Strings.DialogTitleDone, MessageBoxButtons.YesNo) == DialogResult.Yes)
+                    if (Aviso.Preguntar(Strings.DoneOpenConvertedFolder, Strings.DialogTitleDone) == DialogResult.Yes)
                     {
                         Process.Start("explorer.exe", Path.GetDirectoryName(path) ?? "");
                     }
@@ -199,7 +205,7 @@ namespace RimworldExtractorGUI
                     Log.Msg(Strings.ProgressFixed(i + 1, roots.Length, root));
                 }
 
-                MessageBox.Show(Strings.ConversionDone);
+                Aviso.Mostrar(Strings.ConversionDone);
             }
         }
 
@@ -270,7 +276,7 @@ namespace RimworldExtractorGUI
                         Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, analyzerEntry.FilePath));
                     }
 
-                    MessageBox.Show(Strings.FilesFixed(analyzerEntries.Count));
+                    Aviso.Mostrar(Strings.FilesFixed(analyzerEntries.Count));
                 }
             }
         }
@@ -305,6 +311,13 @@ namespace RimworldExtractorGUI
 
             button1.Text = Strings.BtnReportProblem;
 
+            // Comparte fila con el de opciones: los dos hacen a como se comporta la
+            // aplicacion, y ahi habia una fila entera para un solo boton.
+            _buttonTema.SetBounds(button2.Left, button2.Top, button2.Width, button2.Height);
+            _buttonTema.Text = Tema.Rotulo(Prefabs.Theme);
+            _buttonTema.Click += (_, _) => _buttonTema.Text = Tema.Rotulo(Tema.Alternar());
+            Controls.Add(_buttonTema);
+
             // La columna de botones queda pareja: las filas de un boton toman el ancho
             // entero y las de dos se lo reparten a la mitad. Va antes del autoajuste,
             // que despues corre las etiquetas de la derecha para que no queden tapadas.
@@ -313,11 +326,11 @@ namespace RimworldExtractorGUI
                 Rejilla.Linea(buttonExtract),
                 Rejilla.Linea(buttonConvertXlsx, buttonConvertXml),
                 Rejilla.Linea(buttonOpenTranslationAnalyzer, buttonJpgPackager),
-                Rejilla.Linea(button2));
+                Rejilla.Linea(button2, _buttonTema));
 
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
-            AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, buttonJpgPackager,
+            AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, _buttonTema, buttonJpgPackager,
                 buttonOpenTranslationAnalyzer, buttonConvertXlsx, buttonConvertXml, button1,
                 labelSelectedMods, label1);
 

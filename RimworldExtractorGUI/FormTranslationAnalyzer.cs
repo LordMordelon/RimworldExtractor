@@ -75,7 +75,7 @@ namespace RimworldExtractorGUI
 
             if (invailedCnt > 0)
             {
-                MessageBox.Show(Strings.SomeFilesFailedToAnalyze);
+                Aviso.Mostrar(Strings.SomeFilesFailedToAnalyze);
             }
         }
 
@@ -156,7 +156,7 @@ namespace RimworldExtractorGUI
         {
             if (e.Item.Checked && ((TranslationAnalyzerEntry)e.Item.Tag).Metadata == null)
             {
-                MessageBox.Show(Strings.CannotReextractUnknownMod);
+                Aviso.Mostrar(Strings.CannotReextractUnknownMod);
                 e.Item.Checked = false;
             }
         }

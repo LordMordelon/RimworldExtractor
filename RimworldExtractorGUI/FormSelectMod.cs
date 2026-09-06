@@ -292,7 +292,7 @@ namespace RimworldExtractorGUI
                     .ToList();
                 if (requiredMods == null)
                 {
-                    MessageBox.Show(Strings.NoDependencies);
+                    Aviso.Mostrar(Strings.NoDependencies);
                     return;
                 }
 

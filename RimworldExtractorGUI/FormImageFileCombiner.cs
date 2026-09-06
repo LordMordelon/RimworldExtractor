@@ -60,7 +60,7 @@ namespace RimworldExtractorGUI
 
             if (imgPath != null && !File.Exists(imgPath))
             {
-                MessageBox.Show(Strings.ImageNotFoundOrNoAccess);
+                Aviso.Mostrar(Strings.ImageNotFoundOrNoAccess);
                 return;
             }
 
@@ -87,11 +87,11 @@ namespace RimworldExtractorGUI
                 var destPath = OpenDialogSelectDestPath();
                 if (destPath == null)
                 {
-                    MessageBox.Show(Strings.ReselectFileLocation);
+                    Aviso.Mostrar(Strings.ReselectFileLocation);
                     return;
                 }
                 ImageFilePackageHelper.Package(filePath, destPath, imgPath);
-                if (MessageBox.Show(Strings.DoneOpenPackagedFolder, Strings.DialogTitleDone, MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (Aviso.Preguntar(Strings.DoneOpenPackagedFolder, Strings.DialogTitleDone) == DialogResult.Yes)
                 {
                     Process.Start("explorer.exe", Path.GetDirectoryName(destPath) ?? "");
                 }
@@ -110,19 +110,19 @@ namespace RimworldExtractorGUI
                 var destPath = OpenDialogSelectDestPath();
                 if (destPath == null)
                 {
-                    MessageBox.Show(Strings.ReselectFileLocation);
+                    Aviso.Mostrar(Strings.ReselectFileLocation);
                     return;
                 }
                 ImageFilePackageHelper.Package(newFilePath, destPath, imgPath);
                 File.Delete(newFilePath);
-                if (MessageBox.Show(Strings.DoneOpenPackagedFolder, Strings.DialogTitleDone, MessageBoxButtons.YesNo) == DialogResult.Yes)
+                if (Aviso.Preguntar(Strings.DoneOpenPackagedFolder, Strings.DialogTitleDone) == DialogResult.Yes)
                 {
                     Process.Start("explorer.exe", Path.GetDirectoryName(destPath) ?? "");
                 }
             }
             else
             {
-                MessageBox.Show(Strings.FileNotFoundOrNoAccess);
+                Aviso.Mostrar(Strings.FileNotFoundOrNoAccess);
                                 
             }
         }

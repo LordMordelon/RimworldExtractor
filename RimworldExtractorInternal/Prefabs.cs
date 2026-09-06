@@ -32,6 +32,9 @@ namespace RimworldExtractorInternal
         public static string TranslationLanguage = string.Empty;
         public static bool CommentOriginal = false;
 
+        /// <summary>Tema de la interfaz. No afecta a la extraccion, solo a como se ve.</summary>
+        public static ColorTheme Theme = ColorTheme.System;
+
         private static Dictionary<string, ExtractionRule> _extractionRules = new();
 
         public static HashSet<string> ExtractableTags
@@ -191,6 +194,7 @@ namespace RimworldExtractorInternal
             };
             Policy = DuplicatesPolicy.Overwrite;
             Method = ExtractionMethod.Languages;
+            Theme = ColorTheme.System;
         }
 
         public static void Save(string fileName = "Prefabs.dat")
@@ -214,7 +218,13 @@ namespace RimworldExtractorInternal
                 string.Join('/', NodeReplacement.Select(x => $"{x.Key}|{x.Value}")),
                 string.Join('/', TranslationHandles),
                 Policy.ToString(),
-                Method.ToString()
+                Method.ToString(),
+
+                // Los campos nuevos van al final y se leen solo si estan. Asi un
+                // Prefabs.dat viejo sigue sirviendo: si se agregaran en el medio habria
+                // que subir Version, y eso descarta el archivo entero y le borra la
+                // configuracion a todo el mundo.
+                Theme.ToString()
             };
             File.WriteAllLines(fileName, lines);
         }
@@ -250,6 +260,12 @@ namespace RimworldExtractorInternal
             TranslationHandles = new(lines[idx++].Split('/'));
             Policy = Enum.Parse<DuplicatesPolicy>(lines[idx++]);
             Method = Enum.Parse<ExtractionMethod>(lines[idx++]);
+
+            // Un archivo guardado por una version anterior no llega hasta aca: se queda
+            // con el valor por defecto en vez de fallar.
+            Theme = idx < lines.Length && Enum.TryParse<ColorTheme>(lines[idx++], out var tema)
+                ? tema
+                : ColorTheme.System;
         }
 
         public static string AutoDetectRimworldVersion()
@@ -278,6 +294,15 @@ namespace RimworldExtractorInternal
             Stop = 0,
             Overwrite,
             KeepOriginal
+        }
+
+        /// <summary>
+        /// Tema de la interfaz. "System" sigue lo que tenga configurado Windows.
+        /// Se guarda por nombre, asi que el orden no importa.
+        /// </summary>
+        public enum ColorTheme
+        {
+            System = 0, Light, Dark
         }
 
         public enum ExtractionMethod

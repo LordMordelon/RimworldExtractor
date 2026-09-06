@@ -24,19 +24,26 @@ namespace RimworldExtractorGUI
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
 
-            // Sigue el tema de Windows. La API es de .NET 9 y todavia esta marcada como
-            // experimental, de ahi el pragma; se acota a esta linea para no tapar otros
-            // avisos. Tiene que ir antes de crear cualquier ventana.
-#pragma warning disable WFO5003
-            Application.SetColorMode(SystemColorMode.System);
-#pragma warning restore WFO5003
+            // La configuracion se lee antes de la primera ventana para arrancar ya con el
+            // tema elegido. FormMain la vuelve a leer enseguida: si el archivo no sirve,
+            // el que avisa es el, asi que aca el error se ignora a proposito.
+            try
+            {
+                Prefabs.Load();
+            }
+            catch
+            {
+                // Queda el tema por defecto, que es el de Windows.
+            }
+
+            Tema.Aplicar();
             if (!File.Exists("Prefabs.dat"))
             {
                 var formInitialPathSelect = new FormInitialPathSelect();
                 formInitialPathSelect.StartPosition = FormStartPosition.CenterScreen;
                 if (formInitialPathSelect.ShowDialog() != DialogResult.OK)
                 {
-                    MessageBox.Show(Strings.CompleteFolderSelection);
+                    Aviso.Mostrar(Strings.CompleteFolderSelection);
                     return;
                 }
                 // Application.Run();

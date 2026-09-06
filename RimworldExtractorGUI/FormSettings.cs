@@ -139,22 +139,22 @@ namespace RimworldExtractorGUI
 
         private void buttonHelp1_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(Strings.HelpExtractableTags);
+            Aviso.Mostrar(Strings.HelpExtractableTags);
         }
 
         private void buttonHelp2_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(Strings.HelpTranslationHandle);
+            Aviso.Mostrar(Strings.HelpTranslationHandle);
         }
 
         private void buttonHelp3_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(Strings.HelpNodeReplacement);
+            Aviso.Mostrar(Strings.HelpNodeReplacement);
         }
 
         private void buttonHelp4_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(Strings.HelpFullListTranslation);
+            Aviso.Mostrar(Strings.HelpFullListTranslation);
         }
 
         private void buttonSelectPathRimworld_Click(object sender, EventArgs e)

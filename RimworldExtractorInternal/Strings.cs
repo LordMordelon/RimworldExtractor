@@ -157,6 +157,10 @@
 
         #region GUI - común
 
+        public const string DialogTitleNotice = "Aviso";
+        public const string BtnAccept = "Aceptar";
+        public const string BtnYes = "Sí";
+        public const string BtnNo = "No";
         public const string DialogTitleDone = "Listo";
         public const string DialogTitleDoneQuestion = "¿Listo?";
         public const string SelectRimworldExe = "Elegí RimWorldWin64.exe";
@@ -349,6 +353,13 @@
         public const string BtnSelectMod = "1. Elegir el mod a extraer";
         public const string BtnExtract = "2. Extraer los datos de traducción";
         public const string BtnOptions = "Opciones";
+
+        // El boton del tema muestra el que esta puesto y al pulsarlo pasa al siguiente,
+        // asi que el rotulo tiene que decir en cual esta, no que va a hacer.
+        public const string BtnThemeSystem = "Tema: el de Windows";
+
+        public const string BtnThemeLight = "Tema: claro";
+        public const string BtnThemeDark = "Tema: oscuro";
         // Corta a proposito: comparte fila con la columna de botones, y el titulo
         // de la ventana ya dice de que se trata.
         public const string LabelMainDescription =

@@ -59,9 +59,12 @@ De ahí se desprende el resto:
 
 - **Ningún texto visible va escrito en el código.** Todo pasa por `Strings.cs`, cuyos
   identificadores están en inglés y sus valores en español.
-- **Ningún color va cableado.** Hay modo oscuro (`Application.SetColorMode`), así que
-  los colores salen de `SystemColors` o del `e.ForeColor` que llega al evento. Las
-  listas de `FormSelectMod` se dibujan por código y ya tuvieron este error una vez.
+- **Ningún color va cableado.** El tema se elige desde la ventana principal —claro,
+  oscuro o el de Windows— y se guarda en `Prefabs.dat`, así que los colores salen de
+  `SystemColors` o del `e.ForeColor` que llega al evento. Las listas de `FormSelectMod`
+  se dibujan por código y ya tuvieron este error una vez. La documentación de
+  `Application.SetColorMode` pide llamarla antes de crear ventanas, pero cambiarla
+  después funciona: está comprobado que las ventanas abiertas se repintan.
 - **Comentarios en español**, explicando *por qué* y no *qué*. En los comentarios se
   suelen omitir las tildes (se conserva la `ñ`); en los textos de `Strings.cs` van
   completas.
@@ -96,11 +99,17 @@ sacar una captura de pantalla. Lo que funciona es `Control.DrawToBitmap` sobre u
 formulario mostrado fuera de pantalla: se puede renderizar cada ventana a PNG, medir
 los controles, agrandar la ventana y comprobar que lo que tiene que crecer creció.
 
-Tiene un límite conocido: **las listas dibujadas por código salen vacías**, porque sin
-datos no hay nada que pintar. Los errores de dibujado personalizado no se ven ahí.
+Sí tiene un punto ciego: **los controles nativos de Windows se capturan por
+`WM_PRINTCLIENT`**, que reproduce lo que pinta Windows pero no lo que WinForms dibuja
+encima al repintar. El texto de sugerencia de un `TextBox` (`PlaceholderText`), por
+ejemplo, nunca aparece en el render aunque en pantalla se vea.
 
 ## Trampas conocidas
 
+- **`MessageBox` no obedece al tema.** Es un diálogo del propio Windows: con la interfaz
+  en oscuro salía en blanco. Los cuadros de mensaje van por `Aviso`
+  ([Aviso.cs](RimworldExtractorGUI/Utils/Aviso.cs)), que es una ventana normal de WinForms
+  y por eso sí se pinta con el tema puesto. No volver a `MessageBox`.
 - **Codificación.** Varios archivos venían en CP949 (coreano). Los bytes no son UTF-8
   válido, así que un `grep` de texto coreano no los encuentra: parecen ya traducidos y
   no lo están. `PatchOperations.cs` estuvo así. Ante un archivo sospechoso, revisar
@@ -112,8 +121,10 @@ datos no hay nada que pintar. Los errores de dibujado personalizado no se ven ah
 - **El `PostBuild` mueve las DLL a un subdirectorio `bin/`.** Por eso `Program.cs`
   resuelve los ensamblados desde `AppContext.BaseDirectory`, y no desde el directorio
   de trabajo: si no, la aplicación se cae al lanzarla desde otra carpeta.
-- **`Prefabs.dat` se lee por posición**, no por nombre de campo. Agregar un campo en el
-  medio invalida la configuración de todos los usuarios.
+- **`Prefabs.dat` se lee por posición**, no por nombre de campo. Un campo nuevo va
+  **al final** y se lee sólo si está (`idx < lines.Length`): así un archivo viejo sigue
+  sirviendo. Meterlo en el medio obliga a subir `Version`, y eso descarta el archivo
+  entero y le borra la configuración a todo el mundo.
 - **El tamaño del `.zip` publicado.** Una vez pasó de 2,8 MB a 17,8 MB porque un paquete
   de test arrastró instrumentación de Linux, macOS y ARM. La CI quedó en verde igual: el
   único síntoma fue el tamaño del artefacto.
