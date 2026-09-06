@@ -256,6 +256,9 @@ namespace RimworldExtractorGUI
             // Los tres botones del pie estan uno al lado del otro: al ensancharse
             // para que entre su texto se pisaban entre si.
             Rejilla.FilaPegadaALaDerecha(this, buttonSaveAndClose, buttonReset, buttonCancel);
+
+            // La columna izquierda se parte en dos secciones que se reparten el alto.
+            Rejilla.EnDosFilas(this, groupBox1, groupBox2);
         }
     }
 }

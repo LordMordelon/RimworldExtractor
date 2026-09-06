@@ -82,6 +82,38 @@ namespace RimworldExtractorGUI
         }
 
         /// <summary>
+        /// Reparte la altura de una columna entre dos controles, uno arriba y otro abajo.
+        ///
+        /// Con anclajes solo se puede estirar uno de los dos: el de arriba quedaria con su
+        /// alto original y el de abajo se llevaria todo el espacio nuevo.
+        /// </summary>
+        internal static void EnDosFilas(Control contenedor, Control arriba, Control abajo)
+        {
+            // Se toman los margenes del diseño original, antes de mover nada.
+            var margenSuperior = arriba.Top;
+            var margenInferior = Math.Max(Padding, contenedor.ClientSize.Height - abajo.Bottom);
+            var separacion = Math.Max(Padding, abajo.Top - arriba.Bottom);
+
+            void Acomodar()
+            {
+                var disponible = contenedor.ClientSize.Height - margenSuperior - margenInferior - separacion;
+                if (disponible <= 0)
+                    return;
+
+                var alto = disponible / 2;
+                // Mismo ancho para los dos: son dos secciones de una misma columna, y si
+                // una quedo mas ancha al ensancharse por su contenido se nota el desnivel.
+                var ancho = Math.Max(arriba.Width, abajo.Width);
+
+                arriba.SetBounds(arriba.Left, margenSuperior, ancho, alto);
+                abajo.SetBounds(abajo.Left, margenSuperior + alto + separacion, ancho, disponible - alto);
+            }
+
+            contenedor.Resize += (_, _) => Acomodar();
+            Acomodar();
+        }
+
+        /// <summary>
         /// Acomoda una fila de botones pegada al borde derecho, de derecha a izquierda.
         /// El primero de la lista se estira para ocupar lo que sobra a la izquierda.
         ///
