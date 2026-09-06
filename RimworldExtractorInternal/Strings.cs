@@ -112,6 +112,12 @@
         public const string OfficialContentKeepsFileNames =
             "A diferencia de los mods, el contenido oficial se extrae conservando los nombres de archivo.";
 
+        public static string LoadFoldersYamlWritten(string folderName)
+            => $"Se generó el {LoadFoldersBuild.FileName} del mod. Para sumarlo a RML, copiá esta carpeta a Data/{folderName}";
+
+        public static string LoadFoldersYamlKept(string path)
+            => $"Ya había un {LoadFoldersBuild.FileName} y se dejó como estaba: {path}";
+
         public const string NothingToExtract =
             "No hay datos de traducción, así que no se extrae nada. Tip: en XLSX -> XML no se guarda nada si no hay contenido traducido.";
 

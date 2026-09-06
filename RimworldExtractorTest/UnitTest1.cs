@@ -69,4 +69,105 @@ namespace RimworldExtractorTest
             Assert.IsNull(encontrado);
         }
     }
+
+    /// <summary>
+    /// Cubre el archivo que RML usa para enganchar cada traduccion a su mod.
+    ///
+    /// Importa porque un valor mal puesto ahi no rompe nada visible: el mod se instala,
+    /// el juego arranca y la traduccion simplemente no aparece nunca.
+    /// </summary>
+    [TestClass]
+    public class LoadFoldersBuildTests
+    {
+        private static ModMetadata Mod(string id = "2890901044", bool oficial = false) =>
+            new(@"D:\mods\ce", id, "Combat Extended", "CETeam.CombatExtended", oficial);
+
+        /// <summary>Los tres valores que el constructor de RML necesita para enganchar la carpeta.</summary>
+        [TestMethod]
+        public void EscribeLosTresDatosQueRmlNecesita()
+        {
+            var texto = LoadFoldersBuild.Contents(Mod());
+
+            StringAssert.Contains(texto, "PackageID: [\"CETeam.CombatExtended\"]");
+            StringAssert.Contains(texto, "WorkshopID: \"2890901044\"");
+            StringAssert.Contains(texto, "ModName: \"Combat Extended\"");
+        }
+
+        /// <summary>Un mod local no tiene id del workshop, y el campo queda vacio.</summary>
+        [TestMethod]
+        public void DejaVacioElIdDelWorkshopCuandoNoSeConoce()
+        {
+            StringAssert.Contains(LoadFoldersBuild.Contents(Mod("???")), "WorkshopID: \"\"");
+        }
+
+        /// <summary>La carpeta de destino en RML es la misma que ya nombra el extractor.</summary>
+        [TestMethod]
+        public void ProponeLaCarpetaConElFormatoDeRml()
+        {
+            Assert.AreEqual("Combat Extended - 2890901044", LoadFoldersBuild.FolderNameFor(Mod()));
+        }
+
+        /// <summary>El contenido oficial se engancha de otra manera en RML.</summary>
+        [TestMethod]
+        public void NoLoGeneraParaElContenidoOficial()
+        {
+            var carpeta = CarpetaTemporal();
+            try
+            {
+                Assert.IsFalse(LoadFoldersBuild.Write(Mod(oficial: true), carpeta));
+                Assert.IsFalse(File.Exists(Path.Combine(carpeta, LoadFoldersBuild.FileName)));
+            }
+            finally
+            {
+                Directory.Delete(carpeta, true);
+            }
+        }
+
+        /// <summary>
+        /// Lo mas importante: el que ya existe puede tener reglas de orden o de version
+        /// escritas a mano, y pisarlas en silencio seria peor que no generar nada.
+        /// </summary>
+        [TestMethod]
+        public void NoPisaElArchivoQueYaEstaba()
+        {
+            var carpeta = CarpetaTemporal();
+            var archivo = Path.Combine(carpeta, LoadFoldersBuild.FileName);
+            try
+            {
+                File.WriteAllText(archivo, "escrito a mano");
+
+                Assert.IsFalse(LoadFoldersBuild.Write(Mod(), carpeta));
+                Assert.AreEqual("escrito a mano", File.ReadAllText(archivo));
+            }
+            finally
+            {
+                Directory.Delete(carpeta, true);
+            }
+        }
+
+        /// <summary>El archivo queda en la misma carpeta que el arbol Languages generado.</summary>
+        [TestMethod]
+        public void LoDejaJuntoALaCarpetaDeLaTraduccion()
+        {
+            var carpeta = CarpetaTemporal();
+            try
+            {
+                Assert.IsTrue(LoadFoldersBuild.Write(Mod(), carpeta));
+                StringAssert.Contains(
+                    File.ReadAllText(Path.Combine(carpeta, LoadFoldersBuild.FileName)),
+                    "CETeam.CombatExtended");
+            }
+            finally
+            {
+                Directory.Delete(carpeta, true);
+            }
+        }
+
+        private static string CarpetaTemporal()
+        {
+            var ruta = Path.Combine(Path.GetTempPath(), "rimext-test-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(ruta);
+            return ruta;
+        }
+    }
 }

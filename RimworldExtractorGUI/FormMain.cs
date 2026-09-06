@@ -115,12 +115,15 @@ namespace RimworldExtractorGUI
                     break;
                 case Prefabs.ExtractionMethod.Languages:
                     IO.ToLanguageXml(extraction, false, XmlCommentStyle.None, outPath, outPath);
+                    LoadFoldersBuild.Write(SelectedMod, outPath);
                     break;
                 case Prefabs.ExtractionMethod.LanguagesWithComments:
                     IO.ToLanguageXml(extraction, false, XmlCommentStyle.Original, outPath, outPath);
+                    LoadFoldersBuild.Write(SelectedMod, outPath);
                     break;
                 case Prefabs.ExtractionMethod.LanguagesToTranslate:
                     IO.ToLanguageXml(extraction, false, XmlCommentStyle.TranslationTemplate, outPath, outPath);
+                    LoadFoldersBuild.Write(SelectedMod, outPath);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -163,9 +166,14 @@ namespace RimworldExtractorGUI
                 {
                     var path = openfileDialog.FileName;
                     var translations = IO.FromExcel(path);
+                    var carpeta = Path.GetDirectoryName(path) ?? "";
                     IO.ToLanguageXml(translations, true,
                         Prefabs.CommentOriginal ? XmlCommentStyle.Original : XmlCommentStyle.None,
-                        Path.GetFileName(path), Path.GetDirectoryName(path) ?? "");
+                        Path.GetFileName(path), carpeta);
+
+                    // De que mod es se deduce del nombre del archivo, que es para lo que la
+                    // planilla tiene que volver con el nombre con el que salio.
+                    LoadFoldersBuild.Write(TranslationAnalyzerTool.GetModMetadataFromFilePath(path), carpeta);
                     if (Aviso.Preguntar(Strings.DoneOpenConvertedFolder, Strings.DialogTitleDone) == DialogResult.Yes)
                     {
                         Process.Start("explorer.exe", Path.GetDirectoryName(path) ?? "");
