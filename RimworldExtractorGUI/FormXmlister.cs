@@ -14,6 +14,9 @@ namespace RimworldExtractorGUI
 {
     public partial class FormXmlister : Form
     {
+        /// <summary>Margen contra los bordes de la ventana, el mismo del diseño original.</summary>
+        private const int Margen = 12;
+
         public string[] FileNames = Array.Empty<string>();
         public FormXmlister()
         {
@@ -47,6 +50,13 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            // Anclajes primero, para que lo que se ensanche despues acompanie a la
+            // ventana en vez de dejar un hueco a la derecha.
+            label1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            textBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            button1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
             Text = Strings.TitleXmlister;
             button2.Text = Strings.BtnDone;
             label1.Text = Strings.LabelSelectLanguagesRoot;
@@ -54,6 +64,16 @@ namespace RimworldExtractorGUI
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
             AutoAjuste.Ajustar(button2, label1);
+
+            // El campo llega hasta el boton de examinar, y el rotulo y el de terminar
+            // cruzan la ventana de lado a lado. Es la misma disposicion que la del
+            // combinador, que es un dialogo de la misma forma: un campo y un boton que
+            // confirma. Antes el de terminar media 75 px sueltos contra el borde.
+            Rejilla.FilaPegadaALaDerecha(this, textBox1, button1);
+
+            var anchoUtil = ClientSize.Width - Margen * 2;
+            label1.Width = anchoUtil;
+            button2.SetBounds(Margen, button2.Top, anchoUtil, button2.Height);
         }
     }
 }
