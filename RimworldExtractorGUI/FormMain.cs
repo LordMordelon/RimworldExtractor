@@ -311,6 +311,11 @@ namespace RimworldExtractorGUI
             // El Designer lo deja negro fijo; que acompanie al tema.
             richTextBoxLog.BackColor = RichTextBoxWriter.ColorFondo;
 
+            // LinkLabel trae un azul fijo que sobre fondo oscuro casi no se lee.
+            linkLabelLatestVersion.LinkColor = Tema.ColorDeEnlace;
+            linkLabelLatestVersion.ActiveLinkColor = Tema.ColorDeEnlace;
+            linkLabelLatestVersion.VisitedLinkColor = Tema.ColorDeEnlace;
+
             button1.Text = Strings.BtnReportProblem;
 
             // Comparte fila con el de opciones: los dos hacen a como se comporta la

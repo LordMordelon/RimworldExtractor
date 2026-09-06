@@ -22,9 +22,7 @@ namespace RimworldExtractorGUI
         // importar en que momento se consulte ni si la API experimental cambia.
         internal static Color ColorFondo => SystemColors.Window;
 
-        private static bool Oscuro => Luminancia(ColorFondo) < 128;
-
-        private static double Luminancia(Color c) => 0.299 * c.R + 0.587 * c.G + 0.114 * c.B;
+        private static bool Oscuro => Tema.Luminancia(ColorFondo) < 128;
         private static Color ColorError => Oscuro ? Color.FromArgb(255, 110, 110) : Color.FromArgb(180, 30, 30);
         private static Color ColorWarning => Oscuro ? Color.FromArgb(255, 190, 90) : Color.FromArgb(150, 95, 0);
         private static Color ColorMessage => Oscuro ? Color.FromArgb(220, 220, 220) : Color.FromArgb(30, 30, 30);

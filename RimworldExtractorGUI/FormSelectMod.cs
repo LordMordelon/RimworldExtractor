@@ -491,6 +491,11 @@ namespace RimworldExtractorGUI
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
             AutoAjuste.Ajustar(buttonDone, label2, label3, checkBoxFilterSelected);
+
+            // La casilla arranca la columna de la izquierda, asi que se alinea con el
+            // buscador y con la lista que tiene debajo. En el diseño original quedaba
+            // suelta contra el borde derecho de esa columna.
+            checkBoxFilterSelected.Left = textBoxSearch.Left;
         }
     }
 }

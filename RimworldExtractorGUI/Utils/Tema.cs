@@ -105,6 +105,21 @@ namespace RimworldExtractorGUI
             }
         }
 
+        /// <summary>
+        /// Color para los enlaces. LinkLabel usa un azul fijo que sobre fondo oscuro casi
+        /// no se lee, y no lo cambia solo al cambiar el tema.
+        ///
+        /// Se deduce del color de fondo real y no de Application.IsDarkModeEnabled, por lo
+        /// mismo que la paleta del log: asi el texto no puede quedar en desacuerdo con el
+        /// fondo sobre el que se dibuja.
+        /// </summary>
+        internal static Color ColorDeEnlace => Luminancia(SystemColors.Control) < 128
+            ? Color.FromArgb(102, 192, 255)
+            : Color.FromArgb(0, 90, 180);
+
+        /// <summary>Que tan claro es un color, para decidir que se lee encima.</summary>
+        internal static double Luminancia(Color c) => 0.299 * c.R + 0.587 * c.G + 0.114 * c.B;
+
         /// <summary>Lo que dice el boton: el tema que esta elegido.</summary>
         internal static string Rotulo(ColorTheme tema) => tema switch
         {
