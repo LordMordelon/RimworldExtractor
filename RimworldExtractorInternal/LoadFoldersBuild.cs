@@ -20,8 +20,8 @@ namespace RimworldExtractorInternal
         public const string FileName = "LoadFolders.Build.yaml";
 
         /// <summary>
-        /// Deja el archivo junto a la carpeta Languages recien generada. Devuelve si lo
-        /// escribio.
+        /// Deja el archivo junto a la carpeta Languages recien generada, rehaciendolo si
+        /// ya estaba. Devuelve si lo escribio.
         /// </summary>
         public static bool Write(ModMetadata? mod, string rootDirPath)
         {
@@ -32,14 +32,9 @@ namespace RimworldExtractorInternal
 
             var destino = Path.Combine(rootDirPath, FileName);
 
-            // Nunca se pisa lo que ya esta: puede tener reglas de orden o de version
-            // escritas a mano, y perderlas en silencio seria peor que no generarlo.
-            if (File.Exists(destino))
-            {
-                Log.Msg(Strings.LoadFoldersYamlKept(destino));
-                return false;
-            }
-
+            // Se rehace en cada extraccion, asi que siempre refleja los datos actuales del
+            // mod. Si se extrae directamente sobre una carpeta de RML, las reglas de orden
+            // o de version que se hayan escrito a mano ahi se pierden.
             File.WriteAllText(destino, Contents(mod));
             Log.Msg(Strings.LoadFoldersYamlWritten(FolderNameFor(mod)));
             return true;

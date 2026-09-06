@@ -124,20 +124,20 @@ namespace RimworldExtractorTest
         }
 
         /// <summary>
-        /// Lo mas importante: el que ya existe puede tener reglas de orden o de version
-        /// escritas a mano, y pisarlas en silencio seria peor que no generar nada.
+        /// Se rehace en cada extraccion, para que siempre refleje los datos actuales del
+        /// mod y no quede uno viejo si el mod cambio de packageId o de nombre.
         /// </summary>
         [TestMethod]
-        public void NoPisaElArchivoQueYaEstaba()
+        public void RehaceElArchivoQueYaEstaba()
         {
             var carpeta = CarpetaTemporal();
             var archivo = Path.Combine(carpeta, LoadFoldersBuild.FileName);
             try
             {
-                File.WriteAllText(archivo, "escrito a mano");
+                File.WriteAllText(archivo, "de una extraccion anterior");
 
-                Assert.IsFalse(LoadFoldersBuild.Write(Mod(), carpeta));
-                Assert.AreEqual("escrito a mano", File.ReadAllText(archivo));
+                Assert.IsTrue(LoadFoldersBuild.Write(Mod(), carpeta));
+                StringAssert.Contains(File.ReadAllText(archivo), "CETeam.CombatExtended");
             }
             finally
             {
