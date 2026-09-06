@@ -287,6 +287,10 @@ namespace RimworldExtractorGUI
             labelSelectedMods.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             label1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             label2.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
+            // El rotulo del log ocupa todo el ancho y el Designer lo centra, asi que
+            // quedaba en el medio de la ventana.
+            label2.TextAlign = ContentAlignment.MiddleLeft;
             button1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
             Text = Strings.FormMainTitle;
