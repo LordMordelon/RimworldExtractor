@@ -269,6 +269,12 @@
         /// <summary>Lo que va en la columna del identificador cuando no hay uno.</summary>
         public const string ModListOfficialTag = "Oficial";
 
+        /// <summary>
+        /// Pista del buscador de mods. Nombra las dos cosas por las que se puede buscar,
+        /// que son las dos columnas de la lista.
+        /// </summary>
+        public const string SearchModsPlaceholder = "Buscar por nombre o por número de mod";
+
         #endregion
 
         #region FormImageFileCombiner

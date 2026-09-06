@@ -483,6 +483,11 @@ namespace RimworldExtractorGUI
             labelSelectedMod.Text = Strings.LabelSelectExtractionMode;
             checkBoxFilterSelected.Text = Strings.CheckBoxFilterSelected;
 
+            // Sin esto el buscador es un recuadro vacio sin ninguna pista de para que
+            // sirve. El texto lo dibuja el propio TextBox y desaparece al escribir, asi
+            // que no ensucia lo que se busca ni hay que limpiarlo a mano.
+            textBoxSearch.PlaceholderText = Strings.SearchModsPlaceholder;
+
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
             AutoAjuste.Ajustar(buttonDone, label2, label3, checkBoxFilterSelected);
