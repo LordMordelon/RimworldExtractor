@@ -114,6 +114,32 @@ namespace RimworldExtractorGUI
             Acomodar();
         }
 
+        /// <summary>
+        /// Acomoda filas en una columna de ancho unico, para que todas queden parejas.
+        ///
+        /// El ancho sale de la fila mas exigente: una fila de un control necesita el ancho
+        /// entero, y una de dos necesita el doble del mas ancho. Asi todos los botones
+        /// terminan alineados y los pares se reparten la mitad cada uno.
+        /// </summary>
+        internal static void Columna(int izquierda, params FilaAncho[] filas)
+        {
+            var ancho = 0;
+            foreach (var fila in filas)
+            {
+                var n = fila.Celdas.Length;
+                var mayor = fila.Celdas.Max(c => AutoAjuste.AnchoNecesario(c.Control));
+                ancho = Math.Max(ancho, mayor * n + Padding * (n - 1));
+            }
+
+            foreach (var fila in filas)
+            {
+                var n = fila.Celdas.Length;
+                var anchoCelda = (ancho - Padding * (n - 1)) / n;
+                for (var i = 0; i < n; i++)
+                    AcomodarCampo(fila.Celdas[i], izquierda + i * (anchoCelda + Padding), anchoCelda);
+            }
+        }
+
         private static void AcomodarCampo(Campo campo, int x, int ancho)
         {
             if (campo.Boton is { } boton)

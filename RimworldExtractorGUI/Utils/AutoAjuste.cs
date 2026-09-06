@@ -88,7 +88,7 @@ namespace RimworldExtractorGUI
                 // Hasta donde llega el texto. Un control puede ser legitimamente mas ancho
                 // que su texto —hay etiquetas holgadas con un boton de ayuda apoyado en su
                 // borde derecho—, y eso no molesta a nadie.
-                var finDelTexto = control.Left + AnchoNecesario(control);
+                var finDelTexto = control.Left + Math.Max(control.Width, AnchoNecesario(control));
 
                 // Solo se mueven los controles que la llamada declara. Antes se movia
                 // cualquier vecino, y eso desacomodaba cosas que estaban puestas a
@@ -115,7 +115,7 @@ namespace RimworldExtractorGUI
         /// Ancho que necesita el texto con la fuente real del control. Contempla los
         /// textos de varias lineas, que los hay, midiendo la linea mas larga.
         /// </summary>
-        private static int AnchoNecesario(Control control)
+        internal static int AnchoNecesario(Control control)
         {
             var lineas = control.Text.Split('\n');
             var ancho = lineas.Max(l => TextRenderer.MeasureText(l.Trim(), control.Font).Width);

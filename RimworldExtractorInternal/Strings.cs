@@ -334,8 +334,10 @@
         public const string BtnSelectMod = "1. Elegir el mod a extraer";
         public const string BtnExtract = "2. Extraer los datos de traducción";
         public const string BtnOptions = "Opciones";
+        // Corta a proposito: comparte fila con la columna de botones, y el titulo
+        // de la ventana ya dice de que se trata.
         public const string LabelMainDescription =
-            "Programa para extraer los datos de traducción del contenido oficial de RimWorld y de sus mods.\r\n";
+            "Extrae los datos de traducción de RimWorld y de sus mods.";
         public const string BtnJpgPackager = "Unir imagen + archivo";
         public const string BtnOpenTranslationAnalyzer = "Abrir el analizador\r\nde traducciones (WIP)";
         public const string LabelNoModSelected = "No hay ningún mod elegido.";

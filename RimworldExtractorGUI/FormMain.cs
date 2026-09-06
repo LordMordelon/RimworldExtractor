@@ -303,6 +303,16 @@ namespace RimworldExtractorGUI
 
             button1.Text = Strings.BtnReportProblem;
 
+            // La columna de botones queda pareja: las filas de un boton toman el ancho
+            // entero y las de dos se lo reparten a la mitad. Va antes del autoajuste,
+            // que despues corre las etiquetas de la derecha para que no queden tapadas.
+            Rejilla.Columna(buttonSelectMod.Left,
+                Rejilla.Linea(buttonSelectMod),
+                Rejilla.Linea(buttonExtract),
+                Rejilla.Linea(buttonConvertXlsx, buttonConvertXml),
+                Rejilla.Linea(buttonOpenTranslationAnalyzer, buttonJpgPackager),
+                Rejilla.Linea(button2));
+
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
             AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, buttonJpgPackager,
