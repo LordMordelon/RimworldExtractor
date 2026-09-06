@@ -425,8 +425,12 @@
         public const string SaveMethodOnlyNewNodes = "Crear nuevo solo con los nodos agregados";
 
         // --- FormTranslationAnalyzerPathSelect ---
-        public const string BtnSelectSingleXlsx = "Elegir archivo Excel";
-        public const string BtnSelectXlsxDir = "Elegir la carpeta con los archivos Excel";
+        // El titulo de la ventana ya dice que son archivos Excel, asi que los botones no
+        // lo repiten: con el texto completo uno media mas del doble que el otro y la fila
+        // quedaba desbalanceada. Son los mismos rotulos que usa el combinador.
+        public const string BtnSelectSingleXlsx = "Elegir archivo";
+
+        public const string BtnSelectXlsxDir = "Elegir carpeta";
         public const string LabelAnalyzerFaq =
             "P. ¿Qué es el analizador de traducciones?\r\n" +
             "R. Lee y analiza los archivos Excel que extrajiste antes,\r\n" +

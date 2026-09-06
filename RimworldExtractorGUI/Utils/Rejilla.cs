@@ -122,6 +122,26 @@ namespace RimworldExtractorGUI
         /// terminan alineados y los pares se reparten la mitad cada uno.
         /// </summary>
         internal static void Columna(int izquierda, params FilaAncho[] filas)
+            => Colocar(izquierda, AnchoDeColumna(filas), filas);
+
+        /// <summary>
+        /// Lo mismo, pero apoyando la columna contra el borde derecho del contenedor.
+        /// Se usa cuando la columna es la que manda y lo que sobra a su izquierda queda
+        /// para el resto del formulario.
+        /// </summary>
+        internal static int ColumnaALaDerecha(Control contenedor, int margen, params FilaAncho[] filas)
+        {
+            var ancho = AnchoDeColumna(filas);
+            var izquierda = contenedor.ClientSize.Width - margen - ancho;
+            Colocar(izquierda, ancho, filas);
+            return izquierda;
+        }
+
+        /// <summary>
+        /// Ancho que necesita la columna: sale de la fila mas exigente. Una fila de un
+        /// control necesita el ancho entero, y una de dos necesita el doble del mas ancho.
+        /// </summary>
+        private static int AnchoDeColumna(FilaAncho[] filas)
         {
             var ancho = 0;
             foreach (var fila in filas)
@@ -130,7 +150,11 @@ namespace RimworldExtractorGUI
                 var mayor = fila.Celdas.Max(c => AutoAjuste.AnchoNecesario(c.Control));
                 ancho = Math.Max(ancho, mayor * n + Padding * (n - 1));
             }
+            return ancho;
+        }
 
+        private static void Colocar(int izquierda, int ancho, FilaAncho[] filas)
+        {
             foreach (var fila in filas)
             {
                 var n = fila.Celdas.Length;
