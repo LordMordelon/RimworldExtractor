@@ -259,6 +259,23 @@ namespace RimworldExtractorGUI
 
             // La columna izquierda se parte en dos secciones que se reparten el alto.
             Rejilla.EnDosFilas(this, groupBox1, groupBox2);
+
+            // El contenido de cada seccion se estira para cubrir su ancho.
+            Rejilla.EstirarAlAncho(groupBox1,
+                Rejilla.Linea(label1),
+                Rejilla.Linea(new Rejilla.Campo(textBoxPathRimworld, buttonSelectPathRimworld)),
+                Rejilla.Linea(label2),
+                Rejilla.Linea(new Rejilla.Campo(textBoxPathWorkshop, buttonSelectPathWorkshop)),
+                Rejilla.Linea(label3, label5),
+                Rejilla.Linea(textBoxVersionPattern, new Rejilla.Campo(textBoxRimworldVersion, buttonAutoDetect)));
+
+            Rejilla.EstirarAlAncho(groupBox2,
+                Rejilla.Linea(label6, label7),
+                Rejilla.Linea(comboBoxOriginalLanguage, comboBoxTranslationLanguage),
+                Rejilla.Linea(label8, label11),
+                Rejilla.Linea(comboBoxExtractionMethod, comboBoxFileDuplication),
+                Rejilla.Linea(label14),
+                Rejilla.Linea(new Rejilla.Campo(textBoxBaseRefList, buttonBaseRefList)));
         }
     }
 }

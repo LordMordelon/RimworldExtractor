@@ -82,6 +82,67 @@ namespace RimworldExtractorGUI
         }
 
         /// <summary>
+        /// Estira el contenido de un contenedor para que ocupe todo su ancho.
+        ///
+        /// Cada fila se reparte en celdas iguales. Una celda puede llevar un boton pegado
+        /// a su derecha —el tipico "..." de elegir carpeta—, y entonces el campo ocupa lo
+        /// que queda. Solo se tocan las posiciones horizontales: el alto y la altura de
+        /// cada fila quedan como estaban.
+        /// </summary>
+        internal static void EstirarAlAncho(Control contenedor, params FilaAncho[] filas)
+        {
+            void Acomodar()
+            {
+                var util = contenedor.ClientSize.Width - Padding * 2;
+                if (util <= 0)
+                    return;
+
+                foreach (var fila in filas)
+                {
+                    var celdas = fila.Celdas;
+                    var anchoCelda = (util - Padding * (celdas.Length - 1)) / celdas.Length;
+
+                    for (var i = 0; i < celdas.Length; i++)
+                    {
+                        var x = Padding + i * (anchoCelda + Padding);
+                        AcomodarCampo(celdas[i], x, anchoCelda);
+                    }
+                }
+            }
+
+            contenedor.Resize += (_, _) => Acomodar();
+            Acomodar();
+        }
+
+        private static void AcomodarCampo(Campo campo, int x, int ancho)
+        {
+            if (campo.Boton is { } boton)
+            {
+                boton.Left = x + ancho - boton.Width;
+                campo.Control.Left = x;
+                campo.Control.Width = Math.Max(20, ancho - boton.Width - Padding);
+            }
+            else
+            {
+                campo.Control.Left = x;
+                campo.Control.Width = ancho;
+            }
+        }
+
+        /// <summary>Atajo para armar una fila sin tener que nombrar el tipo.</summary>
+        internal static FilaAncho Linea(params Campo[] celdas) => new(celdas);
+
+        /// <summary>Una fila del reparto horizontal: sus celdas se reparten el ancho.</summary>
+        internal readonly record struct FilaAncho(Campo[] Celdas);
+
+        /// <summary>Un control, y opcionalmente un boton pegado a su derecha.</summary>
+        internal readonly record struct Campo(Control Control, Control? Boton = null)
+        {
+            /// <summary>Deja escribir el control a secas cuando no lleva boton.</summary>
+            public static implicit operator Campo(Control control) => new(control);
+        }
+
+        /// <summary>
         /// Reparte la altura de una columna entre dos controles, uno arriba y otro abajo.
         ///
         /// Con anclajes solo se puede estirar uno de los dos: el de arriba quedaria con su
