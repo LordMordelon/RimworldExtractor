@@ -81,7 +81,7 @@ namespace RimworldExtractorGUI
             listBoxMods.Items.Clear();
             var keyword = textBoxSearch.Text.ToLower();
 
-            listBoxMods.Items.Add(CenteredText("==================== OFFICIAL ====================", 55));
+            listBoxMods.Items.Add(Separador(Strings.ModListSectionOfficial));
             foreach (var officialContent in _officialModsCached)
             {
                 if (string.IsNullOrEmpty(keyword) || officialContent.Identifier.ToLower().Contains(keyword))
@@ -91,7 +91,7 @@ namespace RimworldExtractorGUI
                     listBoxMods.Items.Add(officialContent);
                 }
             }
-            listBoxMods.Items.Add(CenteredText("==================== LOCAL MODS ====================", 55));
+            listBoxMods.Items.Add(Separador(Strings.ModListSectionLocal));
             foreach (var localMod in _localModsCached)
             {
                 if (string.IsNullOrEmpty(keyword) || localMod.Identifier.ToLower().Contains(keyword))
@@ -101,7 +101,7 @@ namespace RimworldExtractorGUI
                     listBoxMods.Items.Add(localMod);
                 }
             }
-            listBoxMods.Items.Add(CenteredText("==================== WORKSHOP MODS ====================", 55));
+            listBoxMods.Items.Add(Separador(Strings.ModListSectionWorkshop));
             foreach (var workshopMod in _workshopModsCached)
             {
                 if (string.IsNullOrEmpty(keyword) || workshopMod.Identifier.ToLower().Contains(keyword))
@@ -140,22 +140,20 @@ namespace RimworldExtractorGUI
             return item;
         }
 
-        private static string CenteredText(string text, int totalLen)
-        {
-            if (totalLen < text.Length)
-            {
-                totalLen = text.Length;
-            }
-            int padding = (totalLen - text.Length) / 2;
-            string centeredText = text.PadLeft(padding + text.Length).PadRight(totalLen);
-            return centeredText;
-        }
+        /// <summary>
+        /// El renglon que separa una seccion de la siguiente.
+        ///
+        /// Antes se centraba rellenando con espacios hasta un largo fijo en caracteres,
+        /// que solo funciona si el titulo mide lo que se supuso: los titulos en español
+        /// son mas largos y se pasaban de ese largo, con lo cual dejaban de centrarse.
+        /// Ahora el renglon se dibuja centrado de verdad y el texto puede medir lo que sea.
+        /// </summary>
+        private static string Separador(string titulo) => $"{Guion} {titulo} {Guion}";
+
+        private const string Guion = "====================";
         /// <summary>Las dos columnas de cada renglon: el identificador y el nombre.</summary>
         private static (string Id, string Nombre) ColumnasDelMod(ModMetadata metadata)
-            => (metadata.IsOfficialContent ? EtiquetaOficial : metadata.Id, metadata.ModName);
-
-        /// <summary>Lo que se muestra en la columna del identificador para el contenido oficial.</summary>
-        private const string EtiquetaOficial = "Official";
+            => (metadata.IsOfficialContent ? Strings.ModListOfficialTag : metadata.Id, metadata.ModName);
 
         /// <summary>
         /// Referencia para medir el ancho de la columna del identificador: los diez
@@ -369,7 +367,11 @@ namespace RimworldExtractorGUI
             if (listBoxMods.Items[e.Index] is string sep)
             {
                 e.DrawBackground();
-                e.Graphics.DrawString(sep, fuente, pincel, e.Bounds, formato);
+                using var centrado = new StringFormat(StringFormatFlags.NoWrap)
+                {
+                    Alignment = StringAlignment.Center
+                };
+                e.Graphics.DrawString(sep, fuente, pincel, e.Bounds, centrado);
                 e.DrawFocusRectangle();
                 return;
             }
@@ -386,7 +388,7 @@ namespace RimworldExtractorGUI
             // cada uno centrado dentro de su propio relleno.
             var anchoId = Math.Max(
                 Medir(e.Graphics, fuente, PlantillaColumnaId),
-                Medir(e.Graphics, fuente, EtiquetaOficial));
+                Medir(e.Graphics, fuente, Strings.ModListOfficialTag));
 
             var xId = e.Bounds.Left + MargenDeColumna;
             var xSeparador = xId + anchoId + MargenDeColumna;

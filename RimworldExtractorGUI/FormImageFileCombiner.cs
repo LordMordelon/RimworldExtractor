@@ -145,6 +145,16 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
+            // Anclajes primero, para que lo que se ensanche despues acompanie a la
+            // ventana en vez de dejar un hueco a la derecha.
+            textBoxPathImage.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            textBoxPathFile.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            buttonSelectPathImage.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            buttonSelectPathFile.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            buttonSelectPathDir.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            label3.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            buttonDone.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+
             Text = Strings.TitleImageFileCombiner;
             buttonDone.Text = Strings.BtnDone;
             label1.Text = Strings.LabelSelectImagePath;
@@ -153,9 +163,25 @@ namespace RimworldExtractorGUI
             buttonSelectPathFile.Text = Strings.BtnSelectFile;
             buttonSelectPathDir.Text = Strings.BtnSelectFolder;
 
+            // El boton de elegir carpeta estaba una fila mas abajo, apoyado sobre el
+            // texto de ayuda. Ya en el diseño original se pisaban; con el texto en
+            // español, que es mas largo, el solapamiento se nota. Las dos maneras de
+            // elegir el origen van juntas en la fila del campo, que es justamente lo
+            // que anuncia su etiqueta: "archivo o carpeta".
+            buttonSelectPathDir.Top = buttonSelectPathFile.Top;
+
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
             AutoAjuste.Ajustar(buttonDone, label1, label2, buttonSelectPathFile, buttonSelectPathDir);
+
+            // Recien aca se conoce el ancho definitivo de la ventana. Los botones se
+            // apoyan en el borde derecho y el campo se estira hasta donde empiezan.
+            Rejilla.FilaPegadaALaDerecha(this, textBoxPathImage, buttonSelectPathImage);
+            Rejilla.FilaPegadaALaDerecha(this, textBoxPathFile, buttonSelectPathDir, buttonSelectPathFile);
+
+            // El texto de ayuda y el boton de terminar cruzan la ventana de lado a lado.
+            label3.Width = ClientSize.Width - label3.Left * 2;
+            buttonDone.Width = ClientSize.Width - buttonDone.Left * 2;
 
             // label3 ocupa todo el ancho y se superpone con estos botones desde
             // upstream: sin esto quedan tapados por su fondo.

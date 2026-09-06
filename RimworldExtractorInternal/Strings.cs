@@ -260,6 +260,15 @@
         public const string NoDependencies = "¡Este mod no tiene mods previos ni previos opcionales!";
         public const string ReferencePrefix = "(ref.) ";
 
+        /// <summary>Titulos de las tres secciones en que se agrupa la lista de mods.</summary>
+        public const string ModListSectionOfficial = "CONTENIDO OFICIAL";
+
+        public const string ModListSectionLocal = "MODS LOCALES";
+        public const string ModListSectionWorkshop = "MODS DEL WORKSHOP";
+
+        /// <summary>Lo que va en la columna del identificador cuando no hay uno.</summary>
+        public const string ModListOfficialTag = "Oficial";
+
         #endregion
 
         #region FormImageFileCombiner
