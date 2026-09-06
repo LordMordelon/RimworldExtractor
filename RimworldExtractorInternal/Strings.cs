@@ -426,13 +426,17 @@
             "Si se elige una carpeta, se comprime automáticamente antes de unirla.";
 
         // --- FormTranslationAnalyzer ---
+        // Titulos de columna: cortos a proposito. Son siete columnas en una sola tabla y
+        // los titulos largos no entraban, con lo cual se cortaban o dejaban al usuario con
+        // una barra de desplazamiento horizontal. Los del original tambien eran cortos.
         public const string ColumnSelect = "Elegir";
-        public const string ColumnModInfo = "Datos del mod";
-        public const string ColumnFileName = "Nombre del archivo";
-        public const string ColumnOriginalCount = "Cantidad de originales";
+
+        public const string ColumnModInfo = "Mod";
+        public const string ColumnFileName = "Archivo";
+        public const string ColumnOriginalCount = "Originales";
         public const string ColumnChanges = "Cambios";
-        public const string ColumnReextractMethod = "Método de re-extracción";
-        public const string ColumnSaveMethod = "Método de guardado";
+        public const string ColumnReextractMethod = "Re-extracción";
+        public const string ColumnSaveMethod = "Guardado";
         public const string BtnSelectModManually = "Elegir a mano el mod a re-extraer";
         public const string BtnFixSelectedFiles = "Corregir los archivos elegidos";
         public const string BtnDeselectAll = "Deseleccionar todo";

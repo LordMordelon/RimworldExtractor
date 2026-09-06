@@ -283,6 +283,79 @@ namespace RimworldExtractorGUI
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
             AutoAjuste.Ajustar(buttonOpenSelectMod, button1, button2, button3, label1);
+
+            // Los anchos de columna que vienen del diseño son la medida minima; a partir
+            // de ahi se recalcula todo, asi que hay que guardarlos antes de tocarlos.
+            _anchosDeColumna = listViewResults.Columns.Cast<ColumnHeader>().Select(c => c.Width).ToArray();
+
+            Acomodar();
+            listViewResults.SizeChanged += (_, _) => Acomodar();
+        }
+
+        /// <summary>Anchos de columna del diseño original, la base del reparto.</summary>
+        private int[] _anchosDeColumna = Array.Empty<int>();
+
+        /// <summary>Columna que se queda con el espacio sobrante: la de los nombres largos.</summary>
+        private const int ColumnaElastica = 2;
+
+        /// <summary>Aire a los lados del titulo de una columna.</summary>
+        private const int MargenDeColumna = 24;
+
+        private void Acomodar()
+        {
+            AcomodarBotonesDeSeleccion();
+            AcomodarColumnas();
+        }
+
+        /// <summary>
+        /// Apoya los dos botones de seleccion en el borde derecho de la tabla, no en el de
+        /// la ventana: a la derecha de la tabla esta el panel del mod elegido, que va por
+        /// delante en el orden Z, y con los textos en español los botones terminaban
+        /// metidos debajo.
+        /// </summary>
+        private void AcomodarBotonesDeSeleccion()
+        {
+            const int separacion = 6;
+            button2.Left = listViewResults.Right - button2.Width;
+            button3.Left = button2.Left - separacion - button3.Width;
+        }
+
+        /// <summary>
+        /// Reparte el ancho de la tabla entre sus columnas.
+        ///
+        /// Los anchos venian medidos para los titulos en coreano, mas cortos, asi que en
+        /// español se cortaban ("Cantid...", "Método ..."). Cada columna toma al menos lo
+        /// que mide su titulo, y lo que sobra va a la del nombre del archivo, que es la que
+        /// tiene los textos mas largos; asi ademas no queda una columna vacia al final.
+        /// </summary>
+        private void AcomodarColumnas()
+        {
+            if (_anchosDeColumna.Length != listViewResults.Columns.Count)
+                return;
+
+            var anchos = new int[_anchosDeColumna.Length];
+            var total = 0;
+            for (var i = 0; i < anchos.Length; i++)
+            {
+                var titulo = listViewResults.Columns[i].Text;
+                var necesario = TextRenderer.MeasureText(titulo, listViewResults.Font).Width + MargenDeColumna;
+                anchos[i] = Math.Max(_anchosDeColumna[i], necesario);
+                total += anchos[i];
+            }
+
+            // ClientSize y no Width: descuenta el borde y la barra de desplazamiento, que
+            // es lo que haria aparecer una barra horizontal de mas.
+            //
+            // Si sobra, se lo queda la columna elastica. Si falta, tambien se lo saca a
+            // ella, pero sin bajar de lo que mide su propio titulo: mas alla de eso
+            // aparece la barra horizontal, que para eso esta.
+            var sobra = listViewResults.ClientSize.Width - total;
+            var minimoElastica = TextRenderer.MeasureText(
+                listViewResults.Columns[ColumnaElastica].Text, listViewResults.Font).Width + MargenDeColumna;
+            anchos[ColumnaElastica] = Math.Max(minimoElastica, anchos[ColumnaElastica] + sobra);
+
+            for (var i = 0; i < anchos.Length; i++)
+                listViewResults.Columns[i].Width = anchos[i];
         }
     }
 }
