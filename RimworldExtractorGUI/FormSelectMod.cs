@@ -503,6 +503,10 @@ namespace RimworldExtractorGUI
             label3.TextAlign = ContentAlignment.MiddleLeft;
             label3.Left = listBoxExtractableFolders.Left;
 
+            // Y el de la columna izquierda, que venia igual de indentado.
+            label2.TextAlign = ContentAlignment.MiddleLeft;
+            label2.Left = listBoxMods.Left;
+
             AcomodarModElegido();
             Shown += (_, _) => AcomodarModElegido();
             panel1.SizeChanged += (_, _) => AcomodarModElegido();
