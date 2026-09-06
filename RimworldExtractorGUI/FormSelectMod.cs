@@ -150,17 +150,24 @@ namespace RimworldExtractorGUI
             string centeredText = text.PadLeft(padding + text.Length).PadRight(totalLen);
             return centeredText;
         }
-        private static string GetModDisplayText(ModMetadata metadata)
-        {
-            if (metadata.IsOfficialContent)
-            {
-                return $"{CenteredText("Official", 26)}:::{CenteredText(metadata.ModName, 40)}";
-            }
-            else
-            {
-                return $"{CenteredText(metadata.Id, metadata.Id == "???" ? 26 : 20)}:::{CenteredText(metadata.ModName, 65)}";
-            }
-        }
+        /// <summary>Las dos columnas de cada renglon: el identificador y el nombre.</summary>
+        private static (string Id, string Nombre) ColumnasDelMod(ModMetadata metadata)
+            => (metadata.IsOfficialContent ? EtiquetaOficial : metadata.Id, metadata.ModName);
+
+        /// <summary>Lo que se muestra en la columna del identificador para el contenido oficial.</summary>
+        private const string EtiquetaOficial = "Official";
+
+        /// <summary>
+        /// Referencia para medir el ancho de la columna del identificador: los diez
+        /// digitos que usa el workshop.
+        /// </summary>
+        private const string PlantillaColumnaId = "0000000000";
+
+        /// <summary>Marca visual entre las dos columnas.</summary>
+        private const string SeparadorDeColumnas = "::";
+
+        /// <summary>Aire entre una columna y la siguiente.</summary>
+        private const int MargenDeColumna = 8;
         private static void OpenWithExplorer(ModMetadata item)
         {
             Process.Start("explorer.exe", item.RootDir);
@@ -353,25 +360,55 @@ namespace RimworldExtractorGUI
             // e.ForeColor sale del tema y ya contempla si el renglon esta seleccionado.
             // Antes era Brushes.Black fijo, y sobre fondo oscuro no se leia.
             using var pincel = new SolidBrush(e.ForeColor);
+            using var formato = new StringFormat(StringFormatFlags.NoWrap);
+
+            // e.Font solo viene nulo si el evento se dispara sin renglon; la fuente de la
+            // lista es la misma que se usaria igual.
+            var fuente = e.Font ?? listBoxMods.Font;
 
             if (listBoxMods.Items[e.Index] is string sep)
             {
                 e.DrawBackground();
-                e.Graphics.DrawString(sep,
-                    e.Font, pincel, e.Bounds, new StringFormat(StringFormatFlags.NoWrap));
+                e.Graphics.DrawString(sep, fuente, pincel, e.Bounds, formato);
                 e.DrawFocusRectangle();
                 return;
             }
             var curMod = (ModMetadata)listBoxMods.Items[e.Index];
-            var text = GetModDisplayText(curMod);
+            var (id, nombre) = ColumnasDelMod(curMod);
             if (ReferenceMods.Any(x => curMod.RootDir == x.RootDir))
-                text = Strings.ReferencePrefix + text;
+                nombre = Strings.ReferencePrefix + nombre;
 
             e.DrawBackground();
-            e.Graphics.DrawString(text,
-                e.Font, pincel, e.Bounds, new StringFormat(StringFormatFlags.NoWrap));
+
+            // Las columnas se ubican midiendo la fuente, no rellenando con espacios como
+            // hacia el diseño original: la fuente es proporcional, asi que un espacio no
+            // mide lo mismo que un digito y los nombres terminaban desalineados entre si,
+            // cada uno centrado dentro de su propio relleno.
+            var anchoId = Math.Max(
+                Medir(e.Graphics, fuente, PlantillaColumnaId),
+                Medir(e.Graphics, fuente, EtiquetaOficial));
+
+            var xId = e.Bounds.Left + MargenDeColumna;
+            var xSeparador = xId + anchoId + MargenDeColumna;
+            var xNombre = xSeparador + Medir(e.Graphics, fuente, SeparadorDeColumnas) + MargenDeColumna;
+
+            e.Graphics.DrawString(id, fuente, pincel,
+                new Rectangle(xId, e.Bounds.Top, anchoId, e.Bounds.Height), formato);
+            e.Graphics.DrawString(SeparadorDeColumnas, fuente, pincel,
+                new PointF(xSeparador, e.Bounds.Top), formato);
+
+            // El nombre se dibuja dentro de lo que queda hasta el borde: si no entra se
+            // corta ahi en vez de desbordar sobre la barra de desplazamiento.
+            e.Graphics.DrawString(nombre, fuente, pincel,
+                new Rectangle(xNombre, e.Bounds.Top, Math.Max(0, e.Bounds.Right - xNombre), e.Bounds.Height),
+                formato);
+
             e.DrawFocusRectangle();
         }
+
+        /// <summary>Ancho que ocupa un texto con la fuente del renglon que se esta dibujando.</summary>
+        private static int Medir(Graphics grafico, Font fuente, string texto)
+            => (int)Math.Ceiling(grafico.MeasureString(texto, fuente).Width);
         private void listBoxExtractableFolders_DrawItem(object sender, DrawItemEventArgs e)
         {
             if (e.Index == -1)
@@ -379,7 +416,7 @@ namespace RimworldExtractorGUI
             e.DrawBackground();
             using var pincel = new SolidBrush(e.ForeColor);
             e.Graphics.DrawString(listBoxExtractableFolders.Items[e.Index].ToString(),
-                e.Font, pincel, e.Bounds, StringFormat.GenericDefault);
+                e.Font ?? listBoxExtractableFolders.Font, pincel, e.Bounds, StringFormat.GenericDefault);
             e.DrawFocusRectangle();
         }
         private void checkBoxFilterSelected_CheckedChanged(object sender, EventArgs e)
