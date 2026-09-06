@@ -34,6 +34,20 @@ namespace RimworldExtractorInternal
     {
         public static TextWriter Out { private get; set; } = Console.Out;
 
+        /// <summary>
+        /// Cierra el destino actual y vuelve a la consola.
+        ///
+        /// Hace falta antes de abrir otra instancia de la aplicacion: mientras el destino
+        /// siga vivo tiene tomado log.txt, y la instancia nueva no puede crearlo.
+        /// </summary>
+        public static void CerrarSalida()
+        {
+            if (!ReferenceEquals(Out, Console.Out) && Out is IDisposable desechable)
+                desechable.Dispose();
+
+            Out = Console.Out;
+        }
+
         /// <summary>Las entradas tal cual, para quien necesite el nivel sin re-parsear.</summary>
         public static IEnumerable<LogEntry> Entries => _logQueue;
 

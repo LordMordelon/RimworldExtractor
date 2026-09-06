@@ -317,7 +317,7 @@ namespace RimworldExtractorGUI
             // aplicacion, y ahi habia una fila entera para un solo boton.
             _buttonTema.SetBounds(button2.Left, button2.Top, button2.Width, button2.Height);
             _buttonTema.Text = Tema.Rotulo(Prefabs.Theme);
-            _buttonTema.Click += (_, _) => _buttonTema.Text = Tema.Rotulo(Tema.Alternar());
+            _buttonTema.Click += (_, _) => CambiarDeTema();
             Controls.Add(_buttonTema);
 
             // La columna de botones queda pareja: las filas de un boton toman el ancho
@@ -349,6 +349,23 @@ namespace RimworldExtractorGUI
             linkLabelLatestVersion.Left = label2.Right + separacion;
             linkLabelLatestVersion.Width = Math.Max(
                 0, button1.Left - separacion - linkLabelLatestVersion.Left);
+        }
+
+        /// <summary>
+        /// Pasa al siguiente tema y ofrece reiniciar, que es lo unico que lo aplica del
+        /// todo: cambiarlo en caliente deja la ventana a medias —el fondo hace caso pero
+        /// los botones conservan el tema con el que se crearon—, asi que se guarda y no se
+        /// toca nada hasta el proximo arranque.
+        /// </summary>
+        private void CambiarDeTema()
+        {
+            _buttonTema.Text = Tema.Rotulo(Tema.Alternar());
+
+            if (Aviso.Preguntar(Strings.ThemeRestartQuestion, Strings.DialogTitleTheme) != DialogResult.Yes)
+                return;
+
+            if (!Tema.Reiniciar())
+                Aviso.Mostrar(Strings.ThemeRestartManually, Strings.DialogTitleTheme);
         }
     }
 }

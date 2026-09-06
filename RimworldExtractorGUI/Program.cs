@@ -82,6 +82,10 @@ namespace RimworldExtractorGUI
             var formMain = new FormMain();
             formMain.StartPosition = FormStartPosition.CenterScreen;
             Application.Run(formMain);
+
+            // Si se cambio el tema y se acepto reiniciar, la instancia nueva se abre recien
+            // aca: mientras esta siga viva tiene tomado log.txt y la otra no podria crearlo.
+            Tema.RelanzarSiHaceFalta();
         }
 
         private static Assembly? CurrentDomainOnAssemblyResolve(object? sender, ResolveEventArgs args)

@@ -360,6 +360,15 @@
 
         public const string BtnThemeLight = "Tema: claro";
         public const string BtnThemeDark = "Tema: oscuro";
+
+        public const string DialogTitleTheme = "Cambio de tema";
+
+        public const string ThemeRestartQuestion =
+            "El tema nuevo se aplica al abrir la aplicación.\n\n" +
+            "¿La reinicio ahora? Se pierde lo que haya en el log.";
+
+        public const string ThemeRestartManually =
+            "Cerrá la aplicación y volvé a abrirla para ver el tema nuevo.";
         // Corta a proposito: comparte fila con la columna de botones, y el titulo
         // de la ventana ya dice de que se trata.
         public const string LabelMainDescription =

@@ -62,9 +62,13 @@ De ahí se desprende el resto:
 - **Ningún color va cableado.** El tema se elige desde la ventana principal —claro,
   oscuro o el de Windows— y se guarda en `Prefabs.dat`, así que los colores salen de
   `SystemColors` o del `e.ForeColor` que llega al evento. Las listas de `FormSelectMod`
-  se dibujan por código y ya tuvieron este error una vez. La documentación de
-  `Application.SetColorMode` pide llamarla antes de crear ventanas, pero cambiarla
-  después funciona: está comprobado que las ventanas abiertas se repintan.
+  se dibujan por código y ya tuvieron este error una vez.
+- **`Application.SetColorMode` va antes de crear ventanas, como dice su documentación.**
+  Llamarla con la aplicación abierta deja el cambio a medias: el fondo del formulario y
+  el panel de log siguen al tema nuevo, pero **los botones conservan el anterior**,
+  porque su aspecto queda fijado al crearse su handle. Comprobado renderizando
+  `FormMain` antes y después del cambio. Por eso el botón del tema guarda la elección y
+  ofrece reiniciar en vez de aplicarla en caliente.
 - **Comentarios en español**, explicando *por qué* y no *qué*. En los comentarios se
   suelen omitir las tildes (se conserva la `ñ`); en los textos de `Strings.cs` van
   completas.
