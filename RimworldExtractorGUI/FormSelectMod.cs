@@ -146,7 +146,8 @@ namespace RimworldExtractorGUI
         /// Antes se centraba rellenando con espacios hasta un largo fijo en caracteres,
         /// que solo funciona si el titulo mide lo que se supuso: los titulos en español
         /// son mas largos y se pasaban de ese largo, con lo cual dejaban de centrarse.
-        /// Ahora el renglon se dibuja centrado de verdad y el texto puede medir lo que sea.
+        /// Ahora se dibuja alineado a la izquierda, igual que el resto de la lista, y el
+        /// texto puede medir lo que sea.
         /// </summary>
         private static string Separador(string titulo) => $"{Guion} {titulo} {Guion}";
 
@@ -367,11 +368,13 @@ namespace RimworldExtractorGUI
             if (listBoxMods.Items[e.Index] is string sep)
             {
                 e.DrawBackground();
-                using var centrado = new StringFormat(StringFormatFlags.NoWrap)
-                {
-                    Alignment = StringAlignment.Center
-                };
-                e.Graphics.DrawString(sep, fuente, pincel, e.Bounds, centrado);
+
+                // Arranca donde arranca la columna del identificador, para que quede a
+                // plomo con los renglones de mod que tiene debajo.
+                e.Graphics.DrawString(sep, fuente, pincel,
+                    new Rectangle(e.Bounds.Left + MargenDeColumna, e.Bounds.Top,
+                        Math.Max(0, e.Bounds.Width - MargenDeColumna), e.Bounds.Height),
+                    formato);
                 e.DrawFocusRectangle();
                 return;
             }
