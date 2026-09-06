@@ -28,6 +28,15 @@ namespace RimworldExtractorGUI
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public List<ModMetadata> ReferenceMods { get; init; }
 
+        /// <summary>
+        /// Casilla de la traduccion rapida. Se crea en codigo, como todo lo que agrega el
+        /// fork, para no tocar el .Designer.cs.
+        /// </summary>
+        private readonly System.Windows.Forms.CheckBox _checkBoxQuickUpdate = new() { Name = "checkBoxQuickUpdate", AutoSize = true };
+
+        /// <summary>Si hay que actualizar sobre RML en vez de dejar una carpeta suelta.</summary>
+        public bool QuickUpdate { get; private set; }
+
         private readonly List<ModMetadata> _officialModsCached;
         private readonly List<ModMetadata> _localModsCached;
         private readonly List<ModMetadata> _workshopModsCached;
@@ -238,6 +247,7 @@ namespace RimworldExtractorGUI
         private void buttonDone_Click(object sender, EventArgs e)
         {
             DialogResult = DialogResult.OK;
+            QuickUpdate = _checkBoxQuickUpdate.Checked;
             foreach (ExtractableFolder extractableFolder in listBoxExtractableFolders.SelectedItems)
             {
                 SelectedFolders.Add(extractableFolder);
@@ -519,6 +529,14 @@ namespace RimworldExtractorGUI
             panel1.SetBounds(
                 listBoxExtractableFolders.Left, panel1.Top,
                 listBoxExtractableFolders.Width, panel1.Height);
+
+            // Comparte fila con la otra casilla: las dos cambian que hace el boton de
+            // aceptar, y esa fila tenia lugar de sobra.
+            _checkBoxQuickUpdate.Text = Strings.CheckBoxQuickUpdate;
+            _checkBoxQuickUpdate.Top = checkBoxFilterSelected.Top;
+            _checkBoxQuickUpdate.Left = checkBoxFilterSelected.Right + 24;
+            Controls.Add(_checkBoxQuickUpdate);
+            toolTip1.SetToolTip(_checkBoxQuickUpdate, Strings.TooltipQuickUpdate);
 
             AcomodarModElegido();
             Shown += (_, _) => AcomodarModElegido();

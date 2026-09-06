@@ -16,6 +16,12 @@ namespace RimworldExtractorGUI
 {
     public partial class FormSettings : Form
     {
+        // La fila de la carpeta de RML se arma en codigo, como todo lo que agrega el fork,
+        // para no tocar el .Designer.cs.
+        private readonly Label _labelPathRml = new() { Name = "labelPathRml", TextAlign = ContentAlignment.MiddleLeft };
+        private readonly TextBox _textBoxPathRml = new() { Name = "textBoxPathRml" };
+        private readonly Button _buttonPathRml = new() { Name = "buttonPathRml" };
+
         public FormSettings()
         {
             InitializeComponent();
@@ -80,6 +86,7 @@ namespace RimworldExtractorGUI
             comboBoxExtractionMethod.SelectedIndex = (int)Prefabs.Method;
             comboBoxFileDuplication.SelectedIndex = (int)Prefabs.Policy;
             textBoxBaseRefList.Text = Prefabs.PathBaseRefList;
+            _textBoxPathRml.Text = Prefabs.PathRml;
 
             textBoxExtractableTags.Text = string.Join('/', Prefabs.ExtractableTags);
             textBoxTranslationHandles.Text = string.Join('/', Prefabs.TranslationHandles);
@@ -101,6 +108,7 @@ namespace RimworldExtractorGUI
             Prefabs.Method = Enum.GetValues<Prefabs.ExtractionMethod>()[comboBoxExtractionMethod.SelectedIndex];
             Prefabs.Policy = Enum.GetValues<Prefabs.DuplicatesPolicy>()[comboBoxFileDuplication.SelectedIndex];
             Prefabs.PathBaseRefList = textBoxBaseRefList.Text;
+            Prefabs.PathRml = _textBoxPathRml.Text;
 
             Prefabs.ExtractableTags = new HashSet<string>(RemoveSep(textBoxExtractableTags.Text).Split('/'));
             Prefabs.TranslationHandles = new List<string>(RemoveSep(textBoxTranslationHandles.Text).Split('/'));
@@ -224,6 +232,25 @@ namespace RimworldExtractorGUI
                     new Rejilla.Celda(label13, textBoxFullListTranslation, buttonHelp4),
                     checkBox1));
 
+            // La carpeta de RML va con los ajustes de extraccion, que es lo que decide a
+            // donde sale el resultado.
+            _labelPathRml.Text = Strings.LabelPathRml;
+            _buttonPathRml.Text = buttonBaseRefList.Text;
+            _labelPathRml.SetBounds(label14.Left, textBoxBaseRefList.Bottom + 6, label14.Width, label14.Height);
+            _textBoxPathRml.SetBounds(textBoxBaseRefList.Left, _labelPathRml.Bottom + 2,
+                textBoxBaseRefList.Width, textBoxBaseRefList.Height);
+            _buttonPathRml.SetBounds(buttonBaseRefList.Left, _textBoxPathRml.Top,
+                buttonBaseRefList.Width, buttonBaseRefList.Height);
+            _buttonPathRml.Click += (_, _) =>
+            {
+                var dialog = new CommonOpenFileDialog { IsFolderPicker = true, Title = Strings.SelectRmlPath };
+                if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+                    _textBoxPathRml.Text = dialog.FileName;
+            };
+            groupBox2.Controls.Add(_labelPathRml);
+            groupBox2.Controls.Add(_textBoxPathRml);
+            groupBox2.Controls.Add(_buttonPathRml);
+
             Text = Strings.TitleSettings;
             label1.Text = Strings.LabelRimworldPath;
             label2.Text = Strings.LabelWorkshopPath;
@@ -260,6 +287,15 @@ namespace RimworldExtractorGUI
             // La columna izquierda se parte en dos secciones que se reparten el alto.
             Rejilla.EnDosFilas(this, groupBox1, groupBox2);
 
+            // La fila agregada no entra en el alto original. Se crece la ventana despues de
+            // repartir, no antes: EnDosFilas se queda con los margenes que encuentra al
+            // llamarla, asi que crecer primero solo agranda el margen de abajo y la seccion
+            // se queda igual. Va el doble de lo que hace falta, porque el alto se parte en
+            // dos mitades.
+            var altoDeLaFila = _textBoxPathRml.Bottom - textBoxBaseRefList.Bottom + 6;
+            ClientSize = new Size(ClientSize.Width, ClientSize.Height + altoDeLaFila * 2);
+            MinimumSize = Size;
+
             // El contenido de cada seccion se estira para cubrir su ancho.
             Rejilla.EstirarAlAncho(groupBox1,
                 Rejilla.Linea(label1),
@@ -275,7 +311,9 @@ namespace RimworldExtractorGUI
                 Rejilla.Linea(label8, label11),
                 Rejilla.Linea(comboBoxExtractionMethod, comboBoxFileDuplication),
                 Rejilla.Linea(label14),
-                Rejilla.Linea(new Rejilla.Campo(textBoxBaseRefList, buttonBaseRefList)));
+                Rejilla.Linea(new Rejilla.Campo(textBoxBaseRefList, buttonBaseRefList)),
+                Rejilla.Linea(_labelPathRml),
+                Rejilla.Linea(new Rejilla.Campo(_textBoxPathRml, _buttonPathRml)));
         }
     }
 }

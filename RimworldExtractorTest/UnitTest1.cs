@@ -71,6 +71,161 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre la configuracion persistida, que se lee por posicion y sin nombres de campo.
+    /// </summary>
+    [TestClass]
+    public class PrefabsTests
+    {
+        /// <summary>El formato que alimenta la traduccion rapida es el de arranque.</summary>
+        [TestMethod]
+        public void ElFormatoPorDefectoEsElXmlParaTraducir()
+        {
+            Prefabs.Init();
+            Assert.AreEqual(Prefabs.ExtractionMethod.LanguagesToTranslate, Prefabs.Method);
+        }
+
+        /// <summary>
+        /// Los campos nuevos van al final del archivo y se leen solo si estan, para que un
+        /// Prefabs.dat de una version anterior siga sirviendo en vez de descartarse entero.
+        /// </summary>
+        [TestMethod]
+        public void UnArchivoSinLosCamposNuevosSigueSirviendo()
+        {
+            var archivo = Path.Combine(Path.GetTempPath(), "prefabs-" + Guid.NewGuid().ToString("N") + ".dat");
+            try
+            {
+                Prefabs.Init();
+                Prefabs.PathRml = "una/ruta/cualquiera/RML";
+                Prefabs.Save(archivo);
+
+                // Se recorta el final, como si lo hubiera escrito una version anterior.
+                var lineas = File.ReadAllLines(archivo);
+                File.WriteAllLines(archivo, lineas.Take(lineas.Length - 2));
+
+                Prefabs.PathRml = "otra cosa";
+                Prefabs.Load(archivo);
+
+                Assert.AreEqual(string.Empty, Prefabs.PathRml, "el campo ausente tiene que quedar en su valor por defecto");
+            }
+            finally
+            {
+                if (File.Exists(archivo)) File.Delete(archivo);
+            }
+        }
+
+        /// <summary>La ruta de RML sobrevive el guardado y la lectura.</summary>
+        [TestMethod]
+        public void LaRutaDeRmlSobreviveElGuardado()
+        {
+            var archivo = Path.Combine(Path.GetTempPath(), "prefabs-" + Guid.NewGuid().ToString("N") + ".dat");
+            try
+            {
+                Prefabs.Init();
+                Prefabs.PathRml = "una/ruta/cualquiera/RML";
+                Prefabs.Save(archivo);
+
+                Prefabs.PathRml = "otra cosa";
+                Prefabs.Load(archivo);
+
+                Assert.AreEqual("una/ruta/cualquiera/RML", Prefabs.PathRml);
+            }
+            finally
+            {
+                if (File.Exists(archivo)) File.Delete(archivo);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Cubre el cruce entre una extraccion nueva y lo que ya estaba traducido.
+    ///
+    /// Es el corazon de la traduccion rapida: si se equivoca, o se pierde trabajo hecho o
+    /// quedan por traducidas cosas que no lo estan.
+    /// </summary>
+    [TestClass]
+    public class TranslationMergeTests
+    {
+        private static TranslationEntry Entrada(string node, string original, string? traducida = null)
+            => new("ThingDef", node, original, traducida, null, null);
+
+        /// <summary>
+        /// Lo central: si la clave coincide se conserva la traduccion, aunque el texto en
+        /// ingles haya cambiado, y el original queda actualizado al nuevo para que el
+        /// cambio se vea en el diff.
+        /// </summary>
+        [TestMethod]
+        public void ConservaLaTraduccionYActualizaElOriginal()
+        {
+            var (resultado, sinUso) = TranslationMerge.Merge(
+                new[] { Entrada("Cosa.label", "Storage unit") },
+                new[] { Entrada("Cosa.label", "Storage", "Almacenamiento") });
+
+            Assert.AreEqual(1, resultado.Count);
+            Assert.AreEqual("Almacenamiento", resultado[0].Translated);
+            Assert.AreEqual("Storage unit", resultado[0].Original);
+            Assert.AreEqual(0, sinUso.Count);
+        }
+
+        /// <summary>Un nodo que no estaba antes queda sin traducir, o sea en TODO.</summary>
+        [TestMethod]
+        public void DejaSinTraducirLoQueEsNuevo()
+        {
+            var (resultado, _) = TranslationMerge.Merge(
+                new[] { Entrada("Nueva.label", "Brand new") },
+                new[] { Entrada("Vieja.label", "Old", "Vieja") });
+
+            Assert.AreEqual(1, resultado.Count);
+            Assert.IsTrue(string.IsNullOrEmpty(resultado[0].Translated));
+        }
+
+        /// <summary>Lo que ya no existe en el mod se aparta para no perderlo.</summary>
+        [TestMethod]
+        public void ApartaLoQueYaNoExisteEnElMod()
+        {
+            var (resultado, sinUso) = TranslationMerge.Merge(
+                new[] { Entrada("Sigue.label", "Still here") },
+                new[]
+                {
+                    Entrada("Sigue.label", "Still here", "Sigue"),
+                    Entrada("Ya no.label", "Gone", "Se fue")
+                });
+
+            Assert.AreEqual(1, resultado.Count);
+            Assert.AreEqual(1, sinUso.Count);
+            Assert.AreEqual("Ya no.label", sinUso[0].Node);
+            Assert.AreEqual("Se fue", sinUso[0].Translated);
+        }
+
+        /// <summary>
+        /// Un nodo que desaparecio pero que nunca se habia traducido no va al informe: no
+        /// hay nada que rescatar y solo seria ruido.
+        /// </summary>
+        [TestMethod]
+        public void NoInformaLoQueDesaparecioSinTraducir()
+        {
+            var (_, sinUso) = TranslationMerge.Merge(
+                Array.Empty<TranslationEntry>(),
+                new[] { Entrada("Ya no.label", "Gone") });
+
+            Assert.AreEqual(0, sinUso.Count);
+        }
+
+        /// <summary>
+        /// Una entrada vieja sin traducir no puede "pisar" a la nueva dejandola por
+        /// traducida: tiene que seguir apareciendo como pendiente.
+        /// </summary>
+        [TestMethod]
+        public void NoTomaComoTraduccionUnaEntradaVacia()
+        {
+            var (resultado, _) = TranslationMerge.Merge(
+                new[] { Entrada("Cosa.label", "Storage") },
+                new[] { Entrada("Cosa.label", "Storage") });
+
+            Assert.IsTrue(string.IsNullOrEmpty(resultado[0].Translated));
+        }
+    }
+
+    /// <summary>
     /// Cubre el archivo que RML usa para enganchar cada traduccion a su mod.
     ///
     /// Importa porque un valor mal puesto ahi no rompe nada visible: el mod se instala,

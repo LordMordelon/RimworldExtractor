@@ -17,7 +17,10 @@ namespace RimworldExtractorGUI
         /// Boton para elegir el tema. Se crea en codigo y no en el Designer, como todo lo
         /// que agrega el fork, para no tocar los archivos generados.
         /// </summary>
-        private readonly Button _buttonTema = new();
+        private readonly Button _buttonTema = new() { Name = "buttonTema" };
+
+        /// <summary>Si la ultima seleccion pidio actualizar sobre RML.</summary>
+        private bool _quickUpdate;
 
         public FormMain()
         {
@@ -82,6 +85,7 @@ namespace RimworldExtractorGUI
                 SelectedMod = formSelectMod.SelectedMod!;
                 ReferenceMods = formSelectMod.ReferenceMods.Except(Enumerable.Repeat(SelectedMod, 1)).ToList();
                 SelectedFolders = formSelectMod.SelectedFolders;
+                _quickUpdate = formSelectMod.QuickUpdate;
                 buttonExtract.Enabled = true;
 
                 labelSelectedMods.Text = Strings.SelectedMod(SelectedMod.ModName);
@@ -103,11 +107,27 @@ namespace RimworldExtractorGUI
                 return;
             }
 
+            // La ruta se comprueba antes de extraer: si falta, no tiene sentido hacer el
+            // trabajo para despues no poder guardarlo donde se pidio.
+            if (_quickUpdate && string.IsNullOrWhiteSpace(Prefabs.PathRml))
+            {
+                Aviso.Mostrar(Strings.QuickUpdateNoRmlPath, Strings.DialogTitleNotice);
+                return;
+            }
+
             Log.Msg(Strings.ExtractionStarted);
 
             var extraction = Extractor.ExtractTranslationData(SelectedMod, SelectedFolders, ReferenceMods);
 
             var outPath = SelectedMod.Identifier.StripInvaildChars();
+
+            if (_quickUpdate)
+            {
+                outPath = ActualizarSobreRml(extraction, outPath);
+                TerminarExtraccion(extraction, outPath);
+                return;
+            }
+
             switch (Prefabs.Method)
             {
                 case Prefabs.ExtractionMethod.Excel:
@@ -129,26 +149,87 @@ namespace RimworldExtractorGUI
                     throw new ArgumentOutOfRangeException();
             }
 
+            TerminarExtraccion(extraction, outPath);
+        }
 
+        /// <summary>
+        /// El cierre comun de las dos formas de extraer: el resumen en el log y la
+        /// pregunta de si abrir la carpeta.
+        /// </summary>
+        private void TerminarExtraccion(List<TranslationEntry> extraction, string outPath)
+        {
             var (cntDefs, cntKeyed, cntStrings, cntPatches) = extraction.Count();
             Log.Msg(Strings.ExtractionSummary(extraction.Count, cntDefs, cntKeyed, cntStrings, cntPatches));
 
             var hasError = Log.HasErrorSince(Strings.ExtractionStarted);
+            var pregunta = hasError ? Strings.DoneWithErrorsOpenFolder : Strings.DoneOpenFolder;
+            var titulo = hasError ? Strings.DialogTitleDoneQuestion : Strings.DialogTitleDone;
 
-            if (hasError)
+            if (Aviso.Preguntar(pregunta, titulo) == DialogResult.Yes)
             {
-                if (Aviso.Preguntar(Strings.DoneWithErrorsOpenFolder, Strings.DialogTitleDoneQuestion) == DialogResult.Yes)
-                {
-                    Process.Start("explorer.exe", outPath);
-                }
+                Process.Start("explorer.exe", outPath);
             }
-            else
+        }
+
+        /// <summary>
+        /// Cruza la extraccion con lo que ya esta traducido en RML y escribe el resultado
+        /// ahi mismo. Devuelve la carpeta donde quedo.
+        ///
+        /// El arbol de destino se borra antes de escribir: la mezcla ya es el contenido
+        /// completo, y si no, los archivos de una version anterior del mod quedarian ahi
+        /// con claves que el juego intentaria cargar.
+        /// </summary>
+        private string ActualizarSobreRml(List<TranslationEntry> extraction, string nombreDeArchivos)
+        {
+            var destino = Path.Combine(Prefabs.PathRml, "Data", LoadFoldersBuild.FolderNameFor(SelectedMod!));
+
+            var existentes = Directory.Exists(destino)
+                ? IO.FromLanguageXml(destino)
+                : new List<TranslationEntry>();
+
+            var (resultado, sinUso) = TranslationMerge.Merge(extraction, existentes);
+
+            BorrarArbolAnterior(destino);
+            Directory.CreateDirectory(destino);
+
+            // Se fuerza la sobrescritura mientras dura el guardado: con la politica en
+            // "conservar el original" no se escribiria nada y la actualizacion no haria
+            // absolutamente nada, sin que se note.
+            var politica = Prefabs.Policy;
+            Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
+            try
             {
-                if (Aviso.Preguntar(Strings.DoneOpenFolder, Strings.DialogTitleDone) == DialogResult.Yes)
-                {
-                    Process.Start("explorer.exe", outPath);
-                }
+                IO.ToLanguageXml(resultado, false, XmlCommentStyle.TranslationTemplate, nombreDeArchivos, destino);
             }
+            finally
+            {
+                Prefabs.Policy = politica;
+            }
+
+            IO.WriteUnused(sinUso, destino);
+            LoadFoldersBuild.Write(SelectedMod, destino);
+
+            var conservadas = resultado.Count(x => !string.IsNullOrEmpty(x.Translated));
+            Log.Msg(Strings.QuickUpdateSummary(conservadas, resultado.Count - conservadas, sinUso.Count));
+            Log.Msg(Strings.QuickUpdateWrittenTo(destino));
+
+            return destino;
+        }
+
+        /// <summary>
+        /// Borra lo que la herramienta genera, y solo eso: el idioma de destino dentro de
+        /// Languages —los demas idiomas, si los hubiera, no son asunto nuestro— y los
+        /// Patches de traduccion.
+        /// </summary>
+        private static void BorrarArbolAnterior(string destino)
+        {
+            var idioma = Path.Combine(destino, "Languages", Prefabs.TranslationLanguage);
+            if (Directory.Exists(idioma))
+                Directory.Delete(idioma, true);
+
+            var patches = Path.Combine(destino, "Patches");
+            if (Directory.Exists(patches))
+                Directory.Delete(patches, true);
         }
 
 

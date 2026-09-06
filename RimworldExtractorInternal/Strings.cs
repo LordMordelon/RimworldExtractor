@@ -112,6 +112,18 @@
         public const string OfficialContentKeepsFileNames =
             "A diferencia de los mods, el contenido oficial se extrae conservando los nombres de archivo.";
 
+        public static string UnusedTranslationsSaved(int count, string path)
+            => $"{count} traducciones quedaron sin uso porque su nodo ya no existe en el mod. Se guardaron en {path}";
+
+        public static string QuickUpdateSummary(int kept, int pending, int unused)
+            => $"Traducción rápida: {kept} traducciones conservadas, {pending} sin traducir, {unused} sin uso.";
+
+        public static string QuickUpdateWrittenTo(string path)
+            => $"La traducción actualizada quedó en {path}";
+
+        public const string QuickUpdateNoRmlPath =
+            "La traducción rápida necesita saber dónde está el mod RML. Configuralo en Opciones, en «Carpeta del mod RML».";
+
         public static string LoadFoldersYamlWritten(string folderName)
             => $"Se generó el {LoadFoldersBuild.FileName} del mod. Para sumarlo a RML, copiá esta carpeta a Data/{folderName}";
 
@@ -399,6 +411,9 @@
         public const string LabelDuplicatePolicy = "Si al guardar hay archivos duplicados:";
         public const string GroupRimworldSettings = "Ajustes de RimWorld";
         public const string GroupBasicSettings = "Ajustes básicos de extracción y guardado";
+        public const string LabelPathRml = "Carpeta del mod RML (para la traducción rápida):";
+        public const string SelectRmlPath = "Elegí la carpeta del mod RML, la que contiene Data";
+
         public const string LabelBaseRefListPath = "Ruta de la lista de mods de referencia por defecto:";
         public const string GroupAdvancedSettings = "Ajustes avanzados de extracción y guardado";
         public const string LabelFullListTags = "Etiquetas de Full-list Translation:";
@@ -412,6 +427,26 @@
             "Controles: 'clic izquierdo' = elegir como mod a extraer, 'clic derecho' = abrir el menú, 'A' = abrir en el explorador, 'S' = elegir como mod de referencia, 'D' = ver solo los elegidos\r\n";
         public const string LabelSelectExtractionMode = "Elegí el mod que querés extraer";
         public const string LabelSelectFolder = "Elegí la carpeta que querés extraer";
+        public const string CheckBoxQuickUpdate = "Traducción rápida";
+
+        /// <summary>
+        /// La ayuda emergente de la casilla. Es larga a proposito: describe todo lo que
+        /// hace el modo, que es donde el usuario va a buscar antes de marcarlo.
+        /// </summary>
+        public const string TooltipQuickUpdate =
+            """
+            Actualiza la traducción que ya está en RML, en vez de dejar una carpeta suelta.
+
+            • Lo que ya estaba traducido se conserva, aunque el texto original en inglés
+              haya cambiado; el comentario EN se actualiza, así que el cambio se ve en el diff.
+            • Queda TODO solamente en lo que es nuevo.
+            • Lo que ya no existe en el mod sale del árbol y se guarda en UNUSED.xml, en la
+              raíz de la carpeta del mod.
+            • El resultado se escribe directamente en RML, en Data/<Mod> - <ID>.
+
+            Necesita que la carpeta del mod RML esté configurada en Opciones.
+            """;
+
         public const string CheckBoxFilterSelected = "Ver solo los mods elegidos";
 
         // --- FormImageFileCombiner ---

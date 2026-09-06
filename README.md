@@ -62,6 +62,13 @@ Si vas a traducir y no a programar, empezá por la
   <BuildingsNeatStorage.label>TODO</BuildingsNeatStorage.label>
   ```
 
+- **Traducción rápida**, una casilla al elegir el mod. Cruza la extracción con lo que ya
+  está traducido en [RML](https://github.com/LordMordelon/RML) y escribe el resultado ahí:
+  conserva lo traducido aunque cambie el texto original —el comentario `EN` se actualiza y
+  el cambio se ve en el diff—, deja `TODO` solo en lo nuevo, y lo que el mod ya no tiene
+  sale del árbol a un `UNUSED.xml`. Requiere indicar la carpeta de RML en Opciones.
+- **`LoadFolders.Build.yaml` generado solo**, con el `packageId`, el ID del workshop y el
+  nombre del mod, que el extractor ya conoce.
 - **Maquetación reacomodada.** Los formularios vienen con medidas fijas pensadas para
   el coreano y el español ocupa bastante más, así que los controles se miden y se
   acomodan al arrancar. Ver [AGENTS.md](AGENTS.md).

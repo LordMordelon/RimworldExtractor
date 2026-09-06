@@ -738,7 +738,7 @@ namespace RimworldExtractorInternal
             var defInjectedDir = Path.Combine(translationsDir, "DefInjected");
             var keyedDir = Path.Combine(translationsDir, "Keyed");
             var stringsDir = Path.Combine(translationsDir, "Strings");
-            // var patchesDir = Path.Combine(rootPath, "Patches");
+            var patchesDir = Path.Combine(rootPath, "Patches");
 
             var translations = new List<TranslationEntry>();
 
@@ -775,15 +775,68 @@ namespace RimworldExtractorInternal
                 }
             }
 
+            // En estas tres el texto del nodo es la traduccion, no el original: se leen con
+            // el extractor y se da vuelta el par. TranslatedFromXml es lo que evita que el
+            // marcador TODO entre como si fuera una traduccion de verdad, que lo dejaria
+            // "traducido" para siempre y nunca volveria a aparecer como pendiente.
             var keyed = new ExtractableFolder(ModMetadata.Emptry, keyedDir, null);
-            translations.AddRange(Extractor.ExtractKeyed(keyed).Select(x => x with{Translated = x.Original, Original = ""}));
+            translations.AddRange(Extractor.ExtractKeyed(keyed)
+                .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" }));
 
             var strings = new ExtractableFolder(ModMetadata.Emptry, stringsDir, null);
-            translations.AddRange(Extractor.ExtractStrings(strings).Select(x => x with{Translated = x.Original, Original = ""}));
+            translations.AddRange(Extractor.ExtractStrings(strings)
+                .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" }));
+
+            // Los Patches viven fuera de Languages, en la raiz del mod.
+            if (Directory.Exists(patchesDir))
+            {
+                var patches = new ExtractableFolder(ModMetadata.Emptry, patchesDir, null);
+                translations.AddRange(Extractor.ExtractPatches(patches)
+                    .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" }));
+            }
 
             return translations;
         }
 
+
+        /// <summary>
+        /// Guarda las traducciones que quedaron sin lugar porque su nodo ya no existe en
+        /// el mod, para poder recuperarlas a mano si el mod las vuelve a traer.
+        ///
+        /// Va fuera de Languages/ a proposito: ahi adentro RimWorld lo cargaria como una
+        /// traduccion mas, y las claves muertas de DefInjected le llenan el log de errores
+        /// al jugador.
+        /// </summary>
+        public static void WriteUnused(List<TranslationEntry> sinUso, string rootDirPath)
+        {
+            var destino = Path.Combine(rootDirPath, "UNUSED.xml");
+            if (sinUso.Count == 0)
+            {
+                // Si esta vez no sobro nada, no se deja el archivo de una corrida anterior.
+                if (File.Exists(destino))
+                    File.Delete(destino);
+                return;
+            }
+
+            var doc = new XmlDocument();
+            var root = doc.AppendElement("UnusedTranslations");
+
+            // Ordenado para que el diff de una actualizacion a la siguiente sea legible.
+            foreach (var entry in sinUso.OrderBy(x => x.ClassName).ThenBy(x => x.Node))
+            {
+                var elemento = root.AppendElement("entry", entry.Translated);
+                elemento.AppendAttribute("class", entry.ClassName);
+                elemento.AppendAttribute("node", entry.Node);
+                if (!string.IsNullOrEmpty(entry.Original))
+                    elemento.AppendAttribute("original", entry.Original);
+            }
+
+            doc.InsertBefore(doc.CreateXmlDeclaration("1.0", "utf-8", null), doc.DocumentElement);
+            // Se guarda sin pasar por la politica de duplicados: es un informe que se
+            // rehace en cada corrida, y conservar el viejo lo dejaria mintiendo.
+            doc.Save(destino);
+            Log.Msg(Strings.UnusedTranslationsSaved(sinUso.Count, destino));
+        }
 
         private static void SaveSafely(this XLWorkbook xlsx, string path)
         {

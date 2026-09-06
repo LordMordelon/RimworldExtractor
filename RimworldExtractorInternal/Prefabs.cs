@@ -35,6 +35,12 @@ namespace RimworldExtractorInternal
         /// <summary>Tema de la interfaz. No afecta a la extraccion, solo a como se ve.</summary>
         public static ColorTheme Theme = ColorTheme.System;
 
+        /// <summary>
+        /// Carpeta del mod RML, la que contiene Data/. Solo la usa la traduccion rapida,
+        /// para encontrar lo que ya esta traducido y escribir el resultado ahi.
+        /// </summary>
+        public static string PathRml = string.Empty;
+
         private static Dictionary<string, ExtractionRule> _extractionRules = new();
 
         public static HashSet<string> ExtractableTags
@@ -193,8 +199,11 @@ namespace RimworldExtractorInternal
                 // "hediff"
             };
             Policy = DuplicatesPolicy.Overwrite;
-            Method = ExtractionMethod.Languages;
+            // El XML con TODO es el que alimenta la traduccion rapida, que es el flujo
+            // normal de este fork.
+            Method = ExtractionMethod.LanguagesToTranslate;
             Theme = ColorTheme.System;
+            PathRml = string.Empty;
         }
 
         public static void Save(string fileName = "Prefabs.dat")
@@ -224,7 +233,8 @@ namespace RimworldExtractorInternal
                 // Prefabs.dat viejo sigue sirviendo: si se agregaran en el medio habria
                 // que subir Version, y eso descarta el archivo entero y le borra la
                 // configuracion a todo el mundo.
-                Theme.ToString()
+                Theme.ToString(),
+                PathRml
             };
             File.WriteAllLines(fileName, lines);
         }
@@ -266,6 +276,7 @@ namespace RimworldExtractorInternal
             Theme = idx < lines.Length && Enum.TryParse<ColorTheme>(lines[idx++], out var tema)
                 ? tema
                 : ColorTheme.System;
+            PathRml = idx < lines.Length ? lines[idx++] : string.Empty;
         }
 
         public static string AutoDetectRimworldVersion()
