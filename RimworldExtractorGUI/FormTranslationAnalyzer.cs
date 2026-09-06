@@ -249,8 +249,11 @@ namespace RimworldExtractorGUI
             listViewResults.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panel1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             buttonOpenSelectMod.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            label1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            comboBox1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            // La fila del metodo de guardado la ubica AcomodarFilaDeGuardado, asi que no
+            // lleva anclaje a la derecha: con el, WinForms volvia a colocar el desplegable
+            // en una pasada de layout posterior y deshacia lo calculado.
+            label1.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            comboBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             button2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             button3.Anchor = AnchorStyles.Top | AnchorStyles.Right;
@@ -289,7 +292,22 @@ namespace RimworldExtractorGUI
             _anchosDeColumna = listViewResults.Columns.Cast<ColumnHeader>().Select(c => c.Width).ToArray();
 
             Acomodar();
-            listViewResults.SizeChanged += (_, _) => Acomodar();
+
+            // Cada parte se recalcula cuando cambia aquello de lo que depende, y no en un
+            // momento fijo del arranque: los anclajes acomodan los controles en un orden
+            // que no se puede dar por sabido, y ademas la escala por DPI se aplica despues
+            // de construir la ventana.
+            Shown += (_, _) => Acomodar();
+
+            listViewResults.SizeChanged += (_, _) =>
+            {
+                AcomodarColumnas();
+                AcomodarBotonesDeSeleccion();
+            };
+
+            panel1.LocationChanged += (_, _) => AcomodarColumnaDerecha();
+            panel1.SizeChanged += (_, _) => AcomodarColumnaDerecha();
+            label1.SizeChanged += (_, _) => AcomodarFilaDeGuardado();
         }
 
         /// <summary>Anchos de columna del diseño original, la base del reparto.</summary>
@@ -305,6 +323,47 @@ namespace RimworldExtractorGUI
         {
             AcomodarBotonesDeSeleccion();
             AcomodarColumnas();
+            AcomodarColumnaDerecha();
+        }
+
+        /// <summary>Lo que cuelga del panel del mod elegido, que es la referencia de esa columna.</summary>
+        private void AcomodarColumnaDerecha()
+        {
+            AcomodarFilaDeGuardado();
+            AcomodarTituloDelMod();
+        }
+
+        /// <summary>
+        /// Reparte la fila del metodo de guardado entre la etiqueta y el desplegable.
+        ///
+        /// Los dos venian con posicion fija y en español se pisaban: el desplegable va por
+        /// delante en el orden Z y tapaba el final de la etiqueta ("Método de guar").
+        /// </summary>
+        private void AcomodarFilaDeGuardado()
+        {
+            const int separacion = 6;
+            label1.Left = panel1.Left;
+
+            var izquierda = label1.Right + separacion;
+            comboBox1.SetBounds(izquierda, comboBox1.Top,
+                Math.Max(60, panel1.Right - izquierda), comboBox1.Height);
+        }
+
+        /// <summary>
+        /// Deja que el nombre del mod ocupe el panel entero y se parta en varias lineas.
+        ///
+        /// Venia con AutoSize, o sea creciendo en una sola linea: los textos en español se
+        /// pasaban del panel, y como el panel tiene AutoScroll respondia con una barra de
+        /// desplazamiento horizontal en vez de mostrar el texto.
+        /// </summary>
+        private void AcomodarTituloDelMod()
+        {
+            // Con un ancho maximo el rotulo parte el texto en varias lineas y crece hacia
+            // abajo; si no entra, el panel tiene AutoScroll y se desplaza. Fijarle la
+            // altura al panel seria peor: cortaria el final del texto sin avisar.
+            labelModTitle.TextAlign = ContentAlignment.TopLeft;
+            labelModTitle.MaximumSize = new Size(
+                Math.Max(0, panel1.ClientSize.Width - labelModTitle.Left * 2), 0);
         }
 
         /// <summary>

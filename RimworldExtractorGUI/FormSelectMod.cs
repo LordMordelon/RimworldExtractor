@@ -496,6 +496,28 @@ namespace RimworldExtractorGUI
             // buscador y con la lista que tiene debajo. En el diseño original quedaba
             // suelta contra el borde derecho de esa columna.
             checkBoxFilterSelected.Left = textBoxSearch.Left;
+
+            AcomodarModElegido();
+            Shown += (_, _) => AcomodarModElegido();
+            panel1.SizeChanged += (_, _) => AcomodarModElegido();
+        }
+
+        /// <summary>
+        /// Deja que el nombre del mod elegido ocupe el panel entero y se parta en varias
+        /// lineas, alineado a la izquierda.
+        ///
+        /// Venia con AutoSize, o sea creciendo en una sola linea: un nombre largo —y mas
+        /// con la lista de mods previos— se pasaba del panel, y como el panel tiene
+        /// AutoScroll respondia con una barra horizontal y el texto quedaba corrido.
+        /// </summary>
+        private void AcomodarModElegido()
+        {
+            // Con un ancho maximo el rotulo parte el texto en varias lineas y crece hacia
+            // abajo; si no entra, el panel tiene AutoScroll y se desplaza. Fijarle la
+            // altura al panel seria peor: cortaria el final del texto sin avisar.
+            labelSelectedMod.TextAlign = ContentAlignment.TopLeft;
+            labelSelectedMod.MaximumSize = new Size(
+                Math.Max(0, panel1.ClientSize.Width - labelSelectedMod.Left * 2), 0);
         }
     }
 }
