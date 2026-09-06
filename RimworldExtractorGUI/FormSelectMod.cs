@@ -497,6 +497,12 @@ namespace RimworldExtractorGUI
             // suelta contra el borde derecho de esa columna.
             checkBoxFilterSelected.Left = textBoxSearch.Left;
 
+            // Lo mismo del otro lado: el rotulo de la carpeta venia indentado dentro de su
+            // columna, con lo cual se leia como si estuviera centrado. Se alinea con la
+            // lista que tiene debajo.
+            label3.TextAlign = ContentAlignment.MiddleLeft;
+            label3.Left = listBoxExtractableFolders.Left;
+
             AcomodarModElegido();
             Shown += (_, _) => AcomodarModElegido();
             panel1.SizeChanged += (_, _) => AcomodarModElegido();
