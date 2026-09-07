@@ -209,6 +209,11 @@ namespace RimworldExtractorGUI
             IO.WriteUnused(sinUso, destino);
             LoadFoldersBuild.Write(SelectedMod, destino);
 
+            // El yaml de la carpeta no alcanza: RimWorld lee el LoadFolders.xml, que lo arma
+            // el builder de RML a partir de todos los yaml. Sin esto un mod recien agregado
+            // no carga, y no hay ningun sintoma que lo explique.
+            LoadFoldersBuild.Regenerar(Prefabs.PathRml);
+
             var conservadas = resultado.Count(x => !string.IsNullOrEmpty(x.Translated));
             Log.Msg(Strings.QuickUpdateSummary(conservadas, resultado.Count - conservadas, sinUso.Count));
             Log.Msg(Strings.QuickUpdateWrittenTo(destino));

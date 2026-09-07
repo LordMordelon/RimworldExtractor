@@ -148,6 +148,18 @@
         public static string LoadFoldersYamlWritten(string folderName)
             => $"Se generó el {LoadFoldersBuild.FileName} del mod. Para sumarlo a RML, copiá esta carpeta a Data/{folderName}";
 
+        public const string LoadFoldersRebuilt =
+            "Se rehicieron el LoadFolders.xml y el ModList.tsv de RML: el mod ya se puede probar en el juego.";
+
+        public const string LoadFoldersBuilderNotFound =
+            "La carpeta de RML no tiene el código de LoadFoldersBuilder, así que el índice quedó viejo. Corré actualizar.cmd en tu clon de RML antes de probar en el juego.";
+
+        public static string LoadFoldersBuilderFailed(int exitCode)
+            => $"LoadFoldersBuilder terminó con el código {exitCode}, así que el LoadFolders.xml quedó viejo. La traducción se guardó igual.";
+
+        public static string LoadFoldersBuilderError(string message)
+            => $"No se pudo lanzar LoadFoldersBuilder, así que el LoadFolders.xml quedó viejo: {message}";
+
         public const string NothingToExtract =
             "No hay datos de traducción, así que no se extrae nada. Tip: en XLSX -> XML no se guarda nada si no hay contenido traducido.";
 
