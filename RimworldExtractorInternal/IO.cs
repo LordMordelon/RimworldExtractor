@@ -756,6 +756,38 @@ namespace RimworldExtractorInternal
 
             var translations = new List<TranslationEntry>();
 
+            // Los Patches se leen primero a proposito, aunque vivan fuera de Languages.
+            //
+            // Un mismo nodo puede estar traducido de las dos formas a la vez, y TranslationMerge
+            // las unifica —le saca el prefijo "Patches."— asi que una tiene que ganar. Gana la
+            // que se lee despues, y tiene que ser la de DefInjected: es la que el juego aplica
+            // ultima, y en la practica es la que esta al dia. En tres mods de AobaKuma la de
+            // Patches habia quedado de una version anterior del mod, con la lista de tools en
+            // otro orden, y al releer daba vuelta veinte traducciones correctas.
+            if (Directory.Exists(patchesDir))
+            {
+                // Con la base de defs completa: estos xpath apuntan a defs del juego o de otros
+                // mods, y para cuando se llega aca la extraccion ya reemplazo CombinedDefs por
+                // el documento reducido de sus propios patches. Contra ese, no encuentran nada
+                // y la traduccion que ya estaba hecha se pierde sin avisar.
+                var patches = new ExtractableFolder(ModMetadata.Emptry, patchesDir, null);
+                translations.AddRange(Extractor.ConLaBaseCompleta(
+                    () => Extractor.ExtractPatches(patches)
+                        .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" })
+                        .ToList()));
+
+                // Y las que ni asi aparecieron, parseando el archivo. Ver LeerPatchesLiteral.
+                var vistas = new HashSet<(string, string)>(
+                    translations.Select(x => (SinPrefijoDePatches(x.ClassName), x.Node)));
+                foreach (var suelta in LeerPatchesLiteral(patchesDir))
+                {
+                    if (vistas.Add((SinPrefijoDePatches(suelta.ClassName), suelta.Node)))
+                        translations.Add(suelta);
+                }
+            }
+
+
+
             foreach (var filePath in DescendantFiles(defInjectedDir).Where(x => x.ToLower().EndsWith(".xml")))
             {
                 var className = Path.GetRelativePath(defInjectedDir, filePath).Split(Path.DirectorySeparatorChar).First();
@@ -801,23 +833,103 @@ namespace RimworldExtractorInternal
             translations.AddRange(Extractor.ExtractStrings(strings)
                 .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" }));
 
-            // Los Patches viven fuera de Languages, en la raiz del mod.
-            if (Directory.Exists(patchesDir))
-            {
-                // Con la base de defs completa: estos xpath apuntan a defs del juego o de otros
-                // mods, y para cuando se llega aca la extraccion ya reemplazo CombinedDefs por
-                // el documento reducido de sus propios patches. Contra ese, no encuentran nada
-                // y la traduccion que ya estaba hecha se pierde sin avisar.
-                var patches = new ExtractableFolder(ModMetadata.Emptry, patchesDir, null);
-                translations.AddRange(Extractor.ConLaBaseCompleta(
-                    () => Extractor.ExtractPatches(patches)
-                        .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" })
-                        .ToList()));
-            }
-
             return translations;
         }
 
+
+        /// <summary>El prefijo con el que el extractor marca lo que sale por un patch.</summary>
+        private static string SinPrefijoDePatches(string className) =>
+            className.StartsWith("Patches.", StringComparison.Ordinal) ? className["Patches.".Length..] : className;
+
+        /// <summary>
+        /// Lee los Patches de RML parseando el archivo, sin evaluar los xpath.
+        ///
+        /// Es la red de seguridad de la lectura normal, que corre ExtractPatches y por lo tanto
+        /// solo ve las traducciones cuyo xpath encuentra su objetivo. Cuando no lo encuentra, la
+        /// traduccion hecha se vuelve invisible: no entra al cruce, no queda apartada en UNUSED y
+        /// se pierde sin que nada avise. Pasa cuando el def lo agrega otro mod, o cuando vive en
+        /// una carpeta condicional que esta corrida no cargo. Con Alpha Mechs fueron 39
+        /// traducciones que volvieron a TODO de una corrida a la otra.
+        ///
+        /// Parsear no reemplaza a evaluar, porque el xpath es el que resuelve de verdad a que
+        /// nodo apunta cada operacion. Por eso lo de aca se agrega despues y solo para las claves
+        /// que no vinieron por el camino normal.
+        /// </summary>
+        private static List<TranslationEntry> LeerPatchesLiteral(string patchesDir)
+        {
+            var sueltas = new List<TranslationEntry>();
+
+            foreach (var filePath in DescendantFiles(patchesDir).Where(x => x.ToLower().EndsWith(".xml")))
+            {
+                XmlDocument doc;
+                try
+                {
+                    doc = ReadXmlKeepingComments(filePath);
+                }
+                catch (Exception e)
+                {
+                    // Un Patches roto ya lo reporta la lectura normal; aca solo se saltea.
+                    Log.Wrn(Strings.ErrorReadingFile(filePath, e.Message));
+                    continue;
+                }
+
+                foreach (var operacion in doc.SelectNodes("//*[xpath][value]")!.OfType<XmlElement>())
+                {
+                    var xpath = operacion["xpath"]?.InnerText.Trim();
+                    var valor = operacion["value"];
+                    if (string.IsNullOrEmpty(xpath) || valor == null)
+                        continue;
+
+                    // Solo el caso simple, que es el que se puede perder: una operacion que
+                    // reemplaza un campo. Las que traen varios hijos son de otra forma y no se
+                    // reconstruyen asi.
+                    var hijos = valor.ChildNodes.OfType<XmlElement>().ToList();
+                    if (hijos.Count != 1)
+                        continue;
+
+                    var clave = DesarmarXpath(xpath);
+                    if (clave == null)
+                        continue;
+
+                    sueltas.Add(new TranslationEntry($"Patches.{clave.Value.Clase}", clave.Value.Nodo,
+                        "", TranslatedFromXml(hijos[0].InnerText), null, null));
+                }
+            }
+
+            return sueltas;
+        }
+
+        /// <summary>
+        /// La vuelta de <see cref="Utils.GetXpath"/>: del xpath saca la clase y el nodo.
+        ///
+        /// Devuelve null para lo que no se puede desarmar sin ambiguedad, que son los xpath con
+        /// predicados de texto —los que GetXpath genera para un TranslationHandle— y cualquier
+        /// forma que no haya salido de ahi. Es a proposito: reconstruir mal una clave es peor que
+        /// no reconstruirla, porque pondria una traduccion en un nodo que no le corresponde.
+        /// </summary>
+        private static (string Clase, string Nodo)? DesarmarXpath(string xpath)
+        {
+            var m = Regex.Match(xpath, @"^/Defs/([A-Za-z0-9_.]+)\[defName=""([^""]+)""\]/(.+)$");
+            if (!m.Success)
+                return null;
+
+            var tokens = m.Groups[3].Value.Split('/');
+            for (var i = 0; i < tokens.Length; i++)
+            {
+                // li[N] es 1-based en el xpath y 0-based en el nodo.
+                var li = Regex.Match(tokens[i], @"^li\[(\d+)\]$");
+                if (li.Success)
+                {
+                    tokens[i] = (int.Parse(li.Groups[1].Value) - 1).ToString();
+                    continue;
+                }
+
+                if (!Regex.IsMatch(tokens[i], "^[A-Za-z0-9_]+$"))
+                    return null;
+            }
+
+            return (m.Groups[1].Value, $"{m.Groups[2].Value}.{string.Join('.', tokens)}");
+        }
 
         /// <summary>
         /// Guarda las traducciones que quedaron sin lugar porque su nodo ya no existe en

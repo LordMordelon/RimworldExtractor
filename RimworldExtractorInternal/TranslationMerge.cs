@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using RimworldExtractorInternal.DataTypes;
 
@@ -26,7 +26,24 @@ namespace RimworldExtractorInternal
             // patches normalizado (ver Clave).
             var previas = new Dictionary<(string, string), TranslationEntry>();
             foreach (var previa in existentes)
-                previas[Clave(previa)] = previa;
+            {
+                var clave = Clave(previa);
+
+                // Gana la ultima, y quien arma la lista decide el orden. Pero si las dos estan
+                // traducidas y no dicen lo mismo, sobra una: se avisa en vez de elegir callado,
+                // que es como veinte traducciones correctas se dieron vuelta sin que nada lo
+                // marcara.
+                if (previas.TryGetValue(clave, out var anterior)
+                    && !string.IsNullOrEmpty(anterior.Translated)
+                    && !string.IsNullOrEmpty(previa.Translated)
+                    && anterior.Translated != previa.Translated)
+                {
+                    Log.Wrn(Strings.TraduccionDuplicadaEnConflicto(
+                        previa.ClassName, previa.Node, anterior.Translated!, previa.Translated!));
+                }
+
+                previas[clave] = previa;
+            }
 
             var usadas = new HashSet<(string, string)>();
             var resultado = new List<TranslationEntry>();

@@ -720,4 +720,191 @@ namespace RimworldExtractorTest
             }
         }
     }
+
+    /// <summary>
+    /// Cubre las dos formas en que la relectura de los Patches de RML danaba traducciones.
+    ///
+    /// Son el mismo tipo de defecto que PatchesRoundTripTests: algo que se escribio bien, se
+    /// relee mal, y el dano no se ve en ningun lado hasta que alguien mira el diff.
+    /// </summary>
+    [TestClass]
+    public class PatchesDeRmlTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        /// <summary>
+        /// Una traduccion cuyo xpath no encuentra su objetivo no se puede perder.
+        ///
+        /// Pasa cuando el def lo agrega otro mod, o cuando vive en una carpeta condicional que
+        /// esta corrida no cargo. Antes la relectura no la veia, asi que no entraba al cruce ni
+        /// quedaba apartada en UNUSED: desaparecia. Con Alpha Mechs fueron 39.
+        /// </summary>
+        [TestMethod]
+        public void NoPierdeLaTraduccionCuandoElXpathNoEncuentraSuObjetivo()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>/Defs/ThingDef[defName="DefDeOtroMod"]/label</xpath>
+                    <value>
+                      <!-- EN: librarian -->
+                      <label>bibliotecario</label>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+            try
+            {
+                var leidas = ConBaseVacia(() => IO.FromLanguageXml(raiz));
+
+                var entrada = leidas.FirstOrDefault(x => x.Node == "DefDeOtroMod.label");
+                Assert.IsNotNull(entrada, "la traduccion se perdio: no la vio la relectura");
+                Assert.AreEqual("bibliotecario", entrada.Translated);
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// El indice de una lista es 1-based en el xpath y 0-based en el nodo. Desarmarlo mal
+        /// deja la traduccion en el campo de al lado, que es peor que perderla: un TODO se ve y
+        /// una traduccion mal puesta no.
+        /// </summary>
+        [TestMethod]
+        public void DesarmaElIndiceDeListaSinCorrerlo()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>/Defs/ThingDef[defName="Cuchillo"]/tools/li[2]/label</xpath>
+                    <value>
+                      <!-- EN: point -->
+                      <label>punta</label>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+            try
+            {
+                var leidas = ConBaseVacia(() => IO.FromLanguageXml(raiz));
+
+                Assert.IsTrue(leidas.Any(x => x.Node == "Cuchillo.tools.1.label"),
+                    "li[2] es el indice 1");
+                Assert.IsFalse(leidas.Any(x => x.Node == "Cuchillo.tools.2.label"),
+                    "el indice quedo corrido un lugar");
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Cuando el mismo nodo esta traducido en DefInjected y en Patches, gana el de
+        /// DefInjected: es el que el juego aplica ultimo y el que en la practica esta al dia.
+        /// Antes ganaba el del Patches y daba vuelta traducciones correctas.
+        /// </summary>
+        [TestMethod]
+        public void ElDefInjectedLeGanaAlPatchesCuandoSeContradicen()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>/Defs/ThingDef[defName="Cuchillo"]/tools/li[2]/label</xpath>
+                    <value>
+                      <!-- EN: edge -->
+                      <label>filo</label>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+
+            var defInjected = Path.Combine(raiz, "Languages", Idioma, "DefInjected", "ThingDef");
+            Directory.CreateDirectory(defInjected);
+            File.WriteAllText(Path.Combine(defInjected, "cosas.xml"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <LanguageData>
+                  <!-- EN: point -->
+                  <Cuchillo.tools.1.label>punta</Cuchillo.tools.1.label>
+                </LanguageData>
+                """);
+            try
+            {
+                // Con el def cargado, para que el xpath del Patches encuentre su objetivo: es el
+                // caso real, donde las dos traducciones llegan al cruce y una tiene que ganar.
+                var leidas = ConLaBase("""
+                    <Defs>
+                      <ThingDef>
+                        <defName>Cuchillo</defName>
+                        <tools>
+                          <li><label>handle</label></li>
+                          <li><label>point</label></li>
+                        </tools>
+                      </ThingDef>
+                    </Defs>
+                    """, () => IO.FromLanguageXml(raiz));
+
+                Assert.IsTrue(leidas.Any(x => x.Node == "Cuchillo.tools.1.label"
+                                              && x.ClassName.StartsWith("Patches.")),
+                    "el montaje no sirve: el xpath del Patches no encontro su objetivo");
+
+                var extraccion = new List<TranslationEntry>
+                {
+                    new("ThingDef", "Cuchillo.tools.1.label", "point", null, null, null)
+                };
+                var (resultado, _, _) = TranslationMerge.Merge(extraccion, leidas);
+
+                Assert.AreEqual("punta", resultado.Single().Translated,
+                    "gano la traduccion del Patches, que es la que habia quedado vieja");
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Corre algo con una base de defs vacia, que es el estado en el que los xpath de RML no
+        /// encuentran nada. Es justo el caso que se perdia.
+        /// </summary>
+        private static T ConBaseVacia<T>(Func<T> hacer) => ConLaBase("<Defs />", hacer);
+
+        /// <summary>Corre algo con la base de defs que se le pase.</summary>
+        private static T ConLaBase<T>(string defs, Func<T> hacer)
+        {
+            var previo = Extractor.CombinedDefs;
+            var doc = new XmlDocument();
+            doc.LoadXml(defs);
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                return hacer();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+        }
+
+        /// <summary>Un mod de mentira con solo la carpeta Patches escrita.</summary>
+        private static string Montar(string patch)
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var raiz = Path.Combine(Path.GetTempPath(), "rml-patches-" + Guid.NewGuid().ToString("N"));
+            var patches = Path.Combine(raiz, "Patches");
+            Directory.CreateDirectory(patches);
+            File.WriteAllText(Path.Combine(patches, "OtroMod.xml"), patch);
+            return raiz;
+        }
+    }
 }

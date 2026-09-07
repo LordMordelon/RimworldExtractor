@@ -65,6 +65,9 @@
         public static string DuplicateNodeWithDifferentOriginal(string className, string node, string other, string original)
             => $"Hay un nodo duplicado con distinto texto original. Nodo: {className}+{node}| {other} | {original} ";
 
+        public static string TraduccionDuplicadaEnConflicto(string clase, string nodo, string descartada, string usada)
+            => $"El mismo nodo esta traducido dos veces y distinto: {clase}+{nodo}. Se usa \"{usada}\" y se descarta \"{descartada}\". Sobra una de las dos, casi siempre la del Patches, que quedo de una version anterior del mod.";
+
         public static string ErrorReadingFile(string filePath, string message)
             => $"Error al leer {filePath}, {message}";
 
