@@ -21,6 +21,12 @@ namespace RimworldExtractorGUI
             Prefabs.Init();
             textBoxPathRimworld.Text = Prefabs.PathRimworld;
             textBoxPathWorkshop.Text = Prefabs.PathWorkshop;
+
+            // La tabla ya sabe cuanto necesita; se fija como minimo para que la ventana no se
+            // pueda encoger hasta romper lo que acaba de acomodar. Va aca y no en el diseñador
+            // porque depende de los textos, que se asignan recien en ApplyStrings.
+            PerformLayout();
+            MinimumSize = Size;
         }
 
         private void buttonSelectPathRimworld_Click(object sender, EventArgs e)
@@ -69,10 +75,6 @@ namespace RimworldExtractorGUI
             label1.Text = Strings.LabelRimworldPathShort;
             label2.Text = Strings.LabelWorkshopPathShort;
             buttonDone.Text = Strings.BtnDone;
-
-            // Los textos en espanol son mas largos que los originales y los
-            // formularios tienen medidas fijas: se ensancha lo que no entra.
-            AutoAjuste.Ajustar(label1, label2, buttonDone);
         }
     }
 }

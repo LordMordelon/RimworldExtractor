@@ -55,12 +55,19 @@ Dos cosas que muerden:
 
 ## Reglas del fork
 
-**Nunca editar un `.Designer.cs`.** Es la regla principal. Toda la traducción y todos
-los retoques de maquetación se hacen en tiempo de ejecución, desde el método
-`ApplyStrings()` de cada formulario. Así los merges con upstream —que sigue
-desarrollándose en coreano— no dan conflictos en los archivos generados.
+**Los `.Designer.cs` se editan como cualquier otro archivo.** Hubo una regla que lo
+prohibía, para que los merges con el upstream coreano no dieran conflictos en archivos
+generados. Se sacó, y conviene que quede escrito por qué para que no se reinstaure sola:
 
-De ahí se desprende el resto:
+- Upstream no publica nada desde el 13-jul-2026: **0 commits contra 59 propios**. La
+  compatibilidad se estaba pagando y no se estaba usando.
+- **El fork es independiente.** Si los coreanos arreglan algo, ese arreglo se trae a mano
+  mirando su commit, no por merge.
+- La regla costaba **843 líneas** de maquetación en tiempo de ejecución: 428 repartidas en
+  los `ApplyStrings()` y 415 en dos ayudantes que reimplementaban a mano lo que
+  `TableLayoutPanel` ya hace. La maquetación va en el `.Designer.cs`, declarada.
+
+Lo demás sigue igual, porque nada de esto era una concesión al fork:
 
 - **Ningún texto visible va escrito en el código.** Todo pasa por `Strings.cs`, cuyos
   identificadores están en inglés y sus valores en español.
