@@ -31,7 +31,12 @@ Archivos que conviene conocer antes de tocar nada:
 
 ## Compilar y probar
 
-Requiere el **SDK de .NET 10**. Los tres proyectos apuntan a `net10.0-windows`.
+Requiere el **SDK de .NET 10**. La GUI apunta a `net10.0-windows`; `Internal` y los tests,
+a `net10.0`, porque no dependen de WinForms.
+
+En `RimworldExtractorGUI/` quedó además un `RimworldExtractorGUI - Backup.csproj` que
+apunta a `net7.0-windows`. No está en la solución y no se compila: es un resto que hay que
+ignorar, no la configuración real.
 
 ```
 dotnet build RimworldExtractor.sln -c Debug
@@ -142,6 +147,55 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
 - **El tamaño del `.zip` publicado.** Una vez pasó de 2,8 MB a 17,8 MB porque un paquete
   de test arrastró instrumentación de Linux, macOS y ARM. La CI quedó en verde igual: el
   único síntoma fue el tamaño del artefacto.
+
+## Escribir sobre RML
+
+`ActualizacionRml.Escribir` **borra y reescribe el árbol entero** del mod, así que lo ya
+traducido se conserva solo si la relectura lo encuentra. Ahí es donde se pierde trabajo, y
+ya pasó cuatro veces por motivos distintos. Todas comparten la misma forma: algo se
+escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando el diff.
+
+- **Los `Patches` no se releen parseando, se releen evaluando.** `IO.FromLanguageXml` corre
+  `ExtractPatches`, o sea que cada `xpath` se evalúa contra `CombinedDefs`. Todo lo que ese
+  camino no devuelve se comporta como si no existiera: no entra al cruce y **tampoco queda
+  apartado en `UNUSED`**. Hay dos defensas y las dos hacen falta:
+  `Extractor.ConLaBaseCompleta`, que repone la base completa —si no, los xpath se evalúan
+  contra el documento reducido que dejó el paso de patches—, y `LeerPatchesLiteral`, que
+  lee del archivo lo que el xpath no encontró. Ese segundo caso aparece cuando el def lo
+  agrega otro mod o vive en una carpeta condicional.
+
+- **`DesarmarXpath` devuelve `null` a propósito** para lo que no puede reconstruir sin
+  ambigüedad. Reconstruir mal una clave es peor que no reconstruirla: pone la traducción en
+  el campo de al lado, y un `TODO` se ve mientras que una traducción mal puesta no.
+  Cuidado con el índice de lista: es 1-based en el xpath (`li[2]`) y 0-based en el nodo.
+
+- **El orden de lectura decide quién gana.** `TranslationMerge.Clave` unifica
+  `Patches.ThingDef` con `ThingDef` a propósito, así que un mismo nodo traducido de las dos
+  formas colisiona y gana el que se lee último. Por eso los `Patches` se leen **primero** y
+  gana `DefInjected`, que es lo que el juego aplica al final. En `ActualizacionRml` el
+  `UNUSED` va antes que todo, para que nunca le gane a lo que está en uso.
+
+- **El `UNUSED.xml` se relee.** Si no se releyera duraría una sola extracción: la corrida
+  que aparta una traducción la saca de `Languages/`, así que la siguiente no la encuentra,
+  no le sobra nada y borra el archivo con todo adentro.
+
+Los tests de `PatchesRoundTripTests`, `UnusedSobreviveTests` y `PatchesDeRmlTests` cubren
+estos cuatro casos. Todos se verificaron fallando sin su arreglo: un test de regresión que
+pasa igual sin el arreglo no guarda nada, y ya escribí uno así una vez.
+
+## Qué no se extrae
+
+Además de las reglas por etiqueta de `Prefabs`, hay dos exclusiones por contenido:
+
+- **`InteractionDef.symbol`**, en `Prefabs.NoTraducibles`, porque sus valores son rutas de
+  textura. Va por `(clase, etiqueta)` y no por etiqueta suelta: los `symbol` de `GeneDef` y
+  `RuleDef` sí son palabras.
+- **Los defs de `category` `Mote`**, en `ExtractDefsInternal`. Son los iconos que flotan
+  sobre el colono y su etiqueta no se muestra nunca. Se mira la categoría y no el
+  `ParentName`, porque las cadenas de herencia varían.
+
+Antes de agregar una exclusión conviene medirla sobre RML, que es la muestra real: las dos
+salieron de contar cuántas entradas afectaba y de comprobar que no se llevaran nada bueno.
 
 ## Publicación
 
