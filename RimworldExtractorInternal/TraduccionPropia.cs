@@ -11,10 +11,11 @@ namespace RimworldExtractorInternal
     /// de destino.
     ///
     /// El extractor no la mira: saca el original de Languages/OriginalLanguage y deja todo
-    /// por traducir, asi que sin este aviso el traductor no se entera. Y conviene enterarse
-    /// por dos motivos: puede que buena parte del trabajo ya este hecha, y si esa carpeta
-    /// se suma a RML hay que poner el packageId del mod en el loadAfter del About, porque
-    /// si no la traduccion del propio mod se carga despues y pisa la de RML.
+    /// por traducir, asi que sin este aviso el traductor no se entera de que hay trabajo
+    /// hecho del que podria partir en vez de traducir desde cero.
+    ///
+    /// No hay nada que hacer al respecto en RML: va ultimo en la lista de mods y le gana
+    /// igual a cualquier traduccion que traiga el mod. El aviso es solo informativo.
     /// </summary>
     public static class TraduccionPropia
     {

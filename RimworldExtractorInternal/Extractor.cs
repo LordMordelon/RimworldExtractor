@@ -152,8 +152,8 @@ namespace RimworldExtractorInternal
             PatchesSinObjetivo.Informar(modMetadata);
 
             // Si el mod ya viene traducido a este idioma, se dice. No cambia la extraccion
-            // —el original sigue saliendo del ingles—, pero cambia si conviene traducirlo y
-            // obliga a tocar el loadAfter de RML.
+            // —el original sigue saliendo del ingles—, pero puede haber ahi trabajo hecho
+            // del que partir.
             TraduccionPropia.Informar(modMetadata);
 
             return extraction.DistinctBy(x => $"{x.ClassName}+{x.Node}").ToList();

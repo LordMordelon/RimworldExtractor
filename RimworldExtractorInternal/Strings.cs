@@ -131,7 +131,7 @@
             => $"Este mod ya trae su propia traducción a {language} ({files} {(files == 1 ? "archivo" : "archivos")}). El extractor no la usa: extrae desde el inglés, así que igual te va a salir todo sin traducir.";
 
         public const string ModShipsOwnTranslationHint =
-            "Si la vas a sumar a RML, poné el packageId del mod en el loadAfter del About.xml de RML: si no, la traducción del propio mod se carga después y pisa la de RML.";
+            "No hace falta hacer nada: RML va último en la lista de mods y le gana igual. Se avisa por si ese trabajo te sirve para partir de ahí en vez de traducir desde cero.";
 
         public static string UnusedTranslationsSaved(int count, string path)
             => $"{count} traducciones quedaron sin uso porque su nodo ya no existe en el mod. Se guardaron en {path}";
