@@ -187,7 +187,7 @@ namespace RimworldExtractorGUI
                 ? IO.FromLanguageXml(destino)
                 : new List<TranslationEntry>();
 
-            var (resultado, sinUso) = TranslationMerge.Merge(extraction, existentes);
+            var (resultado, sinUso, _) = TranslationMerge.Merge(extraction, existentes);
 
             BorrarArbolAnterior(destino);
             Directory.CreateDirectory(destino);

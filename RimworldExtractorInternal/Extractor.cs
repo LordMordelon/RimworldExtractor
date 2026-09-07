@@ -197,10 +197,11 @@ namespace RimworldExtractorInternal
             CombinedDefs.Save("test.xml");
 #endif
             var rawExtraction = ExtractDefsInternal().ToList();
-            foreach (var translationEntry in rawExtraction)
-            {
-                Console.WriteLine(translationEntry);
-            }
+
+            // Aca habia un Console.WriteLine por cada entrada extraida, residuo de depuracion.
+            // En la ventana no se ve —es WinExe, no hay consola— y en una corrida por lotes son
+            // cientos de miles de lineas a stdout, cada una con su ToString armado al pedo.
+
             foreach (var entry in CompatManager.DoPostProcessing(rawExtraction))
             {
                 yield return entry;

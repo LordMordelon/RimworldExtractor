@@ -160,6 +160,9 @@
         public static string LoadFoldersBuilderError(string message)
             => $"No se pudo lanzar LoadFoldersBuilder, así que el LoadFolders.xml quedó viejo: {message}";
 
+        public static string BatchModFailed(string folderName, string message)
+            => $"{folderName}: falló la actualización y se siguió con el resto. {message}";
+
         public const string NothingToExtract =
             "No hay datos de traducción, así que no se extrae nada. Tip: en XLSX -> XML no se guarda nada si no hay contenido traducido.";
 

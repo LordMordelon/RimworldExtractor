@@ -156,7 +156,7 @@ namespace RimworldExtractorTest
         [TestMethod]
         public void ConservaLaTraduccionYActualizaElOriginal()
         {
-            var (resultado, sinUso) = TranslationMerge.Merge(
+            var (resultado, sinUso, _) = TranslationMerge.Merge(
                 new[] { Entrada("Cosa.label", "Storage unit") },
                 new[] { Entrada("Cosa.label", "Storage", "Almacenamiento") });
 
@@ -170,7 +170,7 @@ namespace RimworldExtractorTest
         [TestMethod]
         public void DejaSinTraducirLoQueEsNuevo()
         {
-            var (resultado, _) = TranslationMerge.Merge(
+            var (resultado, _, _) = TranslationMerge.Merge(
                 new[] { Entrada("Nueva.label", "Brand new") },
                 new[] { Entrada("Vieja.label", "Old", "Vieja") });
 
@@ -182,7 +182,7 @@ namespace RimworldExtractorTest
         [TestMethod]
         public void ApartaLoQueYaNoExisteEnElMod()
         {
-            var (resultado, sinUso) = TranslationMerge.Merge(
+            var (resultado, sinUso, _) = TranslationMerge.Merge(
                 new[] { Entrada("Sigue.label", "Still here") },
                 new[]
                 {
@@ -203,7 +203,7 @@ namespace RimworldExtractorTest
         [TestMethod]
         public void NoInformaLoQueDesaparecioSinTraducir()
         {
-            var (_, sinUso) = TranslationMerge.Merge(
+            var (_, sinUso, _) = TranslationMerge.Merge(
                 Array.Empty<TranslationEntry>(),
                 new[] { Entrada("Ya no.label", "Gone") });
 
@@ -217,11 +217,118 @@ namespace RimworldExtractorTest
         [TestMethod]
         public void NoTomaComoTraduccionUnaEntradaVacia()
         {
-            var (resultado, _) = TranslationMerge.Merge(
+            var (resultado, _, _) = TranslationMerge.Merge(
                 new[] { Entrada("Cosa.label", "Storage") },
                 new[] { Entrada("Cosa.label", "Storage") });
 
             Assert.IsTrue(string.IsNullOrEmpty(resultado[0].Translated));
+        }
+
+        /// <summary>
+        /// Una traduccion no cambia de identidad al cambiar de forma de entrega.
+        ///
+        /// Un def que es de otro mod sale por un PatchOperation y su clase lleva el prefijo
+        /// "Patches."; el mismo nodo guardado como DefInjected no lo lleva. Es el caso de las
+        /// traducciones importadas del pack viejo, donde todo estaba como DefInjected: sin
+        /// esto, la primera actualizacion las mandaria a UNUSED y las volveria a pedir.
+        /// </summary>
+        [TestMethod]
+        public void CruzaUnDefInjectedConElMismoNodoEmitidoComoPatch()
+        {
+            var comoPatch = new TranslationEntry("Patches.ThingDef", "ChemfuelTank.label", "chemfuel tank", null, null, null);
+
+            var (resultado, sinUso, _) = TranslationMerge.Merge(
+                new[] { comoPatch },
+                new[] { Entrada("ChemfuelTank.label", "chemfuel tank", "tanque de combustible") });
+
+            Assert.AreEqual(1, resultado.Count);
+            Assert.AreEqual("tanque de combustible", resultado[0].Translated);
+            // Sigue saliendo como patch: lo que se hereda es el texto, no la forma.
+            Assert.AreEqual("Patches.ThingDef", resultado[0].ClassName);
+            Assert.AreEqual(0, sinUso.Count);
+        }
+
+        /// <summary>El cruce vale en los dos sentidos, no solo al importar.</summary>
+        [TestMethod]
+        public void CruzaUnPatchConElMismoNodoEmitidoComoDefInjected()
+        {
+            var previaComoPatch = new TranslationEntry(
+                "Patches.ThingDef", "ChemfuelTank.label", "chemfuel tank", "tanque de combustible", null, null);
+
+            var (resultado, sinUso, _) = TranslationMerge.Merge(
+                new[] { Entrada("ChemfuelTank.label", "chemfuel tank") },
+                new[] { previaComoPatch });
+
+            Assert.AreEqual("tanque de combustible", resultado[0].Translated);
+            Assert.AreEqual(0, sinUso.Count);
+        }
+
+        /// <summary>
+        /// El caso que motivo el segundo pase: el mod dejo de nombrar las partes de un cuerpo
+        /// y paso a indexarlas por posicion. La clave cambio, el ingles no, y la traduccion
+        /// terminaba en UNUSED mientras la misma frase volvia a salir como TODO.
+        /// </summary>
+        [TestMethod]
+        public void RescataUnaTraduccionCuyoNodoSeMovio()
+        {
+            var (resultado, sinUso, rescatadas) = TranslationMerge.Merge(
+                new[] { Entrada("Bicho.corePart.parts.0.parts.1.customLabel", "mechanical tail") },
+                new[] { Entrada("Bicho.corePart.parts.mechanical_tail.customLabel", "mechanical tail", "cola mecánica") });
+
+            Assert.AreEqual("cola mecánica", resultado[0].Translated);
+            Assert.AreEqual(1, rescatadas.Count);
+            Assert.AreEqual(0, sinUso.Count, "lo que se rescato no puede quedar tambien como sin uso");
+        }
+
+        /// <summary>
+        /// Con dos traducciones distintas para el mismo ingles no se elige ninguna: no hay
+        /// forma de saber cual, y una traduccion mal puesta es peor que un TODO porque nadie
+        /// la vuelve a mirar.
+        /// </summary>
+        [TestMethod]
+        public void NoRescataSiElMismoTextoTieneDosTraducciones()
+        {
+            var (resultado, sinUso, rescatadas) = TranslationMerge.Merge(
+                new[] { Entrada("Nuevo.label", "hunter") },
+                new[]
+                {
+                    Entrada("Viejo.label", "hunter", "cazador"),
+                    Entrada("Otro.label", "hunter", "cazadora")
+                });
+
+            Assert.IsTrue(string.IsNullOrEmpty(resultado[0].Translated));
+            Assert.AreEqual(0, rescatadas.Count);
+            Assert.AreEqual(2, sinUso.Count);
+        }
+
+        /// <summary>
+        /// El campo tiene que coincidir. Sin esta guarda, un label sin traducir se llevaria la
+        /// traduccion huerfana de un labelFemale: mismo ingles, genero equivocado.
+        /// </summary>
+        [TestMethod]
+        public void NoRescataDeUnCampoDistinto()
+        {
+            var (resultado, _, rescatadas) = TranslationMerge.Merge(
+                new[] { Entrada("Nuevo.label", "hunter") },
+                new[] { Entrada("Viejo.labelFemale", "hunter", "cazadora") });
+
+            Assert.IsTrue(string.IsNullOrEmpty(resultado[0].Translated));
+            Assert.AreEqual(0, rescatadas.Count);
+        }
+
+        /// <summary>
+        /// Un original vacio no puede ser clave de busqueda: si lo fuera, todas las entradas
+        /// sin ingles cruzarian entre si.
+        /// </summary>
+        [TestMethod]
+        public void NoCruzaPorOriginalVacio()
+        {
+            var (resultado, _, rescatadas) = TranslationMerge.Merge(
+                new[] { Entrada("Nuevo.label", "") },
+                new[] { Entrada("Viejo.label", "", "cualquier cosa") });
+
+            Assert.IsTrue(string.IsNullOrEmpty(resultado[0].Translated));
+            Assert.AreEqual(0, rescatadas.Count);
         }
     }
 
