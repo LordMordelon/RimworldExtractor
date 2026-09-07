@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using RimworldExtractorInternal.DataTypes;
@@ -27,6 +27,10 @@ namespace RimworldExtractorInternal
         /// completo, y si no, los archivos de una version anterior del mod quedarian ahi con
         /// claves que el juego intentaria cargar.
         ///
+        /// Entra al cruce tanto lo que esta en uso como lo que quedo apartado en UNUSED.xml,
+        /// de forma que una traduccion vieja se recupere sola si el mod vuelve a traer su nodo,
+        /// y que siga apartada si no.
+        ///
         /// No regenera el LoadFolders.xml: eso lo decide quien llama, porque hacerlo una vez
         /// por mod en una corrida de doscientos serian doscientas compilaciones de mas.
         /// </summary>
@@ -34,9 +38,12 @@ namespace RimworldExtractorInternal
         {
             var destino = LoadFoldersBuild.CarpetaDe(mod, rmlPath);
 
-            var existentes = Directory.Exists(destino)
-                ? IO.FromLanguageXml(destino)
-                : new List<TranslationEntry>();
+            // Lo apartado en corridas anteriores vuelve a entrar al cruce, y va primero:
+            // Merge se queda con la ultima entrada de cada clave, asi que ante un empate tiene
+            // que ganar la traduccion que esta en uso y no la descartada.
+            var existentes = IO.ReadUnused(destino);
+            if (Directory.Exists(destino))
+                existentes.AddRange(IO.FromLanguageXml(destino));
 
             var (resultado, sinUso, rescatadas) = TranslationMerge.Merge(extraccion, existentes);
 

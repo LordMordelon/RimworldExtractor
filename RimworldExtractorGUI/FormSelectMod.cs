@@ -32,7 +32,8 @@ namespace RimworldExtractorGUI
         /// Casilla de la traduccion rapida. Se crea en codigo, como todo lo que agrega el
         /// fork, para no tocar el .Designer.cs.
         /// </summary>
-        private readonly System.Windows.Forms.CheckBox _checkBoxQuickUpdate = new() { Name = "checkBoxQuickUpdate", AutoSize = true };
+        private readonly System.Windows.Forms.CheckBox _checkBoxQuickUpdate =
+            new() { Name = "checkBoxQuickUpdate", AutoSize = true, Checked = true };
 
         /// <summary>Si hay que actualizar sobre RML en vez de dejar una carpeta suelta.</summary>
         public bool QuickUpdate { get; private set; }
@@ -41,7 +42,7 @@ namespace RimworldExtractorGUI
         /// Casilla de la extraccion completa: carga el contenido oficial como referencia.
         /// </summary>
         private readonly System.Windows.Forms.CheckBox _checkBoxFullExtraction =
-            new() { Name = "checkBoxFullExtraction", AutoSize = true };
+            new() { Name = "checkBoxFullExtraction", AutoSize = true, Checked = true };
 
         private readonly List<ModMetadata> _officialModsCached;
         private readonly List<ModMetadata> _localModsCached;

@@ -60,8 +60,29 @@ namespace RimworldExtractorInternal
             }
         }
 
-        public static bool CanExtract(string tagName, string defName)
+        /// <summary>
+        /// Campos que estan en la lista de traducibles pero que, en cierta clase de def, no
+        /// son texto para el jugador sino una ruta a un recurso del juego.
+        ///
+        /// El caso que lo motivo: "symbol" es traducible casi siempre —en GeneDef y RuleDef
+        /// son palabras sueltas con las que se arman nombres, como "tabby" o "kitty"— pero en
+        /// InteractionDef es la textura del globo de dialogo, del estilo
+        /// "Motes/Speech/science". Traducir eso no queda mal: rompe el mod, porque el juego
+        /// busca una textura con ese nombre y no la encuentra.
+        ///
+        /// Medido sobre las 525 entradas de "symbol" de RML: las 32 de InteractionDef son
+        /// rutas, y ninguna de las otras 493 lo es.
+        /// </summary>
+        private static readonly HashSet<(string Clase, string Tag)> NoTraducibles = new()
         {
+            ("InteractionDef", "symbol")
+        };
+
+        public static bool CanExtract(string tagName, string defName, string? className = null)
+        {
+            if (className != null && NoTraducibles.Contains((className, tagName)))
+                return false;
+
             if (!_extractionRules.TryGetValue(tagName, out var rule))
                 return false;
             return rule.CanExtract(defName);

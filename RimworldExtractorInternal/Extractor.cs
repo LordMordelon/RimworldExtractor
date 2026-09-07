@@ -249,14 +249,15 @@ namespace RimworldExtractorInternal
 
         internal static IEnumerable<TranslationEntry> ExtractDefs()
         {
-#if DEBUG
-            CombinedDefs.Save("test.xml");
-#endif
             var rawExtraction = ExtractDefsInternal().ToList();
 
-            // Aca habia un Console.WriteLine por cada entrada extraida, residuo de depuracion.
-            // En la ventana no se ve —es WinExe, no hay consola— y en una corrida por lotes son
-            // cientos de miles de lineas a stdout, cada una con su ToString armado al pedo.
+            // Aca habia dos residuos de depuracion. Un Console.WriteLine por cada entrada
+            // extraida, que en la ventana no se ve —es WinExe, no hay consola— y en una corrida
+            // por lotes son cientos de miles de lineas a stdout; y un CombinedDefs.Save a
+            // "test.xml", que en cada mod escribia la base de defs entera al directorio actual.
+            // Son 15 MB por mod: casi cuatro gigas en una corrida de doscientos cincuenta, en un
+            // archivo sin seguimiento que ademas casi termina commiteado. Para inspeccionar la
+            // base conviene un breakpoint, que no deja nada atras.
 
             foreach (var entry in CompatManager.DoPostProcessing(rawExtraction))
             {

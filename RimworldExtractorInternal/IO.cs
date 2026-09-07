@@ -832,7 +832,8 @@ namespace RimworldExtractorInternal
             var destino = Path.Combine(rootDirPath, "UNUSED.xml");
             if (sinUso.Count == 0)
             {
-                // Si esta vez no sobro nada, no se deja el archivo de una corrida anterior.
+                // Con el archivo anterior releido y sumado al cruce, llegar aca sin nada
+                // significa que se rescato todo lo que habia apartado. Borrarlo es correcto.
                 if (File.Exists(destino))
                     File.Delete(destino);
                 return;
@@ -856,6 +857,55 @@ namespace RimworldExtractorInternal
             // rehace en cada corrida, y conservar el viejo lo dejaria mintiendo.
             doc.Save(destino);
             Log.Msg(Strings.UnusedTranslationsSaved(sinUso.Count, destino));
+        }
+
+        /// <summary>
+        /// Lee lo que se aparto en corridas anteriores, para que vuelva a entrar al cruce.
+        ///
+        /// Sin esto el archivo dura una sola extraccion. La corrida que lo escribe saca esas
+        /// traducciones de Languages/, asi que a la siguiente ya no las encuentra por ningun
+        /// lado, no le sobra nada, y borra el archivo con todo adentro.
+        ///
+        /// Releerlo ademas es lo que hace cierto lo que promete WriteUnused: si el mod vuelve
+        /// a traer el nodo, la traduccion se recupera sola en vez de a mano.
+        ///
+        /// Va aparte de FromLanguageXml a proposito. Ese metodo tambien alimenta la conversion
+        /// a XLSX, y meterle claves muertas seria llenarle la planilla al traductor de cosas
+        /// que el mod ya no tiene.
+        /// </summary>
+        public static List<TranslationEntry> ReadUnused(string rootDirPath)
+        {
+            var apartadas = new List<TranslationEntry>();
+            var origen = Path.Combine(rootDirPath, "UNUSED.xml");
+            if (!File.Exists(origen))
+                return apartadas;
+
+            try
+            {
+                var doc = new XmlDocument();
+                doc.Load(origen);
+
+                foreach (var entrada in doc.DocumentElement?.ChildNodes.OfType<XmlElement>()
+                                        ?? Enumerable.Empty<XmlElement>())
+                {
+                    var clase = entrada.GetAttribute("class");
+                    var nodo = entrada.GetAttribute("node");
+                    if (string.IsNullOrEmpty(clase) || string.IsNullOrEmpty(nodo))
+                        continue;
+
+                    apartadas.Add(new TranslationEntry(clase, nodo,
+                        entrada.GetAttribute("original"), entrada.InnerText, null, null));
+                }
+            }
+            catch (Exception e)
+            {
+                // Un UNUSED.xml roto no puede voltear la actualizacion de un mod: es el archivo
+                // de descarte, no la traduccion. Se avisa y se sigue sin el.
+                Log.Err(Strings.ErrorReadingFileColon(origen, e.Message));
+                return new List<TranslationEntry>();
+            }
+
+            return apartadas;
         }
 
         private static void SaveSafely(this XLWorkbook xlsx, string path)

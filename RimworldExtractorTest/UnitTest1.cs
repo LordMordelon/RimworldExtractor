@@ -517,4 +517,116 @@ namespace RimworldExtractorTest
             }
         }
     }
+
+    /// <summary>
+    /// Cubre que lo apartado en UNUSED.xml sobreviva a la siguiente extraccion.
+    ///
+    /// Es el mismo tipo de defecto que PatchesRoundTripTests: algo que se escribe bien pero
+    /// no se vuelve a leer, y entonces se pierde sin que nada avise. La corrida que aparta una
+    /// traduccion la saca de Languages/, asi que si la siguiente no lee el UNUSED.xml no le
+    /// sobra nada, y el archivo se borra con todo adentro. Paso de verdad: se llevo unas 460
+    /// traducciones de diez mods, y solo se noto por mirar el diff antes de commitear.
+    /// </summary>
+    [TestClass]
+    public class UnusedSobreviveTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        private static ModMetadata Mod() =>
+            new(@"D:\mods\ce", "2890901044", "Combat Extended", "CETeam.CombatExtended", false);
+
+        /// <summary>Lo que el mod sigue trayendo. La otra entrada ya no existe en el mod.</summary>
+        private static List<TranslationEntry> Extraccion(params string[] nodos) =>
+            nodos.Select(x => new TranslationEntry("ThingDef", x, Original(x), null, null, null))
+                 .ToList();
+
+        private static string Original(string nodo) => nodo == "Sigue.label" ? "widget" : "gizmo";
+
+        /// <summary>
+        /// Dos extracciones iguales seguidas. La segunda no tiene por que llevarse lo que
+        /// aparto la primera.
+        /// </summary>
+        [TestMethod]
+        public void NoBorraElUnusedEnLaCorridaSiguiente()
+        {
+            var rml = Montar(out var carpeta);
+            try
+            {
+                // Primera corrida: el mod ya no trae Vieja.label, asi que se aparta.
+                ActualizacionRml.Escribir(Mod(), Extraccion("Sigue.label"), rml);
+
+                var unused = Path.Combine(carpeta, "UNUSED.xml");
+                Assert.IsTrue(File.Exists(unused), "la primera corrida no aparto nada");
+                StringAssert.Contains(File.ReadAllText(unused), "cosa vieja");
+
+                // Segunda corrida, identica. Sin el arreglo, aca el archivo desaparece.
+                ActualizacionRml.Escribir(Mod(), Extraccion("Sigue.label"), rml);
+
+                Assert.IsTrue(File.Exists(unused),
+                    "la segunda corrida borro el UNUSED.xml y se perdio lo apartado");
+                StringAssert.Contains(File.ReadAllText(unused), "cosa vieja");
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
+        /// La otra mitad de releerlo: si el mod devuelve el nodo a su lugar, la traduccion
+        /// apartada se recupera sola. Es lo que el comentario de WriteUnused venia prometiendo
+        /// sin poder cumplir.
+        /// </summary>
+        [TestMethod]
+        public void RecuperaLoApartadoCuandoElModDevuelveElNodo()
+        {
+            var rml = Montar(out var carpeta);
+            try
+            {
+                ActualizacionRml.Escribir(Mod(), Extraccion("Sigue.label"), rml);
+                Assert.IsTrue(File.Exists(Path.Combine(carpeta, "UNUSED.xml")));
+
+                // El mod vuelve a traer el nodo.
+                var resultado = ActualizacionRml.Escribir(
+                    Mod(), Extraccion("Sigue.label", "Vieja.label"), rml);
+
+                Assert.AreEqual(2, resultado.Conservadas, "no se recupero la traduccion apartada");
+                Assert.AreEqual(0, resultado.Pendientes);
+                Assert.IsFalse(File.Exists(Path.Combine(carpeta, "UNUSED.xml")),
+                    "ya no quedaba nada apartado y el archivo tenia que irse");
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
+        /// Un RML de mentira con las dos entradas ya traducidas, de las cuales la extraccion
+        /// va a traer una sola.
+        /// </summary>
+        private static string Montar(out string carpetaDelMod)
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var rml = Path.Combine(Path.GetTempPath(), "rml-unused-" + Guid.NewGuid().ToString("N"));
+            carpetaDelMod = Path.Combine(rml, "Data", "Combat Extended - 2890901044");
+
+            var defInjected = Path.Combine(carpetaDelMod, "Languages", Idioma, "DefInjected", "ThingDef");
+            Directory.CreateDirectory(defInjected);
+
+            File.WriteAllText(Path.Combine(defInjected, "cosas.xml"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <LanguageData>
+                  <!-- EN: widget -->
+                  <Sigue.label>artilugio</Sigue.label>
+                  <!-- EN: gizmo -->
+                  <Vieja.label>cosa vieja</Vieja.label>
+                </LanguageData>
+                """);
+
+            return rml;
+        }
+    }
 }
