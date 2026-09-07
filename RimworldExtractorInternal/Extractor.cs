@@ -14,6 +14,57 @@ namespace RimworldExtractorInternal
     public static partial class Extractor
     {
         internal static XmlDocument? CombinedDefs;
+
+        /// <summary>
+        /// La base de defs tal como quedo al terminar de extraer los defs, antes de que el
+        /// paso de patches la reemplace. Ver <see cref="ConLaBaseCompleta{T}"/>.
+        /// </summary>
+        private static XmlDocument? _defsCompletos;
+
+        /// <summary>
+        /// Toma nota de la base completa. Se llama al terminar de extraer los defs, que es el
+        /// unico momento en que CombinedDefs los tiene todos.
+        /// </summary>
+        internal static void RegistrarBaseCompleta(XmlDocument? defs) => _defsCompletos = defs;
+
+        /// <summary>
+        /// Corre algo con la base de defs completa puesta, y despues deja todo como estaba.
+        ///
+        /// Hace falta para releer los Patches ya traducidos de RML. Esa lectura no parsea los
+        /// archivos: corre ExtractPatches, que evalua cada xpath contra CombinedDefs. Y cuando
+        /// se la llama —despues de extraer el mod— CombinedDefs ya no es la base completa, sino
+        /// el documento reducido que deja DoXmlInheritance con los defs que tocaron los patches
+        /// del propio mod. Los xpath de RML no encuentran nada ahi, asi que la traduccion vieja
+        /// se vuelve invisible: sale todo como TODO y ni siquiera queda apartada en UNUSED.
+        ///
+        /// Andaba o no andaba segun si los defs que RML parchea caian por casualidad entre los
+        /// que tocaron los patches del mod.
+        /// </summary>
+        internal static T ConLaBaseCompleta<T>(Func<T> leer)
+        {
+            if (_defsCompletos == null)
+                return leer();
+
+            var previo = CombinedDefs;
+            var xpathsPrevios = PatchOperations.XpathsSinObjetivo.ToList();
+
+            // Se clona: PatchOperations aplica las operaciones sobre el documento, asi que sin
+            // copia la primera lectura ensuciaria la base y la siguiente ya no serviria.
+            CombinedDefs = (XmlDocument)_defsCompletos.CloneNode(true);
+            try
+            {
+                return leer();
+            }
+            finally
+            {
+                CombinedDefs = previo;
+
+                // Los xpath de RML no son fallos del mod: no tienen que entrar en el aviso de
+                // «patches sin objetivo».
+                PatchOperations.XpathsSinObjetivo.Clear();
+                PatchOperations.XpathsSinObjetivo.AddRange(xpathsPrevios);
+            }
+        }
         public static readonly Dictionary<string, XmlNode> ParentNodeLookUp = new();
 
         private static bool _isOfficialContent = false;
@@ -54,6 +105,7 @@ namespace RimworldExtractorInternal
                 // Aca la base de defs esta completa. Mas adelante, al procesar los patches,
                 // se reemplaza por una que solo tiene los defs que estos agregaron.
                 PatchesSinObjetivo.RegistrarDefsCargados(CombinedDefs);
+                RegistrarBaseCompleta(CombinedDefs);
             }
             foreach (var extractableFolder in selectedFolders)
             {
@@ -113,6 +165,10 @@ namespace RimworldExtractorInternal
             // y solo quedarian registrados los fallos de la ultima.
             PatchOperations.XpathsSinObjetivo.Clear();
             DuenioPorDefName.Clear();
+
+            // La base completa es de la extraccion que arranca, no de la anterior: releer los
+            // patches contra los defs de otro mod daria cualquier cosa.
+            _defsCompletos = null;
 
             CombinedDefs = new XmlDocument();
             CombinedDefs.AppendElement("Defs");

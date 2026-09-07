@@ -11,4 +11,11 @@
     <PackageReference Include="ClosedXML" Version="0.104.2" />
   </ItemGroup>
 
+
+    <!-- Los tests necesitan armar el estado interno del extractor para cubrir el ida y
+         vuelta de los Patches, que depende de la base de defs global. -->
+    <ItemGroup>
+        <InternalsVisibleTo Include="RimworldExtractorTest" />
+    </ItemGroup>
+
 </Project>

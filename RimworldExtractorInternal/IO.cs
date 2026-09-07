@@ -804,9 +804,15 @@ namespace RimworldExtractorInternal
             // Los Patches viven fuera de Languages, en la raiz del mod.
             if (Directory.Exists(patchesDir))
             {
+                // Con la base de defs completa: estos xpath apuntan a defs del juego o de otros
+                // mods, y para cuando se llega aca la extraccion ya reemplazo CombinedDefs por
+                // el documento reducido de sus propios patches. Contra ese, no encuentran nada
+                // y la traduccion que ya estaba hecha se pierde sin avisar.
                 var patches = new ExtractableFolder(ModMetadata.Emptry, patchesDir, null);
-                translations.AddRange(Extractor.ExtractPatches(patches)
-                    .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" }));
+                translations.AddRange(Extractor.ConLaBaseCompleta(
+                    () => Extractor.ExtractPatches(patches)
+                        .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" })
+                        .ToList()));
             }
 
             return translations;

@@ -1,4 +1,5 @@
-﻿using RimworldExtractorInternal;
+﻿using System.Xml;
+using RimworldExtractorInternal;
 using RimworldExtractorInternal.DataTypes;
 
 namespace RimworldExtractorTest
@@ -430,6 +431,90 @@ namespace RimworldExtractorTest
             var ruta = Path.Combine(Path.GetTempPath(), "rimext-test-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(ruta);
             return ruta;
+        }
+    }
+
+    /// <summary>
+    /// Cubre el ida y vuelta de los Patches, que es lo unico de la traduccion rapida que no se
+    /// puede releer parseando el archivo.
+    ///
+    /// Releer un Patches ya traducido corre ExtractPatches, que evalua cada xpath contra la
+    /// base de defs global. Cuando esa base no es la completa, los xpath no encuentran nada y
+    /// la traduccion hecha se vuelve invisible: sale todo como TODO y ni siquiera queda
+    /// apartada en UNUSED. Paso de verdad y no lo detecto nada, porque este ciclo se habia
+    /// verificado a mano una sola vez.
+    /// </summary>
+    [TestClass]
+    public class PatchesRoundTripTests
+    {
+        /// <summary>
+        /// Un Patches ya traducido se tiene que poder releer aunque la extraccion haya dejado
+        /// CombinedDefs reducido, que es como queda siempre despues de procesar los patches
+        /// del mod.
+        ///
+        /// El montaje replica ese estado a proposito: la base completa tiene el def, la base
+        /// "actual" no. Sin el arreglo la lectura devuelve cero entradas y la traduccion se
+        /// pierde sin dejar rastro.
+        /// </summary>
+        [TestMethod]
+        public void ReleeUnPatchAunqueLaBaseActualNoTengaElDef()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = "SpanishLatin (Español(Latinoamérica))";
+
+            var raiz = Path.Combine(Path.GetTempPath(), "rml-" + Guid.NewGuid().ToString("N"));
+            var patches = Path.Combine(raiz, "Patches");
+            Directory.CreateDirectory(patches);
+
+            var completos = new XmlDocument();
+            completos.LoadXml("""
+                              <Defs>
+                                <ThingDef>
+                                  <defName>CosaDeOtroMod</defName>
+                                  <label>widget</label>
+                                </ThingDef>
+                              </Defs>
+                              """);
+
+            File.WriteAllText(Path.Combine(patches, "OtroMod.xml"), """
+                                                                   <?xml version="1.0" encoding="utf-8"?>
+                                                                   <Patch>
+                                                                     <Operation Class="PatchOperationReplace">
+                                                                       <success>Always</success>
+                                                                       <xpath>/Defs/ThingDef[defName="CosaDeOtroMod"]/label</xpath>
+                                                                       <value>
+                                                                         <!-- EN: widget -->
+                                                                         <label>artilugio</label>
+                                                                       </value>
+                                                                     </Operation>
+                                                                   </Patch>
+                                                                   """);
+
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.RegistrarBaseCompleta(completos);
+
+                // Asi queda CombinedDefs despues de extraer: solo lo que tocaron los patches
+                // del propio mod, sin el def de afuera al que apunta la traduccion.
+                var reducida = new XmlDocument();
+                reducida.LoadXml("<Defs />");
+                Extractor.CombinedDefs = reducida;
+
+                var leidas = IO.FromLanguageXml(raiz);
+
+                var entrada = leidas.FirstOrDefault(x => x.Node == "CosaDeOtroMod.label");
+                Assert.IsNotNull(entrada, "no se leyo la traduccion del patch");
+                Assert.AreEqual("artilugio", entrada.Translated);
+                Assert.IsTrue(entrada.ClassName.StartsWith("Patches."),
+                    $"tenia que venir marcada como patch y vino como {entrada.ClassName}");
+            }
+            finally
+            {
+                Extractor.RegistrarBaseCompleta(null);
+                Extractor.CombinedDefs = previo;
+                if (Directory.Exists(raiz)) Directory.Delete(raiz, true);
+            }
         }
     }
 }
