@@ -293,6 +293,23 @@ namespace RimworldExtractorInternal
                 }
 
 
+                // Los motes son los iconos que flotan sobre el colono. Su etiqueta no se le
+                // muestra nunca al jugador —la categoria Mote no es seleccionable, no va a
+                // inventarios ni al menu de construccion—, asi que traducirla no cambia nada.
+                //
+                // Salian igual porque casi ningun mote declara etiqueta: la heredan de MoteBase,
+                // que trae <label>Mote</label>, y la extraccion resuelve la herencia. Eran 248
+                // entradas en 43 mods de RML, todas diciendo "Mote".
+                //
+                // Ni Ludeon las traduce: su propio SpanishLatin trae las 62 del juego base con
+                // el valor en ingles.
+                //
+                // Se mira la categoria y no el ParentName porque las cadenas de herencia varian
+                // —MoteBase, MoteGlowDistorted, InteractionMoteBase, y las bases que cada mod se
+                // arma—, pero la categoria la heredan todas.
+                if (node["category"]?.InnerText.Trim() == "Mote")
+                    continue;
+
                 var className = node.Attributes?["Class"]?.Value ?? node.Name;
                 className = className[..1].ToUpper() + className[1..];
 

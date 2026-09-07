@@ -629,4 +629,95 @@ namespace RimworldExtractorTest
             return rml;
         }
     }
+
+    /// <summary>
+    /// Cubre que los motes no entren a la traduccion.
+    ///
+    /// Un mote es el icono que flota sobre el colono: su etiqueta no se le muestra nunca al
+    /// jugador. Salian igual porque casi ninguno declara etiqueta y la heredan de MoteBase, que
+    /// trae "Mote"; eran 248 entradas en 43 mods de RML, todas iguales y todas inutiles.
+    ///
+    /// Lo que este test cuida es el otro lado: que el filtro no se lleve puesto nada mas. Mira
+    /// la categoria del def, no su nombre, justamente para no tocar una cosa de verdad que se
+    /// llame parecido.
+    /// </summary>
+    [TestClass]
+    public class MotesTests
+    {
+        /// <summary>Un def de categoria Mote no aporta ninguna entrada; el de al lado si.</summary>
+        [TestMethod]
+        public void NoExtraeLosDefsDeCategoriaMote()
+        {
+            var entradas = Extraer("""
+                <Defs>
+                  <ThingDef>
+                    <defName>UnMote</defName>
+                    <label>Mote</label>
+                    <category>Mote</category>
+                  </ThingDef>
+                  <ThingDef>
+                    <defName>UnaSilla</defName>
+                    <label>silla</label>
+                    <category>Building</category>
+                  </ThingDef>
+                </Defs>
+                """);
+
+            Assert.IsFalse(entradas.Any(x => x.Node.StartsWith("UnMote")),
+                "el mote no tenia que salir");
+            Assert.IsTrue(entradas.Any(x => x.Node == "UnaSilla.label"),
+                "el filtro se llevo puesto un def que no era un mote");
+        }
+
+        /// <summary>
+        /// El nombre no decide nada. Una cosa de verdad que se llame Mote se sigue traduciendo,
+        /// y un mote con un nombre cualquiera se sigue salteando.
+        /// </summary>
+        [TestMethod]
+        public void SeGuiaPorLaCategoriaYNoPorElNombre()
+        {
+            var entradas = Extraer("""
+                <Defs>
+                  <ThingDef>
+                    <defName>MoteadorDeCafe</defName>
+                    <label>moteador de café</label>
+                    <category>Item</category>
+                  </ThingDef>
+                  <ThingDef>
+                    <defName>ChispaRara</defName>
+                    <label>chispa</label>
+                    <category>Mote</category>
+                  </ThingDef>
+                </Defs>
+                """);
+
+            Assert.IsTrue(entradas.Any(x => x.Node == "MoteadorDeCafe.label"),
+                "se filtro por el nombre en vez de por la categoria");
+            Assert.IsFalse(entradas.Any(x => x.Node.StartsWith("ChispaRara")),
+                "un mote con nombre cualquiera tambien tiene que quedar afuera");
+        }
+
+        /// <summary>
+        /// Se arma el CombinedDefs a mano, ya con la herencia resuelta, que es como le llega a
+        /// la extraccion.
+        /// </summary>
+        private static List<TranslationEntry> Extraer(string defs)
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml(defs);
+
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                return Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+        }
+    }
 }
