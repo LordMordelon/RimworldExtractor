@@ -541,11 +541,15 @@ namespace RimworldExtractorInternal
                     {
                         li.AppendAttribute("Class", "PatchOperationReplace");
                         li.AppendElement("success", "Always");
-                        if (commentStyle != XmlCommentStyle.None)
-                            li.AppendComment(OriginalComment(commentStyle, translation.Original));
                         li.AppendElement("xpath", Utils.GetXpath(translation.ClassName[(translation.ClassName.IndexOf('.') + 1)..], translation.Node));
                         li.AppendElement("value", value =>
                         {
+                            // El original va pegado al nodo que hay que traducir, no arriba
+                            // de todo: es lo que uno mira mientras traduce. Al releer no
+                            // molesta porque ReadXml descarta los comentarios.
+                            if (commentStyle != XmlCommentStyle.None)
+                                value.AppendComment(OriginalComment(commentStyle, translation.Original));
+
                             var lastNode = translation.Node.Split('.').Last();
                             if (int.TryParse(lastNode, out _)) lastNode = "li";
                             value.AppendElement(lastNode, ValueFor(commentStyle, translation));
