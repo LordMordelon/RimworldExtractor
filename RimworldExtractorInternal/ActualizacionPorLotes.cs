@@ -56,8 +56,12 @@ namespace RimworldExtractorInternal
             if (!Directory.Exists(data))
                 return renglones;
 
-            var carpetas = Directory.GetDirectories(data)
-                .Where(x => File.Exists(Path.Combine(x, LoadFoldersBuild.FileName)))
+            // Se busca en todo el arbol, no solo en el primer nivel: las carpetas de Data se
+            // pueden agrupar en subcarpetas y el builder de RML las encuentra igual. Es lo
+            // mismo que hace Statics.FindAndValidatePaths de su lado.
+            var carpetas = Directory
+                .GetFiles(data, LoadFoldersBuild.FileName, SearchOption.AllDirectories)
+                .Select(x => Path.GetDirectoryName(x)!)
                 .Where(x => filtro is null || filtro(Path.GetFileName(x)))
                 .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
                 .ToList();

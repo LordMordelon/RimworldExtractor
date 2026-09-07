@@ -52,6 +52,38 @@ namespace RimworldExtractorInternal
         /// </summary>
         public static string FolderNameFor(ModMetadata mod) => mod.Identifier.StripInvaildChars();
 
+        /// <summary>
+        /// Donde vive, o va a vivir, la traduccion de este mod dentro de RML.
+        ///
+        /// Las carpetas de Data se pueden agrupar en subcarpetas —por autor, por familia— y el
+        /// builder de RML las encuentra igual, porque busca los yaml en todo el arbol. El
+        /// extractor tiene que hacer lo mismo: si diera por sentado Data/<nombre>, al actualizar
+        /// un mod agrupado no encontraria lo ya traducido, lo trataria como nuevo y escribiria
+        /// una carpeta duplicada al lado. Sin dar ningun error.
+        ///
+        /// Si no existe en ningun lado es un mod nuevo, y entonces va directo bajo Data.
+        /// </summary>
+        public static string CarpetaDe(ModMetadata mod, string rmlPath)
+        {
+            var nombre = FolderNameFor(mod);
+            var data = Path.Combine(rmlPath, "Data");
+            var plana = Path.Combine(data, nombre);
+
+            if (!Directory.Exists(data) || Directory.Exists(plana))
+                return plana;
+
+            try
+            {
+                return Directory.EnumerateDirectories(data, nombre, SearchOption.AllDirectories)
+                    .FirstOrDefault() ?? plana;
+            }
+            catch
+            {
+                // Una carpeta ilegible no puede impedir escribir la traduccion.
+                return plana;
+            }
+        }
+
         /// <summary>Ruta del proyecto del builder dentro de un clon de RML.</summary>
         private static string ProyectoDelBuilder(string rmlPath)
             => Path.Combine(rmlPath, "Source", "LoadFoldersBuilder", "LoadFoldersBuilder.csproj");

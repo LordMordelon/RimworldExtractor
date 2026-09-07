@@ -181,60 +181,18 @@ namespace RimworldExtractorGUI
         /// </summary>
         private string ActualizarSobreRml(List<TranslationEntry> extraction, string nombreDeArchivos)
         {
-            var destino = Path.Combine(Prefabs.PathRml, "Data", LoadFoldersBuild.FolderNameFor(SelectedMod!));
-
-            var existentes = Directory.Exists(destino)
-                ? IO.FromLanguageXml(destino)
-                : new List<TranslationEntry>();
-
-            var (resultado, sinUso, _) = TranslationMerge.Merge(extraction, existentes);
-
-            BorrarArbolAnterior(destino);
-            Directory.CreateDirectory(destino);
-
-            // Se fuerza la sobrescritura mientras dura el guardado: con la politica en
-            // "conservar el original" no se escribiria nada y la actualizacion no haria
-            // absolutamente nada, sin que se note.
-            var politica = Prefabs.Policy;
-            Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
-            try
-            {
-                IO.ToLanguageXml(resultado, false, XmlCommentStyle.TranslationTemplate, nombreDeArchivos, destino);
-            }
-            finally
-            {
-                Prefabs.Policy = politica;
-            }
-
-            IO.WriteUnused(sinUso, destino);
-            LoadFoldersBuild.Write(SelectedMod, destino);
+            var r = ActualizacionRml.Escribir(SelectedMod!, extraction, Prefabs.PathRml);
 
             // El yaml de la carpeta no alcanza: RimWorld lee el LoadFolders.xml, que lo arma
-            // el builder de RML a partir de todos los yaml. Sin esto un mod recien agregado
-            // no carga, y no hay ningun sintoma que lo explique.
+            // el builder de RML a partir de todos los yaml. Sin esto un mod recien agregado no
+            // carga, y no hay ningun sintoma que lo explique. Va aca y no dentro de Escribir
+            // porque en una corrida por lotes se hace una sola vez, al final.
             LoadFoldersBuild.Regenerar(Prefabs.PathRml);
 
-            var conservadas = resultado.Count(x => !string.IsNullOrEmpty(x.Translated));
-            Log.Msg(Strings.QuickUpdateSummary(conservadas, resultado.Count - conservadas, sinUso.Count));
-            Log.Msg(Strings.QuickUpdateWrittenTo(destino));
+            Log.Msg(Strings.QuickUpdateSummary(r.Conservadas, r.Pendientes, r.SinUso));
+            Log.Msg(Strings.QuickUpdateWrittenTo(r.Destino));
 
-            return destino;
-        }
-
-        /// <summary>
-        /// Borra lo que la herramienta genera, y solo eso: el idioma de destino dentro de
-        /// Languages —los demas idiomas, si los hubiera, no son asunto nuestro— y los
-        /// Patches de traduccion.
-        /// </summary>
-        private static void BorrarArbolAnterior(string destino)
-        {
-            var idioma = Path.Combine(destino, "Languages", Prefabs.TranslationLanguage);
-            if (Directory.Exists(idioma))
-                Directory.Delete(idioma, true);
-
-            var patches = Path.Combine(destino, "Patches");
-            if (Directory.Exists(patches))
-                Directory.Delete(patches, true);
+            return r.Destino;
         }
 
 

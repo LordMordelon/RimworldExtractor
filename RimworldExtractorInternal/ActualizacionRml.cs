@@ -32,7 +32,7 @@ namespace RimworldExtractorInternal
         /// </summary>
         public static Resultado Escribir(ModMetadata mod, List<TranslationEntry> extraccion, string rmlPath)
         {
-            var destino = Path.Combine(rmlPath, "Data", LoadFoldersBuild.FolderNameFor(mod));
+            var destino = LoadFoldersBuild.CarpetaDe(mod, rmlPath);
 
             var existentes = Directory.Exists(destino)
                 ? IO.FromLanguageXml(destino)
