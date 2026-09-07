@@ -12,6 +12,10 @@ el mod que empaqueta las traducciones producidas con esta herramienta.
 > de un repositorio público —lo fue al principio, ya no—, y por eso no figura en la red de
 > forks del original, pero en esencia lo es. El remoto `upstream` sigue apuntando ahí para mezclar sus cambios.
 
+**Qué cambia respecto del original:** la interfaz en español sin tocar los `.Designer.cs`, el tema
+claro/oscuro, la traducción rápida —actualizar un mod sin volver a traducirlo—, la integración con
+RML y varios arreglos. Está todo en **[CAMBIOS.md](CAMBIOS.md)**.
+
 ## Descargar
 
 En la **[página de Releases](https://github.com/LordMordelon/RimworldExtractor/releases/latest)**
