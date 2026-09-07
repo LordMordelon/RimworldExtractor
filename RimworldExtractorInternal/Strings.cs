@@ -127,6 +127,12 @@
         public const string PatchesWithoutTargetHint =
             "Marcá «Extracción completa» al elegir el mod para cargar el contenido oficial, o elegí esos mods como referencia con la tecla 'S', y volvé a extraer.";
 
+        public static string ModShipsOwnTranslation(string language, int files)
+            => $"Este mod ya trae su propia traducción a {language} ({files} {(files == 1 ? "archivo" : "archivos")}). El extractor no la usa: extrae desde el inglés, así que igual te va a salir todo sin traducir.";
+
+        public const string ModShipsOwnTranslationHint =
+            "Si la vas a sumar a RML, poné el packageId del mod en el loadAfter del About.xml de RML: si no, la traducción del propio mod se carga después y pisa la de RML.";
+
         public static string UnusedTranslationsSaved(int count, string path)
             => $"{count} traducciones quedaron sin uso porque su nodo ya no existe en el mod. Se guardaron en {path}";
 
