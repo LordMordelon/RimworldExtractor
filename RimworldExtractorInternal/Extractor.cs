@@ -62,12 +62,16 @@ namespace RimworldExtractorInternal
                 // Los xpath de RML no son fallos del mod: no tienen que entrar en el aviso de
                 // «patches sin objetivo».
                 PatchOperations.XpathsSinObjetivo.Clear();
+            PatchOperations.OperacionesNoSoportadas.Clear();
                 PatchOperations.XpathsSinObjetivo.AddRange(xpathsPrevios);
             }
         }
         public static readonly Dictionary<string, XmlNode> ParentNodeLookUp = new();
 
         private static bool _isOfficialContent = false;
+
+        /// <summary>Cuantos nodos duplicados se detallan antes de resumir el resto.</summary>
+        private const int MaxDuplicadosEnElLog = 5;
 
         public static List<TranslationEntry> ExtractTranslationData(ModMetadata modMetadata, List<ExtractableFolder> selectedFolders, List<ModMetadata>? referenceMods)
         {
@@ -95,6 +99,20 @@ namespace RimworldExtractorInternal
 
             var extraction = new List<TranslationEntry>();
             Reset();
+
+            // Un mod puede traer el mismo texto dos veces: en el Languages/ de la raiz y en el
+            // de su carpeta de version. No siempre dicen lo mismo —Simple Sidearms tiene
+            // "Weapon dropping criteria" en la raiz y "Weapon fumble criteria" en v1.6— y la
+            // que vale es la de la version, porque las entradas de LoadFolders.xml pisan a la
+            // raiz y es lo que el juego carga.
+            //
+            // El DistinctBy del final de este metodo se queda con la primera aparicion, asi que
+            // alcanza con que las carpetas de la version vayan antes. Se toca el orden y no el
+            // criterio de desempate, que seria un cambio mucho mas ancho.
+            selectedFolders = selectedFolders
+                .OrderBy(x => x.VersionInfo == Prefabs.CurrentVersion ? 0 : 1)
+                .ToList();
+
             var defs = selectedFolders.Where(x => Path.GetFileName(x.FolderName) == "Defs").ToList();
             if (defs.Count > 0)
             {
@@ -107,6 +125,18 @@ namespace RimworldExtractorInternal
                 PatchesSinObjetivo.RegistrarDefsCargados(CombinedDefs);
                 RegistrarBaseCompleta(CombinedDefs);
             }
+            // De que carpeta salio cada entrada, en paralelo a extraction. Solo se usa para
+            // poder decir, cuando dos carpetas traen el mismo nodo con distinto texto, cual es
+            // cual: sin eso el aviso no es accionable. SourceFile no sirve, que se llena
+            // unicamente para el contenido oficial.
+            var procedencia = new List<string>();
+            void Anotar(string carpeta)
+            {
+                while (procedencia.Count < extraction.Count)
+                    procedencia.Add(carpeta);
+            }
+            Anotar("Defs");
+
             foreach (var extractableFolder in selectedFolders)
             {
                 switch (Path.GetFileName(extractableFolder.FolderName))
@@ -126,29 +156,61 @@ namespace RimworldExtractorInternal
                         Log.Wrn(Strings.UnsupportedFolder(extractableFolder.FolderName));
                         continue;
                 }
+
+                Anotar(extractableFolder.FolderName);
             }
 
-            var set = new HashSet<(string, string)>();
-            foreach (var entry in extraction)
+            // Dos carpetas del mismo mod pueden traer el mismo nodo con distinto texto original.
+            // No es un fallo —la extraccion termina bien— sino un dato sobre el mod, asi que va
+            // como advertencia y resumido: antes salia una linea de error por caso, con los dos
+            // textos enteros, y en un mod como Simple Sidearms eran veintiuna ilegibles.
+            //
+            // Se recorre con un diccionario. Antes era un FirstOrDefault sobre un HashSet, o sea
+            // un recorrido lineal por cada entrada: con las decenas de miles de un mod grande,
+            // n al cuadrado.
+            var vistos = new Dictionary<string, (string Original, string Carpeta)>();
+            var conflictos = new List<string>();
+            for (var i = 0; i < extraction.Count; i++)
             {
-                var tuple = (entry.ClassName + "+" + entry.Node, entry.Original);
-                var pair = set.FirstOrDefault(x => x.Item1 == tuple.Item1);
-                if (pair != default)
+                var entry = extraction[i];
+                var clave = entry.ClassName + "+" + entry.Node;
+                var carpeta = i < procedencia.Count ? procedencia[i] : "?";
+
+                if (vistos.TryGetValue(clave, out var previo))
                 {
-                    if (pair.Item2 != entry.Original)
-                    {
-                        Log.Err(
-                            Strings.DuplicateNodeWithDifferentOriginal(entry.ClassName, entry.Node, pair.Item2, entry.Original));
-                    }
+                    if (previo.Original != entry.Original)
+                        conflictos.Add(Strings.DuplicateNodeDetail(
+                            clave, previo.Original, previo.Carpeta, entry.Original, carpeta));
+                    continue;
                 }
 
-                set.Add(tuple);
+                vistos[clave] = (entry.Original, carpeta);
+            }
+
+            if (conflictos.Count > 0)
+            {
+                Log.Wrn(Strings.DuplicateNodesFound(conflictos.Count));
+                foreach (var detalle in conflictos.Take(MaxDuplicadosEnElLog))
+                    Log.Wrn(detalle);
+                if (conflictos.Count > MaxDuplicadosEnElLog)
+                    Log.Wrn(Strings.AndMoreOmitted(conflictos.Count - MaxDuplicadosEnElLog));
             }
 
             _isOfficialContent = false;
 
             // Si algun patch apunto a un def que no estaba cargado, se dice: la extraccion
             // termina bien igual, solo que con menos texto del que deberia.
+            // Los tipos de patch que no se saben procesar, una sola linea con el total en vez
+            // de una por aparicion.
+            if (PatchOperations.OperacionesNoSoportadas.Count > 0)
+            {
+                Log.Wrn(Strings.UnsupportedPatchOperationsFound(
+                    PatchOperations.OperacionesNoSoportadas.Values.Sum(),
+                    string.Join(", ", PatchOperations.OperacionesNoSoportadas
+                        .OrderByDescending(x => x.Value)
+                        .Select(x => $"{x.Key} x{x.Value}"))));
+            }
+
             PatchesSinObjetivo.Informar(modMetadata);
 
             // Si el mod ya viene traducido a este idioma, se dice. No cambia la extraccion

@@ -62,8 +62,41 @@
         public static string UnsupportedFolder(string folderName)
             => $"Carpeta no soportada. {folderName}";
 
-        public static string DuplicateNodeWithDifferentOriginal(string className, string node, string other, string original)
-            => $"Hay un nodo duplicado con distinto texto original. Nodo: {className}+{node}| {other} | {original} ";
+        public static string DuplicateNodesFound(int count)
+            => $"{count} {(count == 1 ? "nodo trae" : "nodos traen")} el mismo texto escrito de dos formas en el propio mod. Se usa el de la carpeta de la version, que es la que carga el juego.";
+
+        /// <summary>
+        /// Un caso concreto. Lo importante es de que carpeta viene cada texto: sin eso no se
+        /// puede decidir nada. Los textos se recortan porque algunos son parrafos enteros.
+        /// </summary>
+        public static string DuplicateNodeDetail(string node, string usado, string carpetaUsada,
+            string descartado, string carpetaDescartada)
+            => $"    {node}: se usa «{Recortar(usado)}» de {carpetaUsada}; se descarta «{Recortar(descartado)}» de {carpetaDescartada}";
+
+        public static string AndMoreOmitted(int count)
+            => $"    …y {count} mas.";
+
+        /// <summary>Deja el texto en una linea y de largo legible, para que el log no explote.</summary>
+        private static string Recortar(string texto, int max = 60)
+        {
+            // Se usan los codigos y no los escapes para no depender de como sobreviva
+            // una barra invertida al pasar por una consola.
+            var barra = ((char)92).ToString();
+            var plano = texto
+                .Replace((char)13, ' ')
+                .Replace((char)10, ' ')
+                // Los XML de RimWorld traen el salto de linea escrito como dos caracteres,
+                // barra invertida y ene, no como un salto de verdad.
+                .Replace(barra + "n", " ")
+                .Replace(barra + "r", " ")
+                .Trim();
+            while (plano.Contains("  "))
+                plano = plano.Replace("  ", " ");
+            return plano.Length <= max ? plano : plano[..max] + "…";
+        }
+
+        public static string UnsupportedPatchOperationsFound(int count, string tipos)
+            => $"{count} {(count == 1 ? "operacion de patch quedo" : "operaciones de patch quedaron")} sin procesar por ser de un tipo no soportado: {tipos}. Si alguna traia texto, ese texto no se extrajo.";
 
         public static string TraduccionDuplicadaEnConflicto(string clase, string nodo, string descartada, string usada)
             => $"El mismo nodo esta traducido dos veces y distinto: {clase}+{nodo}. Se usa \"{usada}\" y se descarta \"{descartada}\". Sobra una de las dos, casi siempre la del Patches, que quedo de una version anterior del mod.";
@@ -150,6 +183,13 @@
 
         public static string LoadFoldersYamlWritten(string folderName)
             => $"Se generó el {LoadFoldersBuild.FileName} del mod. Para sumarlo a RML, copiá esta carpeta a Data/{folderName}";
+
+        /// <summary>
+        /// El mismo archivo, pero cuando ya se escribió dentro de RML. Antes salía el de arriba
+        /// en los dos casos, y mandaba a copiar una carpeta que ya estaba en su lugar.
+        /// </summary>
+        public static string LoadFoldersYamlWrittenInRml()
+            => $"Se generó el {LoadFoldersBuild.FileName} del mod.";
 
         public const string LoadFoldersRebuilt =
             "Se rehicieron el LoadFolders.xml y el ModList.tsv de RML: el mod ya se puede probar en el juego.";

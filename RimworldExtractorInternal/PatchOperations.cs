@@ -6,6 +6,12 @@ namespace RimworldExtractorInternal;
 
 internal static class PatchOperations
 {
+
+        /// <summary>
+        /// Tipos de PatchOperation que no se saben procesar, y cuantas veces aparecieron.
+        /// Se vacia al empezar cada extraccion, desde Extractor.Reset.
+        /// </summary>
+        internal static readonly Dictionary<string, int> OperacionesNoSoportadas = new();
     /// <summary>
     /// Defs added by Patch operations, to be extracted after Patch operations end.
     /// Item1) required mods, Item2) Xml Node
@@ -71,7 +77,11 @@ internal static class PatchOperations
                     yield return translationEntry;
                 break;
             default:
-                Log.Msg(Strings.UnsupportedPatchOperation(operation));
+                // Se acumula en vez de escribirse: un mod puede traer decenas iguales, y
+                // dieciocho lineas identicas y sin contexto no le sirven a nadie. Se informa
+                // una sola vez al terminar la extraccion.
+                if (operation != null)
+                    OperacionesNoSoportadas[operation] = OperacionesNoSoportadas.GetValueOrDefault(operation) + 1;
                 break;
         }
 

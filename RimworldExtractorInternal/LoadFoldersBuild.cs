@@ -42,8 +42,31 @@ namespace RimworldExtractorInternal
             // mod. Si se extrae directamente sobre una carpeta de RML, las reglas de orden
             // o de version que se hayan escrito a mano ahi se pierden.
             File.WriteAllText(destino, Contents(mod));
-            Log.Msg(Strings.LoadFoldersYamlWritten(FolderNameFor(mod)));
+            // Si ya se escribió dentro de RML no hay nada que copiar, y decirlo confunde:
+            // la línea siguiente del log informa que la traducción quedó justamente ahí.
+            Log.Msg(EstaDentroDeRml(rootDirPath)
+                ? Strings.LoadFoldersYamlWrittenInRml()
+                : Strings.LoadFoldersYamlWritten(FolderNameFor(mod)));
             return true;
+        }
+
+        /// <summary>Si la carpeta de destino cuelga del clon de RML configurado.</summary>
+        private static bool EstaDentroDeRml(string rootDirPath)
+        {
+            if (string.IsNullOrWhiteSpace(Prefabs.PathRml))
+                return false;
+
+            try
+            {
+                var rml = Path.GetFullPath(Prefabs.PathRml);
+                return Path.GetFullPath(rootDirPath)
+                    .StartsWith(rml, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                // Una ruta mal escrita no puede voltear una extraccion por un mensaje.
+                return false;
+            }
         }
 
         /// <summary>
