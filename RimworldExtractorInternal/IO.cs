@@ -61,9 +61,28 @@ namespace RimworldExtractorInternal
 
             return translation.Translated ?? translation.Original;
         }
+        /// <summary>
+        /// Descarta lo que no tiene ni texto original ni traduccion.
+        ///
+        /// Hay mods que traen claves vacias en su propio archivo en ingles
+        /// —&lt;Defaults_EmptyString&gt;&lt;/Defaults_EmptyString&gt;—, y de ahi salian entradas que le
+        /// piden al traductor que traduzca la nada. La extraccion no se toca: es fiel a lo que
+        /// trae el mod. El descarte es una decision de que se escribe.
+        ///
+        /// La condicion mira las dos cosas y no solo el original a proposito. Con el original
+        /// vacio igual puede haber una traduccion hecha, que ademas es la que pone texto donde
+        /// el mod no muestra nada: en RML son 16 de Simple Sidearms, del estilo
+        /// Preset1_label = "Solo equipamiento". Filtrar solo por original vacio las sacaria.
+        /// </summary>
+        private static bool HayAlgoQueEscribir(TranslationEntry entrada)
+            => !string.IsNullOrWhiteSpace(entrada.Original)
+               || !string.IsNullOrWhiteSpace(entrada.Translated);
+
         public static void ToExcel(List<TranslationEntry> translations, string outPath = "result",
             bool markNoTranslation = false)
         {
+            translations = translations.Where(HayAlgoQueEscribir).ToList();
+
             var xlsx = new XLWorkbook();
             var sheet = xlsx.AddWorksheet();
             sheet.Cell(1, 1).Value = HeaderClassNode;
@@ -391,6 +410,8 @@ namespace RimworldExtractorInternal
         
         public static void ToLanguageXml(List<TranslationEntry> translations, bool skipNoTranslation, XmlCommentStyle commentStyle, string ModName, string rootDirPath)
         {
+            translations = translations.Where(HayAlgoQueEscribir).ToList();
+
             var languagesDir = PathCombineCreateDir(rootDirPath, "Languages");
             var translationDir = PathCombineCreateDir(languagesDir, Prefabs.TranslationLanguage);
             var defInjected = new List<TranslationEntry>();

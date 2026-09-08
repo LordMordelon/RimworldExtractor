@@ -907,4 +907,82 @@ namespace RimworldExtractorTest
             return raiz;
         }
     }
+
+    /// <summary>
+    /// Cubre que no se le pida al traductor traducir la nada.
+    ///
+    /// Hay mods que traen claves vacias en su propio archivo en ingles, del estilo
+    /// &lt;Defaults_EmptyString&gt;&lt;/Defaults_EmptyString&gt;, y de ahi salian entradas con el
+    /// comentario "EN:" vacio y un TODO al lado.
+    ///
+    /// Lo que este test cuida es el otro lado: que el filtro mire tambien la traduccion. Con el
+    /// original vacio igual puede haber trabajo hecho, y es justamente el que pone texto donde
+    /// el mod no muestra nada.
+    /// </summary>
+    [TestClass]
+    public class EntradasVaciasTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        /// <summary>Sin original y sin traduccion no hay nada que escribir.</summary>
+        [TestMethod]
+        public void NoEscribeLaEntradaSinOriginalNiTraduccion()
+        {
+            var escrito = Escribir(
+                new TranslationEntry("Keyed", "Defaults_EmptyString", "", null, null, null),
+                new TranslationEntry("Keyed", "OtraClave", "real text", null, null, null));
+
+            StringAssert.Contains(escrito, "OtraClave", "se llevo puesta una entrada con original");
+            Assert.IsFalse(escrito.Contains("Defaults_EmptyString"),
+                "se escribio una entrada sin nada que traducir");
+        }
+
+        /// <summary>
+        /// Con el original vacio pero traducida, se escribe. En RML son 16 de Simple Sidearms
+        /// que ponen texto donde el mod no muestra nada; filtrar solo por original vacio las
+        /// sacaria del juego.
+        /// </summary>
+        [TestMethod]
+        public void ConservaLaTraduccionAunqueElOriginalEsteVacio()
+        {
+            var escrito = Escribir(
+                new TranslationEntry("Keyed", "Preset1_label", "", "Solo equipamiento", null, null));
+
+            StringAssert.Contains(escrito, "Preset1_label",
+                "se perdio una traduccion hecha por tener el original vacio");
+            StringAssert.Contains(escrito, "Solo equipamiento");
+        }
+
+        /// <summary>Escribe las entradas y devuelve todo el XML generado, junto.</summary>
+        private static string Escribir(params TranslationEntry[] entradas)
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var raiz = Path.Combine(Path.GetTempPath(), "vacias-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(raiz);
+            try
+            {
+                var politica = Prefabs.Policy;
+                Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
+                try
+                {
+                    IO.ToLanguageXml(entradas.ToList(), false, XmlCommentStyle.TranslationTemplate,
+                        "UnMod", raiz);
+                }
+                finally
+                {
+                    Prefabs.Policy = politica;
+                }
+
+                return string.Join("\n", Directory
+                    .GetFiles(raiz, "*.xml", SearchOption.AllDirectories)
+                    .Select(File.ReadAllText));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+    }
 }
