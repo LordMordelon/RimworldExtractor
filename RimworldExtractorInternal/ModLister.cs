@@ -86,6 +86,7 @@ namespace RimworldExtractorInternal
             var pathAbout = Path.Combine(modRoot, "About", "About.xml");
             string name = "UNKNOWN";
             string packageId = "UNKNOWN";
+            string author = "";
             var modDependencies = new List<string>();
             if (File.Exists(pathAbout))
             {
@@ -95,6 +96,7 @@ namespace RimworldExtractorInternal
                     doc.LoadXml(File.ReadAllText(pathAbout));
                     packageId = doc.DocumentElement?["packageId"]?.InnerText ?? "UNKNOWN";
                     name = doc.DocumentElement?["name"]?.InnerText ?? "UNKNOWN";
+                    author = LeerAutor(doc);
                     if (name == "UNKNOWN")
                     {
                         // Official Contents
@@ -151,7 +153,34 @@ namespace RimworldExtractorInternal
             }
 
             modDependencies = modDependencies.Distinct().ToList();
-            return new ModMetadata(modRoot, id, name, packageId, false, modDependencies);
+            return new ModMetadata(modRoot, id, name, packageId, false, modDependencies) { Author = author };
+        }
+
+        /// <summary>
+        /// El autor declarado en un About.xml. RimWorld acepta las dos formas —&lt;author&gt; con
+        /// uno solo, o &lt;authors&gt; con una lista— y hay mods que usan cada una, asi que leer
+        /// solo la primera dejaria sin autor a una parte del Workshop.
+        ///
+        /// Devuelve el texto crudo, incluida la lista entera cuando son varios: normalizarlo
+        /// es tarea de <see cref="Agrupador.AutorPrincipal"/>, que es quien decide como se
+        /// agrupa.
+        /// </summary>
+        private static string LeerAutor(XmlDocument doc)
+        {
+            var uno = doc.DocumentElement?["author"]?.InnerText.Trim();
+            if (!string.IsNullOrWhiteSpace(uno))
+                return uno;
+
+            var varios = doc.DocumentElement?["authors"];
+            if (varios == null)
+                return "";
+
+            var nombres = varios.ChildNodes
+                .Cast<XmlNode>()
+                .Select(x => x.InnerText.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x));
+
+            return string.Join(", ", nombres);
         }
 
         public static List<ExtractableFolder> GetExtractableFolders(ModMetadata modMetadata)

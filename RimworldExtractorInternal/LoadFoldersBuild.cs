@@ -50,6 +50,28 @@ namespace RimworldExtractorInternal
             return true;
         }
 
+        /// <summary>
+        /// De un LoadFolders.Build.yaml saca el primer packageId de la lista. Vive aca porque el
+        /// formato lo define <see cref="Contents"/>: si cada lector tuviera su propia regex,
+        /// alcanzaria con que cambie el formato para que alguno deje de encontrar nada.
+        /// </summary>
+        private static readonly Regex PackageIdEnYaml =
+            new("PackageID:\\s*\\[\\s*\"([^\"]+)\"", RegexOptions.Compiled);
+
+        /// <summary>El packageId de un LoadFolders.Build.yaml, o null si no se puede leer.</summary>
+        internal static string? PackageIdDe(string yamlPath)
+        {
+            try
+            {
+                var match = PackageIdEnYaml.Match(File.ReadAllText(yamlPath));
+                return match.Success ? match.Groups[1].Value.Trim() : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         /// <summary>Si la carpeta de destino cuelga del clon de RML configurado.</summary>
         private static bool EstaDentroDeRml(string rootDirPath)
         {
@@ -84,7 +106,10 @@ namespace RimworldExtractorInternal
         /// un mod agrupado no encontraria lo ya traducido, lo trataria como nuevo y escribiria
         /// una carpeta duplicada al lado. Sin dar ningun error.
         ///
-        /// Si no existe en ningun lado es un mod nuevo, y entonces va directo bajo Data.
+        /// Si no existe en ningun lado es un mod nuevo. Ahi va a la carpeta de su autor si
+        /// ese autor ya tiene una, y si no, directo bajo Data. Que un mod nuevo caiga solo en
+        /// Data/!Autor/ es lo que mantiene la agrupacion al dia sin que nadie mueva nada
+        /// despues: antes caia siempre plano y la agrupacion se desactualizaba en silencio.
         /// </summary>
         public static string CarpetaDe(ModMetadata mod, string rmlPath)
         {
@@ -97,14 +122,19 @@ namespace RimworldExtractorInternal
 
             try
             {
-                return Directory.EnumerateDirectories(data, nombre, SearchOption.AllDirectories)
-                    .FirstOrDefault() ?? plana;
+                var existente = Directory.EnumerateDirectories(data, nombre, SearchOption.AllDirectories)
+                    .FirstOrDefault();
+                if (existente != null)
+                    return existente;
             }
             catch
             {
                 // Una carpeta ilegible no puede impedir escribir la traduccion.
                 return plana;
             }
+
+            var deAutor = Agrupador.CarpetaDeAutor(mod.Author, rmlPath);
+            return deAutor is null ? plana : Path.Combine(deAutor, nombre);
         }
 
         /// <summary>Ruta del proyecto del builder dentro de un clon de RML.</summary>

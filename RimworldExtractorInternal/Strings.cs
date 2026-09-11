@@ -203,6 +203,18 @@
         public static string LoadFoldersBuilderError(string message)
             => $"No se pudo lanzar LoadFoldersBuilder, así que el LoadFolders.xml quedó viejo: {message}";
 
+        public static string Agrupado(string folderName, string authorFolder)
+            => $"{folderName} se movió a Data/{authorFolder}/, con el resto de las traducciones de ese autor.";
+
+        public static string AgrupadoDuplicado(string folderName, string authorFolder)
+            => $"{folderName} no se agrupó: en Data/{authorFolder}/ ya hay una carpeta con ese nombre. Revisalas y dejá una sola.";
+
+        public static string AgrupadoFallo(string folderName, string message)
+            => $"{folderName} no se pudo mover a la carpeta de su autor, y quedó donde estaba: {message}";
+
+        public static string AutorSinAgrupar(string author, int count)
+            => $"{author} ya tiene {count} traducciones sueltas en Data/. Si le armás una carpeta Data/{Agrupador.Prefijo}{author}/, aunque sea vacía, se acomodan solas en la próxima traducción rápida.";
+
         public static string BatchModFailed(string folderName, string message)
             => $"{folderName}: falló la actualización y se siguió con el resto. {message}";
 

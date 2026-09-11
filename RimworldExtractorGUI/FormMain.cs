@@ -183,16 +183,26 @@ namespace RimworldExtractorGUI
         {
             var r = ActualizacionRml.Escribir(SelectedMod!, extraction, Prefabs.PathRml);
 
+            // Acomoda las traducciones sueltas de un autor que ya tiene su carpeta. Va antes
+            // de regenerar y no despues: mover una carpeta le cambia la ruta, y el indice
+            // tiene que salir con la de despues del movimiento.
+            Agrupador.Reagrupar(Prefabs.PathRml);
+
             // El yaml de la carpeta no alcanza: RimWorld lee el LoadFolders.xml, que lo arma
             // el builder de RML a partir de todos los yaml. Sin esto un mod recien agregado no
             // carga, y no hay ningun sintoma que lo explique. Va aca y no dentro de Escribir
             // porque en una corrida por lotes se hace una sola vez, al final.
             LoadFoldersBuild.Regenerar(Prefabs.PathRml);
 
-            Log.Msg(Strings.QuickUpdateSummary(r.Conservadas, r.Pendientes, r.SinUso));
-            Log.Msg(Strings.QuickUpdateWrittenTo(r.Destino));
+            // Si la que se acaba de escribir era una de las sueltas, ya no esta donde la dejo
+            // Escribir. Se vuelve a preguntar en vez de confiar en la ruta vieja: si no, el
+            // log manda a una carpeta que ya no existe y el boton de abrirla no abre nada.
+            var destino = LoadFoldersBuild.CarpetaDe(SelectedMod!, Prefabs.PathRml);
 
-            return r.Destino;
+            Log.Msg(Strings.QuickUpdateSummary(r.Conservadas, r.Pendientes, r.SinUso));
+            Log.Msg(Strings.QuickUpdateWrittenTo(destino));
+
+            return destino;
         }
 
 

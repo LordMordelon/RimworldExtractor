@@ -985,4 +985,277 @@ namespace RimworldExtractorTest
             }
         }
     }
+
+    /// <summary>
+    /// Cubre la agrupacion de Data/ por autor.
+    ///
+    /// Lo que se protege es que un mod nuevo caiga solo en la carpeta de su autor. Cuando eso
+    /// no pasa, no falla nada visible: la traduccion anda igual, simplemente Data/ se
+    /// desordena de a un mod por vez hasta que alguien lo nota meses despues.
+    /// </summary>
+    [TestClass]
+    public class AgrupadorTests
+    {
+        /// <summary>Un RML de mentira con las carpetas que se le pidan dentro de Data/.</summary>
+        private static string ArmarRml(params string[] carpetas)
+        {
+            var raiz = Path.Combine(Path.GetTempPath(), "rml-" + Guid.NewGuid().ToString("N"));
+            foreach (var carpeta in carpetas)
+                Directory.CreateDirectory(Path.Combine(raiz, "Data", carpeta));
+            return raiz;
+        }
+
+        /// <summary>
+        /// Un mod del workshop cualquiera. El nombre de su carpeta no se escribe a mano en
+        /// ningun test: sale de FolderNameFor, que es lo que decide como se llama de verdad.
+        /// </summary>
+        private static ModMetadata Mod(string nombre, string id, string autor)
+            => new("", id, nombre, "autor.mod", false) { Author = autor };
+
+        /// <summary>
+        /// Con varios autores manda el primero. Si no, cada combinacion de colaboradores seria
+        /// un autor distinto y ninguna llegaria al umbral.
+        /// </summary>
+        [TestMethod]
+        public void ElAutorSeNormalizaAlPrimeroDeLaLista()
+        {
+            Assert.AreEqual("Oskar Potocki", Agrupador.AutorPrincipal("Oskar Potocki, Taranchuk"));
+            Assert.AreEqual("Oskar Potocki", Agrupador.AutorPrincipal("Oskar Potocki, Sarg Bjornson, Taranchuk"));
+            Assert.AreEqual("Sarg Bjornson", Agrupador.AutorPrincipal("Sarg Bjornson and Oskar Potocki"));
+            Assert.AreEqual("", Agrupador.AutorPrincipal(null));
+            Assert.AreEqual("", Agrupador.AutorPrincipal("   "));
+        }
+
+        /// <summary>Un apellido que empieza con "and" no se parte al medio.</summary>
+        [TestMethod]
+        public void ElSeparadorNoPartePalabrasQueEmpiezanIgual()
+        {
+            Assert.AreEqual("Anderson", Agrupador.AutorPrincipal("Anderson"));
+        }
+
+        /// <summary>La misma persona firmando distinto tiene que dar la misma clave.</summary>
+        [TestMethod]
+        public void LaMismaPersonaFirmandoDistintoDaLaMismaClave()
+        {
+            Assert.AreEqual(Agrupador.Clave("Oskar Potocki"), Agrupador.Clave("OskarPotocki"));
+            Assert.AreEqual(Agrupador.Clave("Oskar Potocki"), Agrupador.Clave("oskar potocki"));
+            Assert.AreNotEqual(Agrupador.Clave("Oskar Potocki"), Agrupador.Clave("Sarg Bjornson"));
+        }
+
+        /// <summary>El caso que motiva todo: un mod nuevo de un autor que ya tiene carpeta.</summary>
+        [TestMethod]
+        public void UnModNuevoDeUnAutorConCarpetaCaeAdentro()
+        {
+            var mod = Mod("Progression Scenarios", "3378384387", "ferny");
+            var nombre = LoadFoldersBuild.FolderNameFor(mod);
+            var raiz = ArmarRml("!ferny");
+            try
+            {
+                Assert.AreEqual(
+                    Path.Combine(raiz, "Data", "!ferny", nombre),
+                    LoadFoldersBuild.CarpetaDe(mod, raiz));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>Sin carpeta de autor sigue cayendo plano: no se inventan carpetas.</summary>
+        [TestMethod]
+        public void UnModDeUnAutorSinCarpetaSigueCayendoPlano()
+        {
+            var mod = Mod("Un Mod", "999", "AlguienMas");
+            var nombre = LoadFoldersBuild.FolderNameFor(mod);
+            var raiz = ArmarRml("!ferny");
+            try
+            {
+                Assert.AreEqual(
+                    Path.Combine(raiz, "Data", nombre),
+                    LoadFoldersBuild.CarpetaDe(mod, raiz));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Una traduccion que ya existe se queda donde esta, aunque el autor tenga carpeta.
+        /// Mover lo ya traducido es tarea del <see cref="Agrupador.Reagrupar(string)"/>, que lo hace
+        /// una sola vez y lo loguea, no de la eleccion de destino de cada extraccion.
+        /// </summary>
+        [TestMethod]
+        public void UnaTraduccionQueYaExisteNoSeMueveSola()
+        {
+            var mod = Mod("Progression Scenarios", "3378384387", "ferny");
+            var nombre = LoadFoldersBuild.FolderNameFor(mod);
+            var raiz = ArmarRml("!ferny", nombre);
+            try
+            {
+                Assert.AreEqual(
+                    Path.Combine(raiz, "Data", nombre),
+                    LoadFoldersBuild.CarpetaDe(mod, raiz));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>La carpeta del autor se encuentra aunque este escrita distinto.</summary>
+        [TestMethod]
+        public void LaCarpetaDelAutorSeEncuentraAunqueEsteEscritaDistinto()
+        {
+            var raiz = ArmarRml("!Oskar Potocki");
+            try
+            {
+                Assert.IsNotNull(Agrupador.CarpetaDeAutor("OskarPotocki", raiz));
+                Assert.IsNotNull(Agrupador.CarpetaDeAutor("Oskar Potocki, Taranchuk", raiz));
+                Assert.IsNull(Agrupador.CarpetaDeAutor("Sarg Bjornson", raiz));
+                Assert.IsNull(Agrupador.CarpetaDeAutor("", raiz));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Un autor que firma fuera del alfabeto latino tambien tiene clave. Con a-z se quedaba
+        /// en blanco y el mod no se agrupaba nunca, sin avisar.
+        /// </summary>
+        [TestMethod]
+        public void UnAutorFueraDelAlfabetoLatinoTieneClave()
+        {
+            Assert.AreEqual("カタストロフ", Agrupador.AutorPrincipal("カタストロフ/NozoMe"));
+            Assert.AreNotEqual("", Agrupador.Clave("カタストロフ/NozoMe"));
+            Assert.AreNotEqual("", Agrupador.Clave("梦境触感"));
+            Assert.AreEqual(Agrupador.Clave("梦境触感"), Agrupador.Clave("梦境 触感"));
+        }
+
+        /// <summary>El &amp; separa autores igual que la coma.</summary>
+        [TestMethod]
+        public void ElAmpersandSeparaAutores()
+        {
+            Assert.AreEqual("Oskar Potocki", Agrupador.AutorPrincipal("Oskar Potocki & Taranchuk"));
+            Assert.AreEqual("A", Agrupador.AutorPrincipal("A&B"));
+        }
+
+        /// <summary>
+        /// Cuatro mods de un mismo autor, cada uno con su packageId, sueltos en Data/ o donde
+        /// se indique. Los yaml salen de LoadFoldersBuild.Contents, igual que en RML.
+        /// </summary>
+        private static List<ModMetadata> ModsDe(string autor, int cuantos)
+            => Enumerable.Range(1, cuantos)
+                .Select(i => new ModMetadata("", (1000 + i).ToString(), $"Mod {autor} {i}", $"{autor}.mod{i}", false)
+                    { Author = autor })
+                .ToList();
+
+        private static string EscribirTraduccion(string raiz, ModMetadata mod, string? carpetaDeAutor = null)
+        {
+            var nombre = LoadFoldersBuild.FolderNameFor(mod);
+            var carpeta = carpetaDeAutor is null
+                ? Path.Combine(raiz, "Data", nombre)
+                : Path.Combine(raiz, "Data", carpetaDeAutor, nombre);
+            Directory.CreateDirectory(carpeta);
+            File.WriteAllText(Path.Combine(carpeta, LoadFoldersBuild.FileName), LoadFoldersBuild.Contents(mod));
+            return carpeta;
+        }
+
+        /// <summary>
+        /// Con la carpeta del autor creada, aunque este vacia, las sueltas se mueven todas. Es
+        /// lo que promete el aviso de AutorSinAgrupar.
+        /// </summary>
+        [TestMethod]
+        public void ConLaCarpetaDelAutorLasSueltasSeMuevenTodas()
+        {
+            var mods = ModsDe("ferny", 4);
+            var raiz = ArmarRml("!ferny");
+            try
+            {
+                foreach (var mod in mods)
+                    EscribirTraduccion(raiz, mod);
+
+                Assert.AreEqual(4, Agrupador.Reagrupar(raiz, mods));
+                foreach (var mod in mods)
+                {
+                    var nombre = LoadFoldersBuild.FolderNameFor(mod);
+                    Assert.IsTrue(Directory.Exists(Path.Combine(raiz, "Data", "!ferny", nombre)), nombre);
+                    Assert.IsFalse(Directory.Exists(Path.Combine(raiz, "Data", nombre)), nombre);
+                }
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>Sin carpeta de autor no se mueve nada: crearla es decision de una persona.</summary>
+        [TestMethod]
+        public void SinLaCarpetaDelAutorNoSeMueveNada()
+        {
+            var mods = ModsDe("ferny", 4);
+            var raiz = ArmarRml();
+            try
+            {
+                var carpetas = mods.Select(x => EscribirTraduccion(raiz, x)).ToList();
+
+                Assert.AreEqual(0, Agrupador.Reagrupar(raiz, mods));
+                Assert.IsTrue(carpetas.All(Directory.Exists));
+                Assert.AreEqual(1, Agrupador.Revisar(raiz, mods).Count);
+                Assert.IsNull(Agrupador.Revisar(raiz, mods)[0].Carpeta);
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>Por debajo del umbral no se agrupa, aunque el autor tenga carpeta.</summary>
+        [TestMethod]
+        public void PorDebajoDelUmbralNoSeAgrupa()
+        {
+            var mods = ModsDe("ferny", Agrupador.Umbral - 1);
+            var raiz = ArmarRml("!ferny");
+            try
+            {
+                var carpetas = mods.Select(x => EscribirTraduccion(raiz, x)).ToList();
+
+                Assert.AreEqual(0, Agrupador.Reagrupar(raiz, mods));
+                Assert.IsTrue(carpetas.All(Directory.Exists));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Si en la carpeta del autor ya hay una con el mismo nombre, la suelta se queda donde
+        /// esta: resolverlo a ciegas seria elegir cual de las dos traducciones se pierde.
+        /// </summary>
+        [TestMethod]
+        public void NoSePisaUnaCarpetaQueYaEstaEnElDestino()
+        {
+            var mods = ModsDe("ferny", 4);
+            var raiz = ArmarRml("!ferny");
+            try
+            {
+                var suelta = EscribirTraduccion(raiz, mods[0]);
+                var agrupada = EscribirTraduccion(raiz, mods[0], "!ferny");
+                File.WriteAllText(Path.Combine(agrupada, "marca.txt"), "la de adentro");
+                foreach (var mod in mods.Skip(1))
+                    EscribirTraduccion(raiz, mod);
+
+                Assert.AreEqual(3, Agrupador.Reagrupar(raiz, mods));
+                Assert.IsTrue(Directory.Exists(suelta));
+                Assert.AreEqual("la de adentro", File.ReadAllText(Path.Combine(agrupada, "marca.txt")));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+    }
 }

@@ -70,6 +70,21 @@ Los tres datos de ese archivo —el `packageId`, el id del workshop y el nombre�
 extractor. Escribirlos a mano solo agrega una oportunidad de equivocarse, y equivocarse ahí no rompe
 nada visible: la traducción simplemente no se carga nunca.
 
+`Agrupador.cs` mantiene la agrupación de `Data/` por autor. Los mods de un mismo autor con cuatro
+traducciones o más viven en `Data/!Autor/`, y eso se hizo una vez a mano: después se desactualizaba
+solo, porque cada mod nuevo caía plano en `Data/` y nadie se enteraba hasta revisar a mano.
+
+Ahora un mod nuevo cae directo en la carpeta de su autor si ese autor ya tiene una, y las
+traducciones sueltas de ese autor se acomodan solas en la siguiente traducción rápida. Cuando un
+autor recién llega a cuatro y todavía no tiene carpeta, se avisa por log y no se mueve nada: crear
+una carpeta cambia la forma de `Data/` y es una decisión, no un acomodo. Alcanza con crearla vacía.
+
+El autor sale del `<author>` del `About.xml` del mod instalado, no del `packageId`. No son lo mismo:
+los mods de Oskar Potocki usan al menos cuatro prefijos distintos —`VanillaExpanded`, `OskarPotocki`,
+`vanillaracesexpanded`, `VE`— así que agrupar por prefijo lo partiría en cuatro personas. Y el nombre
+se normaliza antes de comparar, porque «Oskar Potocki» y «OskarPotocki» son la misma firmando
+distinto, y los colaborativos que se firman «Oskar Potocki, Taranchuk» van con el primero.
+
 ---
 
 ## Diagnósticos

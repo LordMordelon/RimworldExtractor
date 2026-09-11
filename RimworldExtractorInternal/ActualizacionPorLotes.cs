@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using RimworldExtractorInternal.DataTypes;
 
 namespace RimworldExtractorInternal
@@ -16,10 +15,6 @@ namespace RimworldExtractorInternal
     /// </summary>
     public static class ActualizacionPorLotes
     {
-        /// <summary>De un LoadFolders.Build.yaml saca el primer packageId de la lista.</summary>
-        private static readonly Regex PackageIdEnYaml =
-            new("PackageID:\\s*\\[\\s*\"([^\"]+)\"", RegexOptions.Compiled);
-
         /// <summary>Por que se salteo un mod.</summary>
         public enum Motivo
         {
@@ -99,12 +94,10 @@ namespace RimworldExtractorInternal
         private static Renglon Actualizar(string carpeta, string nombre, string rmlPath,
             Dictionary<string, ModMetadata> porPackageId)
         {
-            var yaml = File.ReadAllText(Path.Combine(carpeta, LoadFoldersBuild.FileName));
-            var match = PackageIdEnYaml.Match(yaml);
-            if (!match.Success)
+            var packageId = LoadFoldersBuild.PackageIdDe(Path.Combine(carpeta, LoadFoldersBuild.FileName));
+            if (packageId is null)
                 return new Renglon(nombre, Motivo.SinPackageId, string.Empty, 0, 0, 0, new List<TranslationEntry>());
 
-            var packageId = match.Groups[1].Value.Trim();
             if (!porPackageId.TryGetValue(packageId, out var mod))
                 return new Renglon(nombre, Motivo.NoInstalado, packageId, 0, 0, 0, new List<TranslationEntry>());
 
