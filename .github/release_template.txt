@@ -1,18 +1,8 @@
-Hay dos descargas. Las dos hacen exactamente lo mismo; elegí una.
+Dos descargas que hacen lo mismo:
 
-- **Portable** (`RimworldExtractor-Portable.exe`) — **la recomendada si no sabés cuál elegir.**
-  1. Es un único archivo: lo descargás y lo abrís, no se instala nada.
-  2. A cambio pesa bastante (~175 MB), porque trae todo lo que necesita adentro.
+- **Portable** (`RimworldExtractor-Portable.exe`, ~78 MB): un único archivo que se abre sin instalar nada. Si no sabés cuál elegir, es esta.
+- **Standard** (`RimworldExtractor-Standard.zip`, ~3 MB): hay que descomprimirla y requiere el [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/es-es/download/dotnet/10.0).
 
-- **Standard** (`RimworldExtractor-Standard.zip`)
-  1. Hay que descomprimirlo antes de usarlo.
-  2. Pesa mucho menos, pero requiere tener instalado el
-     [**.NET 10.0 Desktop Runtime**](https://dotnet.microsoft.com/es-es/download/dotnet/10.0).
+Si Windows avisa que el archivo no es seguro, es porque no está firmado: *Más información* → *Ejecutar de todas formas*.
 
----
-
-**Windows puede avisarte que el archivo no es seguro.** Es normal: el ejecutable no está firmado
-digitalmente. Si aparece la pantalla azul de SmartScreen, hacé clic en *Más información* y después
-en *Ejecutar de todas formas*.
-
-**¿Primera vez?** Leé la guía para traductores antes de empezar.
+¿Primera vez? Empezá por la [guía para traductores](https://github.com/LordMordelon/RML/blob/master/TRADUCIR.md).
