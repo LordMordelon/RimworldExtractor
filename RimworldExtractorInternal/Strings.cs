@@ -464,10 +464,9 @@
 
         #region Controles de los formularios
         //
-        // Estos son los textos que en upstream viven en los .Designer.cs. No se
-        // editan alli: el disenador de Visual Studio regenera esos archivos, y son
-        // justo los que upstream toca al agregar controles. En su lugar cada
-        // formulario los aplica en tiempo de ejecucion desde su ApplyStrings().
+        // Estos son los textos que en upstream viven en los .Designer.cs. Van aca aunque
+        // esos archivos ya se editen: todo el texto visible pasa por este archivo, y cada
+        // formulario los aplica desde su ApplyStrings().
 
         // --- FormMain ---
         public const string BtnSelectMod = "1. Elegir el mod a extraer";

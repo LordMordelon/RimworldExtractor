@@ -10,11 +10,12 @@ el mod que empaqueta las traducciones producidas con esta herramienta.
 > **No es un fork de GitHub**, aunque comparta su historia. Se creó clonando y
 > empujando a un repositorio nuevo, que es la única manera de tener una copia privada
 > de un repositorio público —lo fue al principio, ya no—, y por eso no figura en la red de
-> forks del original, pero en esencia lo es. El remoto `upstream` sigue apuntando ahí para mezclar sus cambios.
+> forks del original, pero en esencia lo es. Hoy es independiente: los arreglos de upstream se
+> traen a mano, mirando su commit, y no por merge.
 
-**Qué cambia respecto del original:** la interfaz en español sin tocar los `.Designer.cs`, el tema
-claro/oscuro, la traducción rápida —actualizar un mod sin volver a traducirlo—, la integración con
-RML y varios arreglos. Está todo en **[CAMBIOS.md](CAMBIOS.md)**.
+**Qué cambia respecto del original:** la interfaz en español, el tema claro/oscuro, la traducción
+rápida —actualizar un mod sin volver a traducirlo—, la actualización de todo RML de una vez, la
+integración con RML y varios arreglos. Está todo en **[CAMBIOS.md](CAMBIOS.md)**.
 
 ## Descargar
 
@@ -35,9 +36,6 @@ Si vas a traducir y no a programar, empezá por la
 
 - **Interfaz en español.** Todo el texto visible vive en
   [`RimworldExtractorInternal/Strings.cs`](RimworldExtractorInternal/Strings.cs).
-  Los `.Designer.cs` quedan intactos: cada formulario traduce sus controles en
-  tiempo de ejecución desde su método `ApplyStrings()`, para que los merges con
-  upstream sigan siendo limpios.
 - **Idioma de destino por defecto:** `SpanishLatin (Español(Latinoamérica))`.
 - **Rutas por defecto** apuntando a `D:\SteamLibrary`.
 - **Los guiones ya no se corrompen.** El original reemplazaba cada `-` por `ー`
@@ -72,11 +70,17 @@ Si vas a traducir y no a programar, empezá por la
   conserva lo traducido aunque cambie el texto original —el comentario `EN` se actualiza y
   el cambio se ve en el diff—, deja `TODO` solo en lo nuevo, y lo que el mod ya no tiene
   sale del árbol a un `UNUSED.xml`. Requiere indicar la carpeta de RML en Opciones.
+- **Actualizar todo RML**, un botón en la ventana principal. Hace la traducción rápida de
+  todos los mods que RML ya tiene, uno detrás de otro, contra la versión instalada. Es lo que
+  hace falta después de una actualización del juego. Los mods que no están instalados
+  quedan como están.
 - **`LoadFolders.Build.yaml` generado solo**, con el `packageId`, el ID del workshop y el
   nombre del mod, que el extractor ya conoce.
 - **Maquetación reacomodada.** Los formularios vienen con medidas fijas pensadas para
-  el coreano y el español ocupa bastante más, así que los controles se miden y se
-  acomodan al arrancar. Ver [AGENTS.md](AGENTS.md).
+  el coreano y el español ocupa bastante más. Se están pasando a `TableLayoutPanel`, y
+  mientras tanto los que faltan se miden y se acomodan al arrancar. Ver [AGENTS.md](AGENTS.md).
+- **Sin el empaquetador de imágenes**, que pegaba un `.zip` dentro de un `.jpg` para
+  foros coreanos.
 
 ## Compilar
 
@@ -97,25 +101,18 @@ dotnet publish RimworldExtractorGUI/RimworldExtractorGUI.csproj -c Release -r wi
   -p:EnableCompressionInSingleFile=true
 ```
 
-Hay que nombrar el `.csproj` explícitamente: la carpeta contiene además un
-`RimworldExtractorGUI - Backup.csproj`, heredado del original, que confunde a MSBuild.
-No está en la solución y sigue apuntando a `net7.0`, así que no se compila.
-
 El resultado queda en `RimworldExtractorGUI/bin/Release/net10.0-windows/win-x64/publish/`.
+`Prefabs.dat` (la configuración) y `log.txt` se guardan al lado del ejecutable.
 
-## Sincronizar con upstream
-
-```
-git fetch upstream
-git merge upstream/master
-```
-
-`origin` es este repositorio y `upstream` el original (sin push).
+## Publicar
 
 Cada push a `master` etiqueta una versión nueva y publica una release, con las dos
 variantes de descarga. Antes de tocar el código conviene leer
-**[AGENTS.md](AGENTS.md)**: están las reglas del proyecto —empezando por no editar
-nunca un `.Designer.cs`— y las trampas que ya costaron tiempo una vez.
+**[AGENTS.md](AGENTS.md)**: están las reglas del proyecto y las trampas que ya costaron
+tiempo una vez.
+
+`origin` es este repositorio y `upstream` el original, sin push. Sirve para mirar qué
+cambió allá: lo que valga la pena se trae a mano.
 
 ## Créditos
 

@@ -1,7 +1,7 @@
 # Qué cambia respecto del original
 
 Este repositorio deriva de [csh1668/RimworldExtractor](https://github.com/csh1668/RimworldExtractor),
-que está en coreano. Son 53 commits y 13 archivos nuevos.
+que está en coreano, y hoy es independiente de él.
 
 Este documento agrupa los cambios por tema, no commit por commit, y explica **por qué** está cada
 uno. El [README](README.md) cuenta qué hace la herramienta; [AGENTS.md](AGENTS.md) es lo que hay
@@ -9,17 +9,19 @@ que saber antes de tocar el código.
 
 ---
 
-## La regla que ordena todo lo demás
+## Independiente de upstream
 
-**Nunca se edita un `.Designer.cs`.** Toda la traducción y todos los retoques de maquetación se
-aplican en tiempo de ejecución, desde el `ApplyStrings()` de cada formulario.
+Al principio la regla era **no editar nunca un `.Designer.cs`**, para poder seguir mezclando con
+upstream sin conflictos: toda la traducción y la maquetación se aplicaban en tiempo de ejecución,
+desde el `ApplyStrings()` de cada formulario.
 
-Es lo que permite seguir mezclando con upstream, que sigue desarrollándose en coreano: los archivos
-generados por el diseñador quedan intactos, así que no dan conflictos. El remoto `upstream` sigue
-configurado para eso.
+Se abandonó cuando quedó claro que no se usaba: upstream dejó de publicar y el fork siguió solo.
+Los arreglos de allá se traen a mano, mirando su commit, y la maquetación pasa a declararse en el
+`.Designer.cs` con `TableLayoutPanel`. El motivo completo está en [AGENTS.md](AGENTS.md), para que la
+regla no vuelva sola.
 
-De ahí salen las dos consecuencias que se ven en todo el código: ningún texto visible va escrito en
-el código —todo pasa por `Strings.cs`— y ningún color va cableado.
+De esa época quedan dos reglas que se mantienen porque valen por sí mismas: ningún texto visible va
+escrito en el código —todo pasa por `Strings.cs`— y ningún color va cableado.
 
 ---
 
@@ -39,7 +41,12 @@ llamarse **antes** de crear ventanas —llamarla con la aplicación abierta deja
 tema anterior—, así que el botón del tema guarda la elección y ofrece reiniciar.
 
 `AutoAjuste` y `Rejilla` hacen falta porque los formularios vienen con posición y tamaño absolutos,
-medidos para textos en coreano. El español ocupa bastante más.
+medidos para textos en coreano. El español ocupa bastante más. Son provisorios: se van cuando todos
+los formularios estén maquetados con `TableLayoutPanel`.
+
+Se quitó el empaquetador de imágenes (`FormImageFileCombiner`), que pegaba un `.zip` al final de un
+`.jpg` para subir archivos a foros coreanos que solo aceptan imágenes. En su lugar de la ventana
+principal está «Actualizar todo RML».
 
 ---
 
@@ -53,7 +60,8 @@ re-extrae contra la versión instalada y se cruza con lo que ya estaba hecho.
   recuperó 7644 traducciones en una sola corrida: mods que movieron un nodo de lugar sin cambiarle
   el texto.
 - **`ActualizacionRml.cs`** — escribe el resultado sobre la carpeta del mod en RML.
-- **`ActualizacionPorLotes.cs`** — hace lo mismo con todos los mods de RML de una vez.
+- **`ActualizacionPorLotes.cs`** — hace lo mismo con todos los mods de RML de una vez, desde el
+  botón «Actualizar todo RML». Es lo que hace falta después de una actualización del juego.
 - **Formato «XML para traducir a mano»** — deja el original en un comentario y `TODO` donde falta
   traducir, en vez de dejar el inglés como valor. Un `TODO` sin terminar se ve; el inglés copiado
   pasa por traducción y nadie lo revisa.
@@ -115,6 +123,11 @@ referencia. Sin eso, un mod que le cambia el nombre a algo del juego base extra�
 - **Un `Console.WriteLine` de depuración** que imprimía cada entrada extraída a stdout.
 - **La relectura de los Patches** se hacía contra una base de defs que la propia extracción ya había
   reemplazado, así que la traducción hecha se perdía sin dejar rastro.
+- **`Prefabs.dat` y `log.txt` se buscaban en el directorio de trabajo.** Abrir la aplicación desde
+  un acceso directo o desde otra carpeta perdía la configuración y dejaba otro `Prefabs.dat` suelto.
+  Ahora viven junto al ejecutable.
+- **El límite de espera del builder de RML no actuaba**: la salida se leía hasta el final antes de
+  empezar a esperar, así que un builder colgado dejaba la ventana colgada para siempre.
 
 ---
 
@@ -123,3 +136,5 @@ referencia. Sin eso, un mod que le cambia el nombre a algo del juego base extra�
 `.github/workflows/publish.yml` etiqueta la versión a partir de los mensajes de commit, compila las
 dos variantes —portable y estándar— y crea la release. Un commit que empiece con `feat:` sube el
 número del medio.
+
+El Portable se publica comprimido: pesa 78 MB en vez de 184.

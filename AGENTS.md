@@ -19,7 +19,7 @@ con licencias distintas: esta herramienta es MIT, RML deriva de código GPL-3.0.
 | Proyecto | Qué contiene |
 |---|---|
 | `RimworldExtractorInternal` | Toda la lógica: extracción, lectura y escritura de XML/XLSX, listado de mods, configuración. No depende de WinForms. |
-| `RimworldExtractorGUI` | Los nueve formularios, más los ayudantes de `Utils/`. |
+| `RimworldExtractorGUI` | Los ocho formularios, más los ayudantes de `Utils/`. |
 | `RimworldExtractorTest` | MSTest. Los tests usan **la instalación real de RimWorld de la máquina**, así que se declaran `Inconclusive` si no la encuentran en vez de fallar. |
 
 Archivos que conviene conocer antes de tocar nada:
@@ -33,10 +33,6 @@ Archivos que conviene conocer antes de tocar nada:
 
 Requiere el **SDK de .NET 10**. La GUI apunta a `net10.0-windows`; `Internal` y los tests,
 a `net10.0`, porque no dependen de WinForms.
-
-En `RimworldExtractorGUI/` quedó además un `RimworldExtractorGUI - Backup.csproj` que
-apunta a `net7.0-windows`. No está en la solución y no se compila: es un resto que hay que
-ignorar, no la configuración real.
 
 ```
 dotnet build RimworldExtractor.sln -c Debug
@@ -88,8 +84,13 @@ Lo demás sigue igual, porque nada de esto era una concesión al fork:
 ## Maquetación
 
 Los formularios vienen de upstream con posición y tamaño absolutos, medidos para
-textos en coreano. El español ocupa bastante más, así que hay dos ayudantes que
-reacomodan todo al arrancar:
+textos en coreano. El español ocupa bastante más. El destino es maquetarlos con
+`TableLayoutPanel` en el `.Designer.cs`, como ya está `FormInitialPathSelect`: se descartó
+Avalonia (su previewer no funciona en esta máquina) y también WinUI 3, que no tiene diseñador
+visual, no publica un `.exe` único de forma soportada y obligaría a reescribir la GUI entera.
+Cuando estén los ocho, `AutoAjuste` y `Rejilla` se borran.
+
+Mientras tanto, los que faltan usan dos ayudantes que reacomodan todo al arrancar:
 
 - **`AutoAjuste`** mide cada control con su fuente real, lo ensancha si su texto no
   entra, corre a los vecinos que quedarían tapados y agranda la ventana. Al final fija
@@ -128,8 +129,8 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   y por eso sí se pinta con el tema puesto. No volver a `MessageBox`.
 - **Codificación.** Varios archivos venían en CP949 (coreano). Los bytes no son UTF-8
   válido, así que un `grep` de texto coreano no los encuentra: parecen ya traducidos y
-  no lo están. `PatchOperations.cs` estuvo así. Ante un archivo sospechoso, revisar
-  primero su codificación.
+  no lo están. `PatchOperations.cs` estuvo así. Hoy los 62 `.cs` están en UTF-8 y la CI ya
+  no convierte nada, así que lo que se traiga a mano de upstream hay que revisarlo antes.
 - **Guiones en comentarios XML.** La secuencia `--` es ilegal dentro de un comentario
   XML. El original resolvía eso reemplazando *todos* los guiones por `ー` (katakana),
   lo que destruía el texto latino (`re-arm` → `reーarm`). Ahora se escapa únicamente la
@@ -147,13 +148,20 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   vuelta. Las `const` no cuentan: se incrustan como literal y no dejan referencia.
   Compila igual y **falla en silencio**, porque al ser `WinExe` no hay consola donde
   aparezca la excepción; el rastro queda en el visor de eventos de Windows.
+- **`Prefabs.dat` y `log.txt` viven junto al ejecutable**, en `Prefabs.Carpeta`, que sale
+  de `Environment.ProcessPath`. No del directorio de trabajo, porque lanzar la aplicación
+  desde otra carpeta perdía la configuración y dejaba otro `Prefabs.dat` suelto. Y tampoco de
+  `AppContext.BaseDirectory`, porque en el Portable apunta a la carpeta temporal donde se
+  descomprime.
 - **`Prefabs.dat` se lee por posición**, no por nombre de campo. Un campo nuevo va
   **al final** y se lee sólo si está (`idx < lines.Length`): así un archivo viejo sigue
   sirviendo. Meterlo en el medio obliga a subir `Version`, y eso descarta el archivo
   entero y le borra la configuración a todo el mundo.
-- **El tamaño del `.zip` publicado.** Una vez pasó de 2,8 MB a 17,8 MB porque un paquete
-  de test arrastró instrumentación de Linux, macOS y ARM. La CI quedó en verde igual: el
-  único síntoma fue el tamaño del artefacto.
+- **El tamaño de lo publicado.** Una vez el `.zip` pasó de 2,8 MB a 17,8 MB porque un
+  paquete de test arrastró instrumentación de Linux, macOS y ARM. La CI quedó en verde
+  igual: el único síntoma fue el tamaño del artefacto. Referencia actual: el Standard pesa
+  unos 3 MB y el Portable unos 78 MB, comprimido con `EnableCompressionInSingleFile` (sin
+  comprimir eran 184 MB).
 
 ## Escribir sobre RML
 
@@ -186,6 +194,11 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   que aparta una traducción la saca de `Languages/`, así que la siguiente no la encuentra,
   no le sobra nada y borra el archivo con todo adentro.
 
+«Actualizar todo RML» (`ActualizacionPorLotes.Correr`) hace lo mismo con cada mod de RML,
+uno detrás de otro, en segundo plano. Mientras corre, la ventana no se deja cerrar: hacerlo
+mataría el hilo a mitad de un `Escribir`, con el árbol del mod ya borrado y sin reescribir.
+Al terminar agrupa y regenera el índice una sola vez.
+
 Los tests de `PatchesRoundTripTests`, `UnusedSobreviveTests` y `PatchesDeRmlTests` cubren
 estos cuatro casos. Todos se verificaron fallando sin su arreglo: un test de regresión que
 pasa igual sin el arreglo no guarda nada, y ya escribí uno así una vez.
@@ -213,5 +226,5 @@ cuando se quiere marcar una versión: el resto de los mensajes van en prosa.
 
 `.github/workflows/publish.yml` corre en cada push a `master`: etiqueta la versión,
 compila las dos variantes (estándar y portable) y crea la release. `tools.py` es la
-herramienta auxiliar que usa para normalizar codificaciones, escribir la versión y
-armar el texto de la release.
+herramienta auxiliar que usa para escribir la versión, armar el texto de la release y
+acomodar los dos paquetes.
