@@ -317,8 +317,11 @@
 
         public static string FilesFixed(int count) => $"Se corrigieron {count} archivos.";
 
+        public static string RmlPathWithoutData(string path)
+            => $"La carpeta de RML configurada no tiene una carpeta Data:\n{path}\n\nSi moviste el clon de lugar, actualizá la ruta en Opciones, en «Carpeta del mod RML».";
+
         public const string UpdateAllRmlNoData =
-            "No encontré ninguna traducción en la carpeta de RML. Revisá en Opciones que «Carpeta del mod RML» sea la que contiene Data.";
+            "La carpeta Data de RML no tiene ninguna traducción con su LoadFolders.Build.yaml, así que no hay nada que actualizar.";
 
         public static string ConfirmUpdateAllRml(int count)
             => $"Se van a volver a extraer los {count} mods de RML contra la versión instalada, conservando lo ya traducido. " +

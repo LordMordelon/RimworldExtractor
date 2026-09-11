@@ -128,6 +128,15 @@ namespace RimworldExtractorGUI
                 return;
             }
 
+            // Una ruta que ya no existe —el clon se movio de carpeta— no puede tomarse como
+            // destino: Escribir crearia ahi un Data/ nuevo, lejos del repositorio, y el log
+            // diria que la traduccion quedo guardada.
+            if (_quickUpdate && !Directory.Exists(Path.Combine(Prefabs.PathRml, "Data")))
+            {
+                Aviso.Mostrar(Strings.RmlPathWithoutData(Prefabs.PathRml), Strings.DialogTitleNotice);
+                return;
+            }
+
             Log.Msg(Strings.ExtractionStarted);
 
             var extraction = Extractor.ExtractTranslationData(SelectedMod, SelectedFolders, ReferenceMods);
@@ -301,6 +310,12 @@ namespace RimworldExtractorGUI
             if (string.IsNullOrWhiteSpace(rml))
             {
                 Aviso.Mostrar(Strings.QuickUpdateNoRmlPath, Strings.DialogTitleNotice);
+                return;
+            }
+
+            if (!Directory.Exists(Path.Combine(rml, "Data")))
+            {
+                Aviso.Mostrar(Strings.RmlPathWithoutData(rml), Strings.DialogTitleNotice);
                 return;
             }
 
