@@ -1,7 +1,5 @@
 # RimworldExtractor — Español latino
 
-<img src="RimworldExtractorGUI/Resources/logo.png" width="112" alt="Logo: un planeta con anillo que es a la vez un globo de diálogo">
-
 Herramienta para extraer los datos de traducción del contenido oficial de RimWorld
 y de sus mods (`Defs`, `Keyed`, `Strings`, `Patches`), con la interfaz en español.
 
