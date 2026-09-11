@@ -95,7 +95,7 @@ namespace RimworldExtractorGUI
                     var stripedText = concatText.Substring(0, Math.Min(concatText.Length, 200));
                     if (concatText.Length > 200)
                         stripedText += "...";
-                    labelSelectedMods.Text += Strings.SelectedReferenceMods(concatText);
+                    labelSelectedMods.Text += Strings.SelectedReferenceMods(stripedText);
                 }
             }
         }

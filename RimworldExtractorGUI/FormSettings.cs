@@ -26,7 +26,7 @@ namespace RimworldExtractorGUI
         {
             InitializeComponent();
             ApplyStrings();
-            if (File.Exists("Prefabs.dat"))
+            if (File.Exists(Prefabs.RutaPorDefecto))
             {
                 Prefabs.Load();
             }

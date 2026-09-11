@@ -227,8 +227,22 @@ namespace RimworldExtractorInternal
             PathRml = string.Empty;
         }
 
-        public static void Save(string fileName = "Prefabs.dat")
+        /// <summary>
+        /// La carpeta del ejecutable, que es donde viven Prefabs.dat y log.txt.
+        ///
+        /// No es el directorio de trabajo: con un acceso directo o lanzando la aplicacion desde
+        /// otra carpeta, la configuracion no aparecia, volvia a pedir las rutas y dejaba otro
+        /// Prefabs.dat suelto ahi. Tampoco es AppContext.BaseDirectory: en el Portable, que se
+        /// descomprime entero antes de arrancar, apunta a esa carpeta temporal.
+        /// </summary>
+        public static string Carpeta => Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
+
+        /// <summary>Donde se guarda y se lee la configuracion si no se indica otro archivo.</summary>
+        public static string RutaPorDefecto => Path.Combine(Carpeta, "Prefabs.dat");
+
+        public static void Save(string? fileName = null)
         {
+            fileName ??= RutaPorDefecto;
             List<string> lines = new List<string>
             {
                 "DO NOT EDIT THIS MANUALLY",
@@ -262,8 +276,9 @@ namespace RimworldExtractorInternal
 
 
         /// <exception cref="SerializationException">El campo Version no coincide</exception>
-        public static void Load(string fileName = "Prefabs.dat")
+        public static void Load(string? fileName = null)
         {
+            fileName ??= RutaPorDefecto;
             var lines = File.ReadAllLines(fileName);
             var idx = 1;
             if (Version != lines[idx++])

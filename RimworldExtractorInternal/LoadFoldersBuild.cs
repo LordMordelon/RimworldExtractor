@@ -144,6 +144,9 @@ namespace RimworldExtractorInternal
         /// <summary>Cuanto se espera al builder antes de darlo por colgado.</summary>
         private static readonly TimeSpan Paciencia = TimeSpan.FromMinutes(3);
 
+        /// <summary>Lo que devuelve <see cref="Correr"/> cuando se agota la paciencia y se lo mata.</summary>
+        private const int CodigoColgado = -2;
+
         /// <summary>Los codigos de color ANSI que escribe el builder, que en el log estorban.</summary>
         private static readonly Regex Colores = new(@"\x1b\[[0-9;]*m", RegexOptions.Compiled);
 
@@ -183,7 +186,9 @@ namespace RimworldExtractorInternal
                     return;
                 }
 
-                Log.Wrn(Strings.LoadFoldersBuilderFailed(codigo));
+                Log.Wrn(codigo == CodigoColgado
+                    ? Strings.LoadFoldersBuilderTimedOut((int)Paciencia.TotalMinutes)
+                    : Strings.LoadFoldersBuilderFailed(codigo));
                 foreach (var linea in salida)
                     Log.Wrn(linea);
             }
@@ -223,16 +228,23 @@ namespace RimworldExtractorInternal
                 return -1;
             }
 
-            // Se lee antes de esperar: si la tuberia se llena, el hijo se bloquea
-            // escribiendo y los dos quedan esperando al otro.
-            var texto = proceso.StandardOutput.ReadToEnd() + proceso.StandardError.ReadToEnd();
+            // Las dos salidas se leen en segundo plano y a la vez. Leerlas de corrido con
+            // ReadToEnd esperaba a que el proceso terminara antes de llegar al WaitForExit, asi
+            // que la paciencia no actuaba nunca; y leer una y despues la otra puede trabar a los
+            // dos procesos si el hijo llena la tuberia que todavia nadie esta leyendo.
+            var normal = proceso.StandardOutput.ReadToEndAsync();
+            var errores = proceso.StandardError.ReadToEndAsync();
 
             if (!proceso.WaitForExit((int)Paciencia.TotalMilliseconds))
             {
                 proceso.Kill(true);
                 salida = new List<string>();
-                return -2;
+                return CodigoColgado;
             }
+
+            // Sin argumentos espera ademas a que se vacien las salidas redirigidas.
+            proceso.WaitForExit();
+            var texto = normal.Result + errores.Result;
 
             salida = texto
                 .Split('\n')

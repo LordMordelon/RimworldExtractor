@@ -31,7 +31,8 @@ namespace RimworldExtractorGUI
         public RichTextBoxWriter(RichTextBox richTextBox)
         {
             this._richTextBox = richTextBox;
-            this._logFileWriter = File.CreateText("log.txt");
+            // Junto al ejecutable y no en el directorio de trabajo, igual que Prefabs.dat.
+            this._logFileWriter = File.CreateText(Path.Combine(Prefabs.Carpeta, "log.txt"));
         }
 
         public override void WriteLine(string? value)

@@ -200,6 +200,9 @@
         public static string LoadFoldersBuilderFailed(int exitCode)
             => $"LoadFoldersBuilder terminó con el código {exitCode}, así que el LoadFolders.xml quedó viejo. La traducción se guardó igual.";
 
+        public static string LoadFoldersBuilderTimedOut(int minutes)
+            => $"LoadFoldersBuilder no terminó en {minutes} minutos y se lo cerró, así que el LoadFolders.xml quedó viejo. La traducción se guardó igual: corré actualizar.cmd en tu clon de RML.";
+
         public static string LoadFoldersBuilderError(string message)
             => $"No se pudo lanzar LoadFoldersBuilder, así que el LoadFolders.xml quedó viejo: {message}";
 

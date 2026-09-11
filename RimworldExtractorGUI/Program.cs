@@ -67,7 +67,7 @@ namespace RimworldExtractorGUI
             }
 
             Tema.Aplicar();
-            if (!File.Exists("Prefabs.dat"))
+            if (!File.Exists(Prefabs.RutaPorDefecto))
             {
                 var formInitialPathSelect = new FormInitialPathSelect();
                 formInitialPathSelect.StartPosition = FormStartPosition.CenterScreen;
