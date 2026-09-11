@@ -520,7 +520,6 @@ namespace RimworldExtractorGUI
             Text = Strings.TitleSelectMod;
             buttonDone.Text = Strings.BtnSelectionDone;
             label1.Text = Strings.LabelSelectModControls;
-            label2.Text = Strings.LabelSelectExtractionMode;
             label3.Text = Strings.LabelSelectFolder;
             labelSelectedMod.Text = Strings.LabelSelectExtractionMode;
             checkBoxFilterSelected.Text = Strings.CheckBoxFilterSelected;
@@ -532,7 +531,7 @@ namespace RimworldExtractorGUI
 
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
-            AutoAjuste.Ajustar(buttonDone, label2, label3, checkBoxFilterSelected);
+            AutoAjuste.Ajustar(buttonDone, label3, checkBoxFilterSelected);
 
             // La casilla arranca la columna de la izquierda, asi que se alinea con el
             // buscador y con la lista que tiene debajo. En el diseño original quedaba
@@ -545,9 +544,8 @@ namespace RimworldExtractorGUI
             label3.TextAlign = ContentAlignment.MiddleLeft;
             label3.Left = listBoxExtractableFolders.Left;
 
-            // Y el de la columna izquierda, que venia igual de indentado.
-            label2.TextAlign = ContentAlignment.MiddleLeft;
-            label2.Left = listBoxMods.Left;
+            // La columna izquierda no lleva rotulo: repetia el titulo de la ventana. La fila
+            // de casillas ocupa su lugar y la lista de mods se queda con el espacio que sobra.
 
             // El panel arranca y termina donde la lista que tiene debajo, para que el
             // nombre del mod quede sobre la misma vertical que el rotulo de la carpeta.
@@ -558,16 +556,24 @@ namespace RimworldExtractorGUI
             // Comparte fila con la otra casilla: las dos cambian que hace el boton de
             // aceptar, y esa fila tenia lugar de sobra.
             _checkBoxQuickUpdate.Text = Strings.CheckBoxQuickUpdate;
-            _checkBoxQuickUpdate.Top = checkBoxFilterSelected.Top;
-            _checkBoxQuickUpdate.Left = checkBoxFilterSelected.Right + 24;
-            Controls.Add(_checkBoxQuickUpdate);
-            toolTip1.SetToolTip(_checkBoxQuickUpdate, Strings.TooltipQuickUpdate);
-
             _checkBoxFullExtraction.Text = Strings.CheckBoxFullExtraction;
-            _checkBoxFullExtraction.Top = checkBoxFilterSelected.Top;
-            _checkBoxFullExtraction.Left = _checkBoxQuickUpdate.Right + 24;
+            Controls.Add(_checkBoxQuickUpdate);
             Controls.Add(_checkBoxFullExtraction);
+            toolTip1.SetToolTip(_checkBoxQuickUpdate, Strings.TooltipQuickUpdate);
             toolTip1.SetToolTip(_checkBoxFullExtraction, Strings.TooltipFullExtraction);
+
+            // Las tres casillas se reparten el ancho de la columna izquierda. Con una
+            // separacion fija de 24 px la ultima se metia en la columna de la derecha,
+            // encima del panel del mod elegido. Se mide despues de agregarlas a la ventana,
+            // que es cuando toman su fuente y su ancho definitivos.
+            var libre = listBoxMods.Right - checkBoxFilterSelected.Right
+                        - _checkBoxQuickUpdate.Width - _checkBoxFullExtraction.Width;
+            var separacion = Math.Max(8, libre / 2);
+
+            _checkBoxQuickUpdate.Top = checkBoxFilterSelected.Top;
+            _checkBoxQuickUpdate.Left = checkBoxFilterSelected.Right + separacion;
+            _checkBoxFullExtraction.Top = checkBoxFilterSelected.Top;
+            _checkBoxFullExtraction.Left = _checkBoxQuickUpdate.Right + separacion;
 
             AcomodarModElegido();
             Shown += (_, _) => AcomodarModElegido();

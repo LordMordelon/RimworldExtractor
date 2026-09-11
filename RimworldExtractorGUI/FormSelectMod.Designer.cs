@@ -35,7 +35,6 @@
             buttonDone = new Button();
             label1 = new Label();
             labelSelectedMod = new Label();
-            label2 = new Label();
             label3 = new Label();
             checkBoxFilterSelected = new CheckBox();
             toolTip1 = new ToolTip(components);
@@ -47,10 +46,11 @@
             // 
             listBoxMods.DrawMode = DrawMode.OwnerDrawFixed;
             listBoxMods.FormattingEnabled = true;
+            listBoxMods.IntegralHeight = false;
             listBoxMods.ItemHeight = 30;
-            listBoxMods.Location = new Point(12, 91);
+            listBoxMods.Location = new Point(12, 63);
             listBoxMods.Name = "listBoxMods";
-            listBoxMods.Size = new Size(488, 364);
+            listBoxMods.Size = new Size(488, 392);
             listBoxMods.TabIndex = 0;
             listBoxMods.DrawItem += listBoxMods_DrawItem;
             listBoxMods.SelectedIndexChanged += listBoxMods_SelectedIndexChanged;
@@ -59,7 +59,7 @@
             // 
             // textBoxSearch
             // 
-            textBoxSearch.Location = new Point(12, 62);
+            textBoxSearch.Location = new Point(12, 34);
             textBoxSearch.Name = "textBoxSearch";
             textBoxSearch.Size = new Size(488, 23);
             textBoxSearch.TabIndex = 1;
@@ -108,16 +108,7 @@
             labelSelectedMod.Size = new Size(135, 15);
             labelSelectedMod.TabIndex = 6;
             labelSelectedMod.Text = "추출 모드를 선택하세요";
-            // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Location = new Point(149, 9);
-            label2.Name = "label2";
-            label2.Size = new Size(147, 15);
-            label2.TabIndex = 7;
-            label2.Text = "추출할 모드를 선택하세요";
-            // 
+            //
             // label3
             // 
             label3.AutoSize = true;
@@ -130,7 +121,7 @@
             // checkBoxFilterSelected
             // 
             checkBoxFilterSelected.AutoSize = true;
-            checkBoxFilterSelected.Location = new Point(370, 37);
+            checkBoxFilterSelected.Location = new Point(12, 9);
             checkBoxFilterSelected.Name = "checkBoxFilterSelected";
             checkBoxFilterSelected.Size = new Size(130, 19);
             checkBoxFilterSelected.TabIndex = 9;
@@ -155,7 +146,6 @@
             Controls.Add(panel1);
             Controls.Add(checkBoxFilterSelected);
             Controls.Add(label3);
-            Controls.Add(label2);
             Controls.Add(label1);
             Controls.Add(buttonDone);
             Controls.Add(listBoxExtractableFolders);
@@ -178,7 +168,6 @@
         private Button buttonDone;
         private Label label1;
         private Label labelSelectedMod;
-        private Label label2;
         private Label label3;
         private CheckBox checkBoxFilterSelected;
         private ToolTip toolTip1;
