@@ -42,7 +42,6 @@ jobs:
     - name: Pre-Cleanup / Write Current Version
       id: cleanup
       run: |
-        python $env:Script_Path utf8
         python $env:Script_Path version ${{ steps.changelog.outputs.new_tag }}
         python $env:Script_Path template "${{ steps.changelog.outputs.changelog }}"
       

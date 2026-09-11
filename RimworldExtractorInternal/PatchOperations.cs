@@ -1,5 +1,4 @@
 ﻿using System.Xml;
-using DocumentFormat.OpenXml.Office2013.PowerPoint.Roaming;
 using RimworldExtractorInternal.DataTypes;
 
 namespace RimworldExtractorInternal;

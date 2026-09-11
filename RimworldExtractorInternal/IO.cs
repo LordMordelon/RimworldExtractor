@@ -5,8 +5,6 @@ using System.Xml;
 using RimworldExtractorInternal.Compats;
 using RimworldExtractorInternal.DataTypes;
 using RimworldExtractorInternal.Exceptions;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Office2016.Excel;
 
 namespace RimworldExtractorInternal
 {

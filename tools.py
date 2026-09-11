@@ -2,7 +2,6 @@ import sys
 from os import path
 import os
 import zipfile
-import codecs
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -84,34 +83,6 @@ def cleanup_portable():
     print(new_path)
 
 
-def convert_utf8(file_path):
-    print(f'convert_utf8: {file_path}')
-    # cp949 es la ANSI coreana: upstream commitea algun .cs en esa codificacion.
-    # Se prueba antes que cp1252 porque cp1252 acepta casi cualquier byte y
-    # convertiria ese archivo en mojibake en vez de fallar.
-    encodings_to_try = ['utf-8', 'cp949', 'cp1252']
-    for encoding in encodings_to_try:
-        try:
-            with codecs.open(file_path, 'r', encoding=encoding) as f:
-                content = f.read()
-            with codecs.open(file_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            if encoding != 'utf-8':
-                print(f"Successfully converted from {encoding} to utf-8.")
-            return
-        except UnicodeDecodeError as err:
-            print(f"Failed to decode with {encoding}: {err}")
-
-
-def ensure_utf8():
-    for root, _, files in os.walk(ROOT_PATH):
-        for file in files:
-            full_path = path.join(root, file)
-            if not file.endswith('.cs'):
-                continue
-            convert_utf8(full_path)
-
-
 if __name__ == "__main__":
     print(ROOT_PATH)
     command = sys.argv[1]
@@ -124,7 +95,5 @@ if __name__ == "__main__":
     elif command == 'cleanup':
         cleanup_standard()
         cleanup_portable()
-    elif command == 'utf8':
-        ensure_utf8()
     elif command == 'template':
         edit_template(sys.argv[2])
