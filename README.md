@@ -22,7 +22,8 @@ En la **[página de Releases](https://github.com/LordMordelon/RimworldExtractor/
 hay dos descargas que hacen exactamente lo mismo:
 
 - **Portable** (`RimworldExtractor-Portable.exe`) — un único archivo, no se instala nada.
-  Pesa bastante (~175 MB) porque trae todo lo que necesita adentro.
+  Pesa bastante (~80 MB) porque trae todo lo que necesita adentro. La primera vez que se
+  abre tarda unos segundos más, porque se descomprime.
 - **Standard** (`RimworldExtractor-Standard.zip`) — hay que descomprimirlo, pesa mucho
   menos y requiere el
   [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/es-es/download/dotnet/10.0).
@@ -92,7 +93,8 @@ Para el ejecutable de uso diario:
 
 ```
 dotnet publish RimworldExtractorGUI/RimworldExtractorGUI.csproj -c Release -r win-x64 ^
-  --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true
+  --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true ^
+  -p:EnableCompressionInSingleFile=true
 ```
 
 Hay que nombrar el `.csproj` explícitamente: la carpeta contiene además un
