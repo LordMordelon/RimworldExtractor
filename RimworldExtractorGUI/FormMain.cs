@@ -14,18 +14,32 @@ namespace RimworldExtractorGUI
         public List<ModMetadata>? ReferenceMods { get; private set; }
 
         /// <summary>
-        /// Boton para elegir el tema. Se crea en codigo y no en el Designer, como todo lo
-        /// que agrega el fork, para no tocar los archivos generados.
+        /// Boton para elegir el tema. Se crea en codigo porque es de cuando no se tocaban los
+        /// .Designer.cs; pasa al Designer cuando esta ventana se migre a TableLayoutPanel.
         /// </summary>
         private readonly Button _buttonTema = new() { Name = "buttonTema" };
 
         /// <summary>Si la ultima seleccion pidio actualizar sobre RML.</summary>
         private bool _quickUpdate;
 
+        /// <summary>Si esta corriendo «Actualizar todo RML».</summary>
+        private bool _actualizandoRml;
+
         public FormMain()
         {
             InitializeComponent();
             ApplyStrings();
+
+            // Cerrar a mitad del lote mataria el hilo que escribe, y el mod de ese momento
+            // quedaria con su carpeta borrada y sin reescribir.
+            FormClosing += (_, e) =>
+            {
+                if (!_actualizandoRml)
+                    return;
+
+                e.Cancel = true;
+                Aviso.Mostrar(Strings.BatchStillRunning, Strings.DialogTitleNotice);
+            };
             Log.Out = new RichTextBoxWriter(richTextBoxLog);
             Prefabs.StopCallbackXlsx = FormStopCallback.StopCallbackXlsx;
             Prefabs.StopCallbackXml = FormStopCallback.StopCallbackXml;
@@ -273,14 +287,101 @@ namespace RimworldExtractorGUI
             }
         }
 
-        private void buttonJpgPackager_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Vuelve a extraer de una vez todos los mods que RML ya tiene traducidos, que es lo
+        /// que hace falta despues de una actualizacion del juego o de una tanda de mods.
+        ///
+        /// Corre en segundo plano para que la ventana siga respondiendo y el log se vea avanzar:
+        /// son cientos de mods. Es seguro porque ActualizacionRml.Escribir fuerza la
+        /// sobrescritura, asi que nunca abre el dialogo de archivo duplicado desde otro hilo, y
+        /// RichTextBoxWriter ya pasa cada linea al hilo de la interfaz.
+        /// </summary>
+        private async void buttonUpdateAllRml_Click(object sender, EventArgs e)
         {
-            var form = new FormImageFileCombiner();
-            form.StartPosition = FormStartPosition.CenterParent;
-            if (form.ShowDialog(this) == DialogResult.OK)
+            var rml = Prefabs.PathRml;
+            if (string.IsNullOrWhiteSpace(rml))
             {
-
+                Aviso.Mostrar(Strings.QuickUpdateNoRmlPath, Strings.DialogTitleNotice);
+                return;
             }
+
+            var total = ActualizacionPorLotes.Contar(rml);
+            if (total == 0)
+            {
+                Aviso.Mostrar(Strings.UpdateAllRmlNoData, Strings.DialogTitleNotice);
+                return;
+            }
+
+            if (Aviso.Preguntar(Strings.ConfirmUpdateAllRml(total), Strings.DialogTitleNotice) != DialogResult.Yes)
+                return;
+
+            _actualizandoRml = true;
+            HabilitarAcciones(false);
+            try
+            {
+                var renglones = await Task.Run(() =>
+                {
+                    var r = ActualizacionPorLotes.Correr(rml,
+                        (i, n, nombre) => Log.Msg(Strings.BatchProgress(i, n, nombre)));
+
+                    // Una sola vez al final y en el mismo orden que la traduccion rapida: primero
+                    // se acomoda Data/ y despues el indice sale con las rutas definitivas.
+                    Agrupador.Reagrupar(rml);
+                    LoadFoldersBuild.Regenerar(rml);
+                    return r;
+                });
+
+                InformarLote(renglones);
+                Aviso.Mostrar(Strings.BatchDone, Strings.DialogTitleDone);
+            }
+            catch (Exception ex)
+            {
+                // Los fallos de un mod ya los ataja Correr. Esto es lo que queda fuera de ese
+                // cuidado —leer la lista de mods instalados, por ejemplo—, y en un handler
+                // async sin atajar cierra la aplicacion entera.
+                Log.Err(Strings.ErrorMessagePrefix(ex.Message));
+                Aviso.Mostrar(Strings.ErrorMessagePrefix(ex.Message), Strings.DialogTitleNotice);
+            }
+            finally
+            {
+                _actualizandoRml = false;
+                HabilitarAcciones(true);
+            }
+        }
+
+        /// <summary>El resumen de una actualizacion por lotes, con los mods que se saltearon por nombre.</summary>
+        private static void InformarLote(List<ActualizacionPorLotes.Renglon> renglones)
+        {
+            var actualizados = renglones.Where(x => x.Motivo == ActualizacionPorLotes.Motivo.Actualizado).ToList();
+            Log.Msg(Strings.BatchSummary(actualizados.Count, renglones.Count,
+                actualizados.Sum(x => x.Conservadas), actualizados.Sum(x => x.Pendientes),
+                actualizados.Sum(x => x.SinUso), actualizados.Sum(x => x.Rescatadas.Count)));
+
+            void Informar(ActualizacionPorLotes.Motivo motivo, Func<int, string, string> texto)
+            {
+                var carpetas = renglones.Where(x => x.Motivo == motivo).Select(x => x.Carpeta).ToList();
+                if (carpetas.Count > 0)
+                    Log.Wrn(texto(carpetas.Count, string.Join(", ", carpetas)));
+            }
+
+            Informar(ActualizacionPorLotes.Motivo.NoInstalado, Strings.BatchNotInstalled);
+            Informar(ActualizacionPorLotes.Motivo.SinPackageId, Strings.BatchNoPackageId);
+            Informar(ActualizacionPorLotes.Motivo.NadaQueExtraer, Strings.BatchNothingToExtract);
+            Informar(ActualizacionPorLotes.Motivo.Fallo, Strings.BatchFailed);
+        }
+
+        /// <summary>
+        /// Prende o apaga todos los botones de la ventana. Mientras corre el lote no se puede
+        /// extraer, cambiar opciones ni reiniciar por el tema: cualquiera de esas cosas pisaria
+        /// el estado que la actualizacion esta usando.
+        /// </summary>
+        private void HabilitarAcciones(bool habilitar)
+        {
+            foreach (var boton in Controls.OfType<Button>())
+                boton.Enabled = habilitar;
+
+            // Extraer sigue dependiendo de que haya un mod elegido, como al abrir la ventana.
+            buttonExtract.Enabled = habilitar && SelectedMod is not null;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -346,8 +447,9 @@ namespace RimworldExtractorGUI
         }
     
         /// <summary>
-        /// Traduce los controles en tiempo de ejecucion, para no tocar el .Designer.cs
-        /// y mantener limpios los merges con upstream.
+        /// Pone los textos y acomoda la ventana. Todavia maqueta en tiempo de ejecucion,
+        /// con Rejilla y AutoAjuste, hasta que pase a TableLayoutPanel como
+        /// FormInitialPathSelect.
         /// </summary>
         private void ApplyStrings()
         {
@@ -366,7 +468,7 @@ namespace RimworldExtractorGUI
             buttonExtract.Text = Strings.BtnExtract;
             button2.Text = Strings.BtnOptions;
             label1.Text = Strings.LabelMainDescription;
-            buttonJpgPackager.Text = Strings.BtnJpgPackager;
+            buttonUpdateAllRml.Text = Strings.BtnUpdateAllRml;
             buttonOpenTranslationAnalyzer.Text = Strings.BtnOpenTranslationAnalyzer;
             labelSelectedMods.Text = Strings.LabelNoModSelected;
 
@@ -394,12 +496,12 @@ namespace RimworldExtractorGUI
                 Rejilla.Linea(buttonSelectMod),
                 Rejilla.Linea(buttonExtract),
                 Rejilla.Linea(buttonConvertXlsx, buttonConvertXml),
-                Rejilla.Linea(buttonOpenTranslationAnalyzer, buttonJpgPackager),
+                Rejilla.Linea(buttonOpenTranslationAnalyzer, buttonUpdateAllRml),
                 Rejilla.Linea(button2, _buttonTema));
 
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
-            AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, _buttonTema, buttonJpgPackager,
+            AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, _buttonTema, buttonUpdateAllRml,
                 buttonOpenTranslationAnalyzer, buttonConvertXlsx, buttonConvertXml, button1,
                 labelSelectedMods, label1);
 

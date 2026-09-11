@@ -272,6 +272,7 @@
         public const string BtnNo = "No";
         public const string DialogTitleDone = "Listo";
         public const string DialogTitleDoneQuestion = "¿Listo?";
+        public const string BtnDone = "Listo";
         public const string SelectRimworldExe = "Elegí RimWorldWin64.exe";
         public const string FilterRimworldExe = "Ejecutable de RimWorld|RimWorldWin64.exe";
         public const string SelectWorkshopPath =
@@ -315,6 +316,38 @@
         public const string EditedFileSuffix = "- editado";
 
         public static string FilesFixed(int count) => $"Se corrigieron {count} archivos.";
+
+        public const string UpdateAllRmlNoData =
+            "No encontré ninguna traducción en la carpeta de RML. Revisá en Opciones que «Carpeta del mod RML» sea la que contiene Data.";
+
+        public static string ConfirmUpdateAllRml(int count)
+            => $"Se van a volver a extraer los {count} mods de RML contra la versión instalada, conservando lo ya traducido. " +
+               "Los que no estén instalados quedan como están.\n\n" +
+               "Puede tardar varios minutos. Antes de commitear, revisá el diff como indica el AGENTS.md de RML.\n\n¿Seguimos?";
+
+        public static string BatchProgress(int current, int total, string folderName)
+            => $"{current}/{total}: {folderName}";
+
+        public static string BatchSummary(int updated, int total, int kept, int pending, int unused, int rescued)
+            => $"Actualización de RML: {updated} de {total} mods actualizados. {kept} traducciones conservadas, {pending} sin traducir, {unused} sin uso y {rescued} rescatadas por su texto original.";
+
+        public static string BatchNotInstalled(int count, string names)
+            => $"{count} no están instalados y quedaron como estaban: {names}";
+
+        public static string BatchNoPackageId(int count, string names)
+            => $"{count} no tienen packageId en su {LoadFoldersBuild.FileName} y quedaron como estaban: {names}";
+
+        public static string BatchNothingToExtract(int count, string names)
+            => $"{count} no tenían nada que extraer y quedaron como estaban: {names}";
+
+        public static string BatchFailed(int count, string names)
+            => $"{count} fallaron (el detalle está más arriba): {names}";
+
+        public const string BatchDone =
+            "Terminó la actualización de RML. El resumen está en el log.\n\nAntes de commitear, revisá el diff como indica el AGENTS.md de RML.";
+
+        public const string BatchStillRunning =
+            "Todavía se está actualizando RML. Si la cerrás ahora, el mod que se está escribiendo puede quedar a medias: esperá a que termine.";
 
         #endregion
 
@@ -390,28 +423,6 @@
 
         #endregion
 
-        #region FormImageFileCombiner
-
-        public const string SelectImageFile = "Elegí el archivo de imagen.";
-        public const string FilterImageFile = "Archivo de imagen|*.jpg;*.png;*.gif";
-        public const string SelectZipToPackage = "Elegí la ruta del archivo comprimido a empaquetar.";
-        public const string FilterZip = "Archivo ZIP";
-        public const string SelectFolderToPackage = "Elegí la ruta de la carpeta a empaquetar.";
-        public const string SelectSaveLocation = "Elegí dónde guardar el archivo";
-
-        public const string ImageNotFoundOrNoAccess =
-            "La imagen no existe en esa ruta o no hay permisos de acceso.\n" +
-            "Si el archivo existe y aun así falla, ejecutá como administrador o movelo a otra ubicación y volvé a intentar.";
-
-        public const string FileNotFoundOrNoAccess =
-            "El archivo o la carpeta no existe en esa ruta o no hay permisos de acceso.\n" +
-            "Si el archivo existe y aun así falla, ejecutá como administrador o movelo a otra ubicación y volvé a intentar.";
-
-        public const string ReselectFileLocation = "Volvé a elegir la ubicación del archivo.";
-        public const string DoneOpenPackagedFolder = "¡Listo! ¿Abro la carpeta con el archivo empaquetado?";
-
-        #endregion
-
         #region FormTranslationAnalyzer
 
         public static string AnalyzingProgress(int current, int total)
@@ -482,7 +493,7 @@
         // de la ventana ya dice de que se trata.
         public const string LabelMainDescription =
             "Extrae los datos de traducción de RimWorld y de sus mods.";
-        public const string BtnJpgPackager = "Unir imagen + archivo";
+        public const string BtnUpdateAllRml = "Actualizar todo RML";
         public const string BtnOpenTranslationAnalyzer = "Abrir el analizador\r\nde traducciones (WIP)";
         public const string LabelNoModSelected = "No hay ningún mod elegido.";
 
@@ -556,20 +567,6 @@
 
         public const string CheckBoxFilterSelected = "Ver solo los mods elegidos";
 
-        // --- FormImageFileCombiner ---
-        public const string BtnDone = "Listo";
-        // Cortas a proposito: esta ventana tiene la etiqueta, el cuadro y el boton en una
-        // sola fila angosta, y la explicacion de abajo ya da el contexto.
-        public const string LabelSelectFileToCombine = "Archivo o carpeta:";
-        public const string LabelSelectImagePath = "Imagen (opcional):";
-        public const string BtnSelectFile = "Elegir archivo";
-        public const string BtnSelectFolder = "Elegir carpeta";
-        public const string LabelCombinerHelp =
-            "Herramienta que une un archivo de imagen con un archivo comprimido (.zip).\r\n" +
-            "Cambiando la extensión de la imagen a '.zip' se puede ver el contenido del comprimido.\r\n" +
-            "Si no se elige una imagen, se usa la imagen por defecto.\r\n" +
-            "Si se elige una carpeta, se comprime automáticamente antes de unirla.";
-
         // --- FormTranslationAnalyzer ---
         // Titulos de columna: cortos a proposito. Son siete columnas en una sola tabla y
         // los titulos largos no entraban, con lo cual se cortaban o dejaban al usuario con
@@ -596,7 +593,7 @@
         // --- FormTranslationAnalyzerPathSelect ---
         // El titulo de la ventana ya dice que son archivos Excel, asi que los botones no
         // lo repiten: con el texto completo uno media mas del doble que el otro y la fila
-        // quedaba desbalanceada. Son los mismos rotulos que usa el combinador.
+        // quedaba desbalanceada.
         public const string BtnSelectSingleXlsx = "Elegir archivo";
 
         public const string BtnSelectXlsxDir = "Elegir carpeta";
@@ -629,7 +626,6 @@
         // literal y no queda ninguna referencia que resolver en tiempo de ejecucion.
         public const string TitleStartupError = "No se pudo abrir el extractor";
 
-        public const string TitleImageFileCombiner = "Unir imagen + archivo";
         public const string TitleInitialPathSelect = "Indicá las rutas de RimWorld y del workshop";
         public const string TitleSelectMod = "Elegí el mod que querés extraer";
         public const string TitleSettings = "Ajustes";

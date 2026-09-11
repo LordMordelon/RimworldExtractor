@@ -40,7 +40,7 @@
             labelSelectedMods = new Label();
             button1 = new Button();
             linkLabelLatestVersion = new LinkLabel();
-            buttonJpgPackager = new Button();
+            buttonUpdateAllRml = new Button();
             buttonOpenTranslationAnalyzer = new Button();
             SuspendLayout();
             // 
@@ -152,15 +152,15 @@
             linkLabelLatestVersion.TextAlign = ContentAlignment.MiddleLeft;
             linkLabelLatestVersion.LinkClicked += linkLabelLatestVersion_LinkClicked;
             // 
-            // buttonJpgPackager
+            // buttonUpdateAllRml
             // 
-            buttonJpgPackager.Location = new Point(115, 168);
-            buttonJpgPackager.Name = "buttonJpgPackager";
-            buttonJpgPackager.Size = new Size(97, 46);
-            buttonJpgPackager.TabIndex = 12;
-            buttonJpgPackager.Text = "이미지 + 파일 합치기";
-            buttonJpgPackager.UseVisualStyleBackColor = true;
-            buttonJpgPackager.Click += buttonJpgPackager_Click;
+            buttonUpdateAllRml.Location = new Point(115, 168);
+            buttonUpdateAllRml.Name = "buttonUpdateAllRml";
+            buttonUpdateAllRml.Size = new Size(97, 46);
+            buttonUpdateAllRml.TabIndex = 12;
+            buttonUpdateAllRml.Text = "Actualizar todo RML";
+            buttonUpdateAllRml.UseVisualStyleBackColor = true;
+            buttonUpdateAllRml.Click += buttonUpdateAllRml_Click;
             // 
             // buttonOpenTranslationAnalyzer
             // 
@@ -178,7 +178,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 496);
             Controls.Add(buttonOpenTranslationAnalyzer);
-            Controls.Add(buttonJpgPackager);
+            Controls.Add(buttonUpdateAllRml);
             Controls.Add(linkLabelLatestVersion);
             Controls.Add(button1);
             Controls.Add(labelSelectedMods);
@@ -208,7 +208,7 @@
         private Label labelSelectedMods;
         private Button button1;
         private LinkLabel linkLabelLatestVersion;
-        private Button buttonJpgPackager;
+        private Button buttonUpdateAllRml;
         private Button buttonOpenTranslationAnalyzer;
     }
 }

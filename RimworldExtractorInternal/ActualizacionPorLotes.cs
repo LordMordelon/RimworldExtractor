@@ -12,6 +12,8 @@ namespace RimworldExtractorInternal
     /// Sirve despues de una actualizacion del juego o de una tanda de mods: cada carpeta se
     /// re-extrae contra la version instalada y se cruza con lo que ya estaba traducido, asi
     /// que sale solo, marcado como TODO, lo que el mod agrego desde la ultima vez.
+    ///
+    /// Lo lanza el boton «Actualizar todo RML» de la ventana principal.
     /// </summary>
     public static class ActualizacionPorLotes
     {
@@ -47,19 +49,9 @@ namespace RimworldExtractorInternal
             Func<string, bool>? filtro = null)
         {
             var renglones = new List<Renglon>();
-            var data = Path.Combine(rmlPath, "Data");
-            if (!Directory.Exists(data))
+            var carpetas = Carpetas(rmlPath, filtro);
+            if (carpetas.Count == 0)
                 return renglones;
-
-            // Se busca en todo el arbol, no solo en el primer nivel: las carpetas de Data se
-            // pueden agrupar en subcarpetas y el builder de RML las encuentra igual. Es lo
-            // mismo que hace Statics.FindAndValidatePaths de su lado.
-            var carpetas = Directory
-                .GetFiles(data, LoadFoldersBuild.FileName, SearchOption.AllDirectories)
-                .Select(x => Path.GetDirectoryName(x)!)
-                .Where(x => filtro is null || filtro(Path.GetFileName(x)))
-                .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
-                .ToList();
 
             // El indice de packageId se arma una sola vez: resolverlo por carpeta significaria
             // releer cientos de About.xml doscientas veces.
@@ -89,6 +81,30 @@ namespace RimworldExtractorInternal
             }
 
             return renglones;
+        }
+
+        /// <summary>Cuantas traducciones recorreria <see cref="Correr"/>, para avisar antes de empezar.</summary>
+        public static int Contar(string rmlPath) => Carpetas(rmlPath, null).Count;
+
+        /// <summary>
+        /// Las carpetas de Data/ que tienen su LoadFolders.Build.yaml, en orden alfabetico.
+        ///
+        /// Se busca en todo el arbol, no solo en el primer nivel: las carpetas de Data se
+        /// pueden agrupar en subcarpetas y el builder de RML las encuentra igual. Es lo mismo
+        /// que hace Statics.FindAndValidatePaths de su lado.
+        /// </summary>
+        private static List<string> Carpetas(string rmlPath, Func<string, bool>? filtro)
+        {
+            var data = Path.Combine(rmlPath, "Data");
+            if (!Directory.Exists(data))
+                return new List<string>();
+
+            return Directory
+                .GetFiles(data, LoadFoldersBuild.FileName, SearchOption.AllDirectories)
+                .Select(x => Path.GetDirectoryName(x)!)
+                .Where(x => filtro is null || filtro(Path.GetFileName(x)))
+                .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         private static Renglon Actualizar(string carpeta, string nombre, string rmlPath,
