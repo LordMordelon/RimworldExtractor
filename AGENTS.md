@@ -28,6 +28,12 @@ Archivos que conviene conocer antes de tocar nada:
 - **`RimworldExtractorInternal/Prefabs.cs`** — la configuración persistida en `Prefabs.dat`.
 - **`RimworldExtractorInternal/IO.cs`** — lectura y escritura de XML y planillas.
 - **`RimworldExtractorGUI/Utils/`** — `AutoAjuste` y `Rejilla` (ver más abajo).
+- **`RimworldExtractorGUI/Resources/generar_logo.py`** — la fuente del logo. El dibujo está
+  definido ahí, con geometría y colores, y el script escribe `logo.ico` y `logo.png`. Para
+  cambiarlo se toca el script y se vuelve a correr (necesita Pillow); no se editan las
+  imágenes. El `.ico` va en el ejecutable por `ApplicationIcon` y en cada ventana por
+  `Logo.Icono`: WinForms no toma el del ejecutable, así que una ventana nueva tiene que
+  asignarlo en su constructor.
 
 ## Compilar y probar
 

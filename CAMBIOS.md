@@ -34,6 +34,7 @@ escrito en el código —todo pasa por `Strings.cs`— y ningún color va cablea
 | `Utils/Rejilla.cs` | Reparte espacio donde los anclajes de WinForms no alcanzan |
 | `Utils/Tema.cs` | Tema claro, oscuro o el de Windows, guardado en `Prefabs.dat` |
 | `Utils/Aviso.cs` | Reemplaza a `MessageBox` en los 20 cuadros de mensaje |
+| `Resources/generar_logo.py` | El logo propio: un planeta con anillo que es a la vez un globo de diálogo. Upstream no tenía ícono |
 
 Las dos últimas existen por motivos concretos. `MessageBox` es un diálogo del propio Windows y no
 obedece al tema: con la interfaz en oscuro salía en blanco. Y `Application.SetColorMode` tiene que

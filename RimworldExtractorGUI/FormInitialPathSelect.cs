@@ -17,6 +17,7 @@ namespace RimworldExtractorGUI
         public FormInitialPathSelect()
         {
             InitializeComponent();
+            Icon = Logo.Icono;
             ApplyStrings();
             Prefabs.Init();
             textBoxPathRimworld.Text = Prefabs.PathRimworld;

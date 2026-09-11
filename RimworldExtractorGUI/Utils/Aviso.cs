@@ -47,7 +47,8 @@ namespace RimworldExtractorGUI
                 MaximizeBox = false,
                 MinimizeBox = false,
                 ShowInTaskbar = false,
-                AutoScaleMode = AutoScaleMode.Font
+                AutoScaleMode = AutoScaleMode.Font,
+                Icon = Logo.Icono
             };
 
             var texto = new Label

@@ -28,6 +28,7 @@ namespace RimworldExtractorGUI
         public FormTranslationAnalyzer(string[] paths)
         {
             InitializeComponent();
+            Icon = Logo.Icono;
             ApplyStrings();
             _items = new List<ListViewItem>();
             Task.Factory.StartNew(() => { AnalyzeTranslation(paths); });

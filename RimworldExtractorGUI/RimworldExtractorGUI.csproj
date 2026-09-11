@@ -9,7 +9,16 @@
     <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
     <SignAssembly>False</SignAssembly>
     <NoWin32Manifest>true</NoWin32Manifest>
+    <!-- El del ejecutable: el que se ve en el explorador y en la barra de tareas. Lo
+         genera Resources\generar_logo.py. -->
+    <ApplicationIcon>Resources\logo.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- El mismo icono, embebido, para la barra de titulo de cada ventana: WinForms no
+         toma el del ejecutable, cada Form arranca con el suyo generico. -->
+    <EmbeddedResource Include="Resources\logo.ico" LogicalName="RimworldExtractorGUI.logo.ico" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>embedded</DebugType>

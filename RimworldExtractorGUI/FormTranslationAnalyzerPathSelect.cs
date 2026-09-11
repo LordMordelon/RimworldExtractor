@@ -21,6 +21,7 @@ namespace RimworldExtractorGUI
         public FormTranslationAnalyzerPathSelect()
         {
             InitializeComponent();
+            Icon = Logo.Icono;
             ApplyStrings();
         }
 

@@ -52,6 +52,7 @@ namespace RimworldExtractorGUI
         public FormSelectMod()
         {
             InitializeComponent();
+            Icon = Logo.Icono;
             ApplyStrings();
             ModLister.ResetCache();
             _officialModsCached = ModLister.OfficialMods.ToList();

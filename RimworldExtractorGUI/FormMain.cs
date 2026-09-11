@@ -27,6 +27,7 @@ namespace RimworldExtractorGUI
         public FormMain()
         {
             InitializeComponent();
+            Icon = Logo.Icono;
             ApplyStrings();
 
             // Cerrar a mitad del lote mataria el hilo que escribe, y el mod de ese momento

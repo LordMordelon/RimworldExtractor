@@ -19,6 +19,7 @@ namespace RimworldExtractorGUI
         public FormStopCallback(string path)
         {
             InitializeComponent();
+            Icon = Logo.Icono;
             ApplyStrings();
             label1.Text = path;
         }

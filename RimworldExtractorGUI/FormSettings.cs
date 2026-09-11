@@ -25,6 +25,7 @@ namespace RimworldExtractorGUI
         public FormSettings()
         {
             InitializeComponent();
+            Icon = Logo.Icono;
             ApplyStrings();
             if (File.Exists(Prefabs.RutaPorDefecto))
             {

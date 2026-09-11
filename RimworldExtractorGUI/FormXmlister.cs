@@ -21,6 +21,7 @@ namespace RimworldExtractorGUI
         public FormXmlister()
         {
             InitializeComponent();
+            Icon = Logo.Icono;
             ApplyStrings();
         }
 
