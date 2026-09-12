@@ -16,6 +16,15 @@ namespace RimworldExtractorInternal
         /// </summary>
         internal static readonly Dictionary<string, string> DuenioPorDefName = new();
 
+        /// <summary>
+        /// Los defs cuyo dueño es contenido oficial: Core o un DLC.
+        ///
+        /// Se anota aparte del nombre del dueño porque lo que importa no es cual es, sino que
+        /// los DLC cargan siempre antes que cualquier mod. Eso es lo que hace que su
+        /// DefInjected le gane a un Patches nuestro, y que el nuestro le gane al suyo.
+        /// </summary>
+        internal static readonly HashSet<string> DefsDeContenidoOficial = new();
+
         private static void LoadReferenceDefs(List<ReferenceDefsRoot> referenceDefsRoots)
         {
             if (CombinedDefs == null)
@@ -42,7 +51,11 @@ namespace RimworldExtractorInternal
 
                             var defName = node["defName"]?.InnerText?.Trim();
                             if (!string.IsNullOrEmpty(defName))
+                            {
                                 DuenioPorDefName[defName] = referenceDefsRoot.ModName;
+                                if (referenceDefsRoot.EsOficial)
+                                    DefsDeContenidoOficial.Add(defName);
+                            }
                             CombinedDefs.DocumentElement!.AppendChild(newNode);
                             var attributeName = node.Attributes?["Name"]?.Value;
                             if (attributeName != null)
@@ -484,5 +497,5 @@ namespace RimworldExtractorInternal
 namespace RimworldExtractorInternal
 {
     /// <summary>Una carpeta Defs de referencia, y de que mod es.</summary>
-    internal readonly record struct ReferenceDefsRoot(string ModName, string Path);
+    internal readonly record struct ReferenceDefsRoot(string ModName, string Path, bool EsOficial);
 }

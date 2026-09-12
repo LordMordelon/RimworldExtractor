@@ -425,9 +425,13 @@ namespace RimworldExtractorInternal
                 Log.Msg(Strings.OfficialContentKeepsFileNames);
             }
 
+            var reencaminadas = PatchesQueElJuegoPisa(translations);
 
-            foreach (var translation in translations)
+            foreach (var entrada in translations)
             {
+                var translation = reencaminadas.Contains(entrada.ClassNode)
+                    ? entrada with { ClassName = SinPrefijoDePatches(entrada.ClassName) }
+                    : entrada;
                 var className = translation.ClassName;
 
                 if (skipNoTranslation && className != "Strings" && string.IsNullOrEmpty(translation.Translated))
@@ -859,6 +863,107 @@ namespace RimworldExtractorInternal
         /// <summary>El prefijo con el que el extractor marca lo que sale por un patch.</summary>
         private static string SinPrefijoDePatches(string className) =>
             className.StartsWith("Patches.", StringComparison.Ordinal) ? className["Patches.".Length..] : className;
+
+        /// <summary>
+        /// Cuales de las traducciones que saldrian como Patches tienen que salir como
+        /// DefInjected, porque el juego ya traduce ese nodo y un patch no le puede ganar.
+        ///
+        /// RimWorld aplica las PatchOperation antes de inyectar los DefInjected, asi que sobre
+        /// un def de Core o de un DLC que la traduccion oficial ya cubre, el patch se aplica y
+        /// se pisa un paso despues. En pantalla queda el texto oficial y nada avisa. Lo unico
+        /// que gana es otro DefInjected, y el nuestro gana porque los DLC cargan siempre antes
+        /// que cualquier mod.
+        ///
+        /// Devuelve las claves ClassName+Node a reencaminar, y avisa por las que no se pueden.
+        /// </summary>
+        private static HashSet<string> PatchesQueElJuegoPisa(List<TranslationEntry> translations)
+        {
+            var reencaminadas = new HashSet<string>();
+            var sinConvertir = new List<TranslationEntry>();
+
+            // Los elementos de una lista se deciden en conjunto, no de a uno: una inyeccion de
+            // lista reemplaza la lista entera, asi que emitirla incompleta es peor que dejar
+            // el patch. (clase, nodo de la lista) -> indices que tenemos.
+            var listas = new Dictionary<(string, string), List<TranslationEntry>>();
+
+            foreach (var entrada in translations)
+            {
+                if (!entrada.ClassName.StartsWith("Patches.", StringComparison.Ordinal))
+                    continue;
+
+                // Un PatchOperationFindMod es condicional y un DefInjected no puede serlo:
+                // inyectarlo sin condicion aplicaria la traduccion de un texto que sin ese mod
+                // no existe.
+                var esCondicional = entrada.RequiredMods != null
+                                    && (entrada.RequiredMods.CountAllowed > 0
+                                        || entrada.RequiredMods.CountDisallowed > 0);
+
+                if (!Extractor.DefsDeContenidoOficial.Contains(entrada.DefName))
+                    continue;
+
+                var clase = SinPrefijoDePatches(entrada.ClassName);
+
+                if (TraduccionOficial.Cubre(clase, entrada.Node))
+                {
+                    if (esCondicional)
+                        sinConvertir.Add(entrada);
+                    else
+                        reencaminadas.Add(entrada.ClassNode);
+                    continue;
+                }
+
+                // El nodo puede ser un elemento de una lista que el oficial inyecta entera.
+                var corte = entrada.Node.LastIndexOf('.');
+                if (corte < 0 || !int.TryParse(entrada.Node[(corte + 1)..], out _))
+                    continue;
+
+                var nodoLista = entrada.Node[..corte];
+                if (TraduccionOficial.CantidadDeLista(clase, nodoLista) == null)
+                    continue;
+
+                if (esCondicional)
+                {
+                    sinConvertir.Add(entrada);
+                    continue;
+                }
+
+                if (!listas.TryGetValue((clase, nodoLista), out var elementos))
+                    listas[(clase, nodoLista)] = elementos = new List<TranslationEntry>();
+                elementos.Add(entrada);
+            }
+
+            foreach (var ((clase, nodoLista), elementos) in listas)
+            {
+                // Solo si tenemos la lista completa: los indices 0..n-1, con n el que declara
+                // el oficial. Con cualquier otra cosa RimWorld avisa por conteo y no aplica ni
+                // eso, asi que conviene mas el patch de hoy.
+                var declarados = TraduccionOficial.CantidadDeLista(clase, nodoLista)!.Value;
+                var indices = elementos
+                    .Select(x => int.Parse(x.Node[(x.Node.LastIndexOf('.') + 1)..]))
+                    .ToHashSet();
+
+                if (indices.Count == declarados && Enumerable.Range(0, declarados).All(indices.Contains))
+                {
+                    foreach (var elemento in elementos)
+                        reencaminadas.Add(elemento.ClassNode);
+                }
+                else
+                {
+                    sinConvertir.AddRange(elementos);
+                }
+            }
+
+            if (reencaminadas.Count > 0)
+                Log.Msg(Strings.OfficialTranslationBeatsPatch(reencaminadas.Count));
+
+            // El defecto era invisible; dejar invisible lo que queda sin arreglar seria
+            // repetirlo. Estas se siguen escribiendo como patch y el juego las va a pisar.
+            foreach (var entrada in sinConvertir)
+                Log.Wrn(Strings.OfficialTranslationBeatsPatchUnfixed(
+                    SinPrefijoDePatches(entrada.ClassName), entrada.Node));
+
+            return reencaminadas;
+        }
 
         /// <summary>
         /// Lee los Patches de RML parseando el archivo, sin evaluar los xpath.

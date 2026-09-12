@@ -987,6 +987,230 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre que una traduccion que el juego ya trae no salga como patch.
+    ///
+    /// RimWorld aplica las PatchOperation antes de inyectar los DefInjected, asi que sobre un
+    /// def de Core o de un DLC que la traduccion oficial ya cubre, el patch se aplica y se pisa
+    /// un paso despues: en pantalla queda el texto oficial y nada avisa. Paso de verdad con
+    /// LargeChemfuelTank de Odyssey, y se vio recien cuando alguien fue a mirar por que la
+    /// traduccion "no se aplicaba".
+    /// </summary>
+    [TestClass]
+    public class TraduccionOficialPisaTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        /// <summary>La tabla y el registro de defs oficiales son estaticos: se vacian entre tests.</summary>
+        [TestCleanup]
+        public void Limpiar()
+        {
+            TraduccionOficial.Limpiar();
+            Extractor.DefsDeContenidoOficial.Clear();
+        }
+
+        /// <summary>
+        /// El caso que disparo todo: un patch sobre un def de Odyssey cuyo label el juego ya
+        /// traduce. Tiene que salir como DefInjected, que es lo unico que le gana.
+        /// </summary>
+        [TestMethod]
+        public void SobreUnDefOficialYaTraducidoSaleComoDefInjected()
+        {
+            Extractor.DefsDeContenidoOficial.Add("LargeChemfuelTank");
+            TraduccionOficial.Sembrar(new[] { ("ThingDef", "LargeChemfuelTank.label", 0) });
+
+            var (defInjected, patches) = Escribir(
+                new TranslationEntry("Patches.ThingDef", "LargeChemfuelTank.label",
+                    "large astrofuel tank", "tanque grande de astrobustible", null, null));
+
+            StringAssert.Contains(defInjected, "tanque grande de astrobustible",
+                "la traduccion tenia que salir como DefInjected");
+            Assert.AreEqual("", patches, "quedo un patch que el juego va a pisar");
+        }
+
+        /// <summary>
+        /// Sin clave oficial no hay nada que pise el patch, y un patch es lo que corresponde:
+        /// el def no es del mod que se extrae, asi que no se puede tocar de otra forma.
+        /// </summary>
+        [TestMethod]
+        public void SinClaveOficialSigueSiendoPatch()
+        {
+            Extractor.DefsDeContenidoOficial.Add("LargeChemfuelTank");
+            TraduccionOficial.Sembrar(new[] { ("ThingDef", "OtraCosa.label", 0) });
+
+            var (defInjected, patches) = Escribir(
+                new TranslationEntry("Patches.ThingDef", "LargeChemfuelTank.label",
+                    "large astrofuel tank", "tanque grande de astrobustible", null, null));
+
+            StringAssert.Contains(patches, "tanque grande de astrobustible");
+            Assert.AreEqual("", defInjected, "se convirtio una traduccion que nadie pisaba");
+        }
+
+        /// <summary>
+        /// Un def de otro mod no se convierte aunque la clave exista: el orden entre dos mods
+        /// lo decide el jugador, asi que ahi la regla deja de valer.
+        /// </summary>
+        [TestMethod]
+        public void SobreUnDefDeOtroModSigueSiendoPatch()
+        {
+            TraduccionOficial.Sembrar(new[] { ("ThingDef", "CosaDeUnMod.label", 0) });
+
+            var (defInjected, patches) = Escribir(
+                new TranslationEntry("Patches.ThingDef", "CosaDeUnMod.label",
+                    "widget", "artilugio", null, null));
+
+            StringAssert.Contains(patches, "artilugio");
+            Assert.AreEqual("", defInjected);
+        }
+
+        /// <summary>
+        /// Un PatchOperationFindMod es condicional y un DefInjected no puede serlo: convertirlo
+        /// aplicaria la traduccion de un texto que sin ese mod no existe. Se queda como patch,
+        /// pero avisado.
+        /// </summary>
+        [TestMethod]
+        public void ConRequiredModsSigueSiendoPatch()
+        {
+            Extractor.DefsDeContenidoOficial.Add("LargeChemfuelTank");
+            TraduccionOficial.Sembrar(new[] { ("ThingDef", "LargeChemfuelTank.label", 0) });
+
+            var requiere = new RequiredMods();
+            requiere.AddAllowedByPackageId("algun.mod");
+
+            var (defInjected, patches) = Escribir(
+                new TranslationEntry("Patches.ThingDef", "LargeChemfuelTank.label",
+                    "large astrofuel tank", "tanque grande de astrobustible", requiere, null));
+
+            StringAssert.Contains(patches, "tanque grande de astrobustible");
+            Assert.AreEqual("", defInjected, "se convirtio una traduccion condicional");
+        }
+
+        /// <summary>
+        /// Una lista se inyecta entera, asi que solo se convierte si estan todos sus elementos.
+        /// </summary>
+        [TestMethod]
+        public void UnaListaCompletaSaleComoDefInjected()
+        {
+            Extractor.DefsDeContenidoOficial.Add("MechanoidSignal");
+            TraduccionOficial.Sembrar(new[]
+                { ("QuestScriptDef", "MechanoidSignal.questDescriptionRules.rulesStrings", 2) });
+
+            var (defInjected, patches) = Escribir(
+                Lista("MechanoidSignal.questDescriptionRules.rulesStrings.0", "uno"),
+                Lista("MechanoidSignal.questDescriptionRules.rulesStrings.1", "dos"));
+
+            StringAssert.Contains(defInjected, "uno");
+            StringAssert.Contains(defInjected, "dos");
+            Assert.AreEqual("", patches);
+        }
+
+        /// <summary>
+        /// Con la lista incompleta, emitirla la romperia entera: RimWorld avisa por conteo y no
+        /// aplica ni los elementos que si estan. Conviene mas el patch, que al menos es lo que
+        /// habia. Es el caso real de Intro_Wimp en Vanilla Factions Expanded - Deserters.
+        /// </summary>
+        [TestMethod]
+        public void UnaListaIncompletaSigueSiendoPatch()
+        {
+            Extractor.DefsDeContenidoOficial.Add("MechanoidSignal");
+            TraduccionOficial.Sembrar(new[]
+                { ("QuestScriptDef", "MechanoidSignal.questDescriptionRules.rulesStrings", 3) });
+
+            var (defInjected, patches) = Escribir(
+                Lista("MechanoidSignal.questDescriptionRules.rulesStrings.0", "uno"),
+                Lista("MechanoidSignal.questDescriptionRules.rulesStrings.1", "dos"));
+
+            StringAssert.Contains(patches, "uno");
+            Assert.AreEqual("", defInjected, "se emitio una lista incompleta");
+        }
+
+        /// <summary>
+        /// Lo convertido se tiene que poder releer, o la proxima actualizacion lo pierde: la
+        /// extraccion nueva lo vuelve a traer como Patches.ThingDef y tiene que cruzarse con lo
+        /// que quedo escrito como ThingDef. Es el mismo defecto que cubre PatchesRoundTripTests:
+        /// se escribe bien, se relee mal, no falla nada.
+        /// </summary>
+        [TestMethod]
+        public void LoConvertidoSeCruzaConLaExtraccionSiguiente()
+        {
+            var escrita = new TranslationEntry("ThingDef", "LargeChemfuelTank.label",
+                "large astrofuel tank", "tanque grande de astrobustible", null, null);
+            var nueva = new TranslationEntry("Patches.ThingDef", "LargeChemfuelTank.label",
+                "large astrofuel tank", null, null, null);
+
+            var (resultado, sinUso, _) = TranslationMerge.Merge(new[] { nueva }, new[] { escrita });
+
+            Assert.AreEqual("tanque grande de astrobustible", resultado.Single().Translated,
+                "la traduccion convertida no se reengancho con la extraccion nueva");
+            Assert.AreEqual(0, sinUso.Count, "quedo como huerfana");
+        }
+
+        /// <summary>
+        /// Que la tabla salga de verdad de los .tar del juego, que es como el juego distribuye
+        /// cada idioma. Sin esto lo unico probado seria la regla, con la tabla sembrada a mano,
+        /// y el lector podria no leer nada sin que ningun test se entere.
+        /// </summary>
+        [TestMethod]
+        public void LeeLasClavesDeLosTarDelJuego()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var odyssey = Path.Combine(Prefabs.PathRimworld, "Data", "Odyssey");
+            if (!Directory.Exists(odyssey))
+                Assert.Inconclusive(
+                    $"No esta el DLC Odyssey en {odyssey}. Este test necesita RimWorld instalado.");
+
+            Assert.IsTrue(TraduccionOficial.Cubre("ThingDef", "LargeChemfuelTank.label"),
+                "no se leyeron las traducciones oficiales de Odyssey");
+            Assert.AreEqual(3, TraduccionOficial.CantidadDeLista(
+                "QuestScriptDef", "MechanoidSignal.questDescriptionRules.rulesStrings"));
+            Assert.IsFalse(TraduccionOficial.Cubre("ThingDef", "NoExisteEsteDef.label"));
+        }
+
+        private static TranslationEntry Lista(string nodo, string traducido) =>
+            new("Patches.QuestScriptDef", nodo, "en", traducido, null, null);
+
+        /// <summary>
+        /// Escribe las entradas y devuelve, por separado, todo el XML que quedo bajo
+        /// DefInjected/ y todo el que quedo bajo Patches/.
+        /// </summary>
+        private static (string DefInjected, string Patches) Escribir(params TranslationEntry[] entradas)
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var raiz = Path.Combine(Path.GetTempPath(), "oficial-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(raiz);
+            try
+            {
+                var politica = Prefabs.Policy;
+                Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
+                try
+                {
+                    IO.ToLanguageXml(entradas.ToList(), false, XmlCommentStyle.TranslationTemplate,
+                        "UnMod", raiz);
+                }
+                finally
+                {
+                    Prefabs.Policy = politica;
+                }
+
+                return (Juntar(Path.Combine(raiz, "Languages", Idioma, "DefInjected")),
+                        Juntar(Path.Combine(raiz, "Patches")));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        private static string Juntar(string carpeta) => Directory.Exists(carpeta)
+            ? string.Join("\n", Directory.GetFiles(carpeta, "*.xml", SearchOption.AllDirectories)
+                .Select(File.ReadAllText))
+            : "";
+    }
+
+    /// <summary>
     /// Cubre la agrupacion de Data/ por autor.
     ///
     /// Lo que se protege es que un mod nuevo caiga solo en la carpeta de su autor. Cuando eso

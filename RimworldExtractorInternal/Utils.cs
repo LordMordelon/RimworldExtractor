@@ -256,6 +256,28 @@ namespace RimworldExtractorInternal
             return StripSpace().Replace(str.Trim(), " ");
         }
 
+        /// <summary>
+        /// Si ese nombre de carpeta o de .tar es el idioma de destino.
+        ///
+        /// Los mods y el propio juego escriben tanto el nombre completo del idioma como su
+        /// primera palabra, asi que se aceptan los dos. Misma tolerancia que usa
+        /// IO.FromLanguageXml.
+        ///
+        /// Se compara contra el idioma configurado y no contra "Spanish" a secas: una carpeta
+        /// Spanish (Español(Castellano)) no pisa nada, porque para RimWorld el castellano y el
+        /// español latino son idiomas distintos, y asi sigue sirviendo si alguien cambia el
+        /// idioma de destino en Opciones.
+        /// </summary>
+        public static bool EsElIdiomaDestino(string nombre)
+        {
+            var destino = Prefabs.TranslationLanguage;
+            if (string.IsNullOrWhiteSpace(destino) || string.IsNullOrWhiteSpace(nombre))
+                return false;
+
+            return nombre.Equals(destino, StringComparison.OrdinalIgnoreCase)
+                   || nombre.Equals(destino.Split(' ').First(), StringComparison.OrdinalIgnoreCase);
+        }
+
         public static (int cntDefs, int cntKeyed, int cntStrings, int cntPatches) Count(
             this IEnumerable<TranslationEntry> entries)
         {

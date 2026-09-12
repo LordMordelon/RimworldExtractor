@@ -63,7 +63,7 @@ namespace RimworldExtractorInternal
                         continue;
 
                     encontradas.AddRange(Directory.GetDirectories(languages)
-                        .Where(x => EsElIdiomaDestino(Path.GetFileName(x))));
+                        .Where(x => Utils.EsElIdiomaDestino(Path.GetFileName(x))));
                 }
             }
             catch
@@ -75,23 +75,5 @@ namespace RimworldExtractorInternal
             return encontradas;
         }
 
-        /// <summary>
-        /// Misma tolerancia que usa IO.FromLanguageXml: los mods escriben tanto el nombre
-        /// completo del idioma como su primera palabra.
-        ///
-        /// Se compara contra el idioma configurado y no contra "Spanish" a secas, por dos
-        /// razones. Una carpeta Spanish (Español(Castellano)) no pisa nada, porque para
-        /// RimWorld el castellano y el español latino son idiomas distintos; y asi el aviso
-        /// sigue sirviendo si alguien cambia el idioma de destino en Opciones.
-        /// </summary>
-        private static bool EsElIdiomaDestino(string nombre)
-        {
-            var destino = Prefabs.TranslationLanguage;
-            if (string.IsNullOrWhiteSpace(destino))
-                return false;
-
-            return nombre.Equals(destino, StringComparison.OrdinalIgnoreCase)
-                   || nombre.Equals(destino.Split(' ').First(), StringComparison.OrdinalIgnoreCase);
-        }
     }
 }

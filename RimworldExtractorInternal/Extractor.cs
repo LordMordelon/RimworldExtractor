@@ -90,7 +90,8 @@ namespace RimworldExtractorInternal
                                extractableFolder.VersionInfo == Prefabs.CurrentVersion)
                               && Path.GetFileName(extractableFolder.FolderName) == "Defs"
                         select new ReferenceDefsRoot(referenceMod.ModName.Trim(),
-                            Path.Combine(referenceMod.RootDir, extractableFolder.FolderName)));
+                            Path.Combine(referenceMod.RootDir, extractableFolder.FolderName),
+                            referenceMod.IsOfficialContent));
                     prePatches.AddRange(ModLister.GetExtractableFolders(referenceMod).Where(x =>
                         (x.VersionInfo == "default" || x.VersionInfo == "Common" ||
                          x.VersionInfo == Prefabs.CurrentVersion) && Path.GetFileName(x.FolderName) == "Patches"));
@@ -227,6 +228,7 @@ namespace RimworldExtractorInternal
             // y solo quedarian registrados los fallos de la ultima.
             PatchOperations.XpathsSinObjetivo.Clear();
             DuenioPorDefName.Clear();
+            DefsDeContenidoOficial.Clear();
 
             // La base completa es de la extraccion que arranca, no de la anterior: releer los
             // patches contra los defs de otro mod daria cualquier cosa.

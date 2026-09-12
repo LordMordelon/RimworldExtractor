@@ -200,6 +200,19 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   que aparta una traducción la saca de `Languages/`, así que la siguiente no la encuentra,
   no le sobra nada y borra el archivo con todo adentro.
 
+- **Un `Patches` no le puede ganar a la traducción oficial.** RimWorld aplica las
+  `PatchOperation` y recién después inyecta los `DefInjected`, así que sobre un def de Core o
+  de un DLC que el juego ya traduce, el patch se aplica y se pisa un paso más tarde: en
+  pantalla queda el texto oficial y nada avisa. No se arregla con el orden de mods, que es
+  otra etapa. Lo único que gana es otro `DefInjected`, y el de RML gana porque los DLC cargan
+  siempre primero. `TraduccionOficial` lee esas claves de los `.tar` de idioma del juego y
+  `IO.PatchesQueElJuegoPisa` reencamina lo que corresponde. Quedan afuera a propósito dos
+  casos, y los dos se avisan en el log: lo que viene con `RequiredMods`, porque un
+  `DefInjected` no puede ser condicional, y las listas incompletas, porque una inyección de
+  lista reemplaza la lista entera y emitirla con menos elementos no aplica ni esos. Lo
+  cubren los tests de `TraduccionOficialPisaTests`. Apareció con `LargeChemfuelTank` de
+  Odyssey y afectaba a 50 operaciones de RML.
+
 «Actualizar todo RML» (`ActualizacionPorLotes.Correr`) hace lo mismo con cada mod de RML,
 uno detrás de otro, en segundo plano. Mientras corre, la ventana no se deja cerrar: hacerlo
 mataría el hilo a mitad de un `Escribir`, con el árbol del mod ya borrado y sin reescribir.
