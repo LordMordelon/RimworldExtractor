@@ -14,50 +14,81 @@ jobs:
       contents: write
 
     env:
-      Solution_Name: RimworldExtractor.sln
+      # Se publica el proyecto de la interfaz y no la solucion: publicar la solucion con
+      # -p:TargetFramework=net10.0-windows forzaba ese framework tambien en la libreria y
+      # en los tests, que no lo tienen, y cada corrida terminaba con un error NETSDK1005.
+      Project: RimworldExtractorGUI/RimworldExtractorGUI.csproj
       Script_Path: tools.py
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
+      with:
+        # El historial y las etiquetas completos: la version nueva sale de la ultima
+        # etiqueta y de los mensajes de commit desde entonces.
+        fetch-depth: 0
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: '10.0.x'
 
     - name: Setup Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: '3.12'
 
-    - name: Generate Change Log
-      id: changelog
-      uses: mathieudutour/github-tag-action@v6.1
-      with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag_prefix: ""
-          release_branches: .*
+    # Reemplaza a mathieudutour/github-tag-action, que no tiene version para Node 24. Misma
+    # regla: sube el ultimo numero, o el del medio si algun commit desde la ultima etiqueta
+    # empieza con "feat:". La etiqueta no se crea aca sino al publicar la release, asi una
+    # compilacion fallida no deja una etiqueta sin release.
+    - name: Calcular la version
+      id: version
+      shell: bash
+      run: |
+        set -euo pipefail
+        ultima=$(git describe --tags --abbrev=0)
+        IFS=. read -r mayor menor parche <<< "$ultima"
+        if git log "$ultima"..HEAD --format=%s | grep -qE '^feat(\(.+\))?!?:'; then
+          menor=$((menor + 1))
+          parche=0
+        else
+          parche=$((parche + 1))
+        fi
+        nueva="$mayor.$menor.$parche"
+        echo "Ultima etiqueta: $ultima -> version nueva: $nueva"
+        echo "new_tag=$nueva" >> "$GITHUB_OUTPUT"
+        echo "changelog=### [$nueva](https://github.com/$GITHUB_REPOSITORY/compare/$ultima...$nueva) ($(date -u +%F))" >> "$GITHUB_OUTPUT"
 
-    - name: Pre-Cleanup / Write Current Version
-      id: cleanup
+    - name: Escribir la version y el texto de la release
       run: |
-        python $env:Script_Path version ${{ steps.changelog.outputs.new_tag }}
-        python $env:Script_Path template "${{ steps.changelog.outputs.changelog }}"
-      
-    - name: Publish / Post-Cleanup
+        $PSNativeCommandUseErrorActionPreference = $true
+        python $env:Script_Path version ${{ steps.version.outputs.new_tag }}
+        python $env:Script_Path template "${{ steps.version.outputs.changelog }}"
+
+    - name: Compilar y probar
       run: |
-        dotnet restore
-        dotnet publish $env:Solution_Name -c Release -p:PublishDir=${{github.workspace}}/publish_standard
-        dotnet publish $env:Solution_Name -c Release -p:PublishDir=${{github.workspace}}/publish_portable -p:PublishProtocol=FileSystem -p:TargetFramework=net10.0-windows -r win-x64 --self-contained true  -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:PublishDir=${{github.workspace}}/publish_portable
+        $PSNativeCommandUseErrorActionPreference = $true
+        dotnet test RimworldExtractor.sln -c Release
+      # Los tests que necesitan la instalacion de RimWorld se declaran Inconclusive, que
+      # cuenta como omitido: en el runner no hay juego instalado y no fallan por eso.
+
+    - name: Publicar
+      run: |
+        # Sin esto, un comando que falla no corta el paso: PowerShell sigue con el
+        # siguiente y el paso sale en verde si el ultimo anduvo. Asi paso inadvertido un
+        # error de dotnet publish durante varias releases.
+        $PSNativeCommandUseErrorActionPreference = $true
+        dotnet publish $env:Project -c Release -o publish_standard
+        dotnet publish $env:Project -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish_portable
         python $env:Script_Path cleanup
+
     - name: Create Release
       id: create_release
-      uses: softprops/action-gh-release@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v3
       with:
-        tag_name: ${{ steps.changelog.outputs.new_tag }}
+        tag_name: ${{ steps.version.outputs.new_tag }}
+        target_commitish: ${{ github.sha }}
         draft: false
         prerelease: false
         files: |

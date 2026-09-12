@@ -40,7 +40,9 @@ def write_current_version(version):
             for (idx, line) in enumerate(lines):
                 if "string VERSION" in line:
                     start = line.index('"') + 1
-                    lines[idx] = f'{lines[idx][:start]}{version}";'
+                    # Con el salto de linea: sin el, la linea siguiente del archivo
+                    # quedaba pegada al final de esta.
+                    lines[idx] = f'{lines[idx][:start]}{version}";\n'
                     print(f'write_current_version done: {lines[idx]}')
                     break
         with open(FILE_PATH, 'w', encoding='utf-8') as file:
@@ -63,8 +65,13 @@ def cleanup_standard():
         ext = entry.split('.')[-1]
         if ext == 'dll' and entry != 'RimworldExtractorGUI.dll':
             os.rename(full_path, path.join(bin_path, entry))
-    os.remove(path.join(standard_path, "RimworldExtractorGUI.deps.json"))
-    os.remove(path.join(standard_path, "RimworldExtractorInternal.pdb"))
+    # Sobran en el zip, pero no siempre estan: publicando solo el proyecto de la interfaz
+    # no aparece el deps.json de la libreria, y el .pdb depende de como se compilo.
+    for sobrante in ("RimworldExtractorGUI.deps.json", "RimworldExtractorInternal.deps.json",
+                     "RimworldExtractorInternal.pdb"):
+        completa = path.join(standard_path, sobrante)
+        if path.exists(completa):
+            os.remove(completa)
 
     zip_filename = path.join(ROOT_PATH, 'RimworldExtractor-Standard.zip')
     with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
