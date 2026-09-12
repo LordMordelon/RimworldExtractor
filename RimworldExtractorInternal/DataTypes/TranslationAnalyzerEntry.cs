@@ -113,7 +113,7 @@ namespace RimworldExtractorInternal.DataTypes
                 Log.Err(Strings.NotAValidTranslationXlsx(path, e.Message));
                 OriginalTranslations = new List<TranslationEntry>();
             }
-            catch (IOException e)
+            catch (IOException)
             {
                 Log.Err(Strings.XlsxIsOpen(path));
                 OriginalTranslations = new List<TranslationEntry>();

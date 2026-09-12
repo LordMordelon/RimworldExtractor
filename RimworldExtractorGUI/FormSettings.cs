@@ -104,8 +104,10 @@ namespace RimworldExtractorGUI
             Prefabs.PatternVersion = textBoxVersionPattern.Text;
             Prefabs.CurrentVersion = textBoxRimworldVersion.Text;
 
-            Prefabs.OriginalLanguage = (string)comboBoxOriginalLanguage.SelectedItem;
-            Prefabs.TranslationLanguage = (string)comboBoxTranslationLanguage.SelectedItem;
+            // Sin nada elegido el combo devuelve null, y guardar null dejaria el idioma
+            // vacio en Prefabs.dat: se conserva el que ya estaba.
+            Prefabs.OriginalLanguage = comboBoxOriginalLanguage.SelectedItem as string ?? Prefabs.OriginalLanguage;
+            Prefabs.TranslationLanguage = comboBoxTranslationLanguage.SelectedItem as string ?? Prefabs.TranslationLanguage;
             Prefabs.Method = Enum.GetValues<Prefabs.ExtractionMethod>()[comboBoxExtractionMethod.SelectedIndex];
             Prefabs.Policy = Enum.GetValues<Prefabs.DuplicatesPolicy>()[comboBoxFileDuplication.SelectedIndex];
             Prefabs.PathBaseRefList = textBoxBaseRefList.Text;

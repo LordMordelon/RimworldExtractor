@@ -285,7 +285,7 @@ namespace RimworldExtractorInternal
             {
                 for (int i = 0; i < addedNewlys.Count; i++)
                 {
-                    var entry = addedNewlys[i].New;
+                    var entry = addedNewlys[i].New!;
                     mainSheet.Cell(2 + i + rows.Count, colClassNode).Value = $"{entry.ClassName}+{entry.Node}";
                     mainSheet.Cell(2 + i + rows.Count, colClass).Value = entry.ClassName;
                     mainSheet.Cell(2 + i + rows.Count, colNode).Value = entry.Node;

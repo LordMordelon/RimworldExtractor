@@ -418,8 +418,12 @@ namespace RimworldExtractorGUI
                     var analyzerEntries = analyzer.Entries.ToList();
                     for (var i = 0; i < analyzerEntries.Count; i++)
                     {
-                        string newPath;
                         var analyzerEntry = analyzerEntries[i];
+                        // Path.GetDirectoryName devuelve null para una ruta sin carpeta; el
+                        // archivo siempre viene de una, asi que la cadena vacia alcanza.
+                        var carpeta = Path.GetDirectoryName(analyzerEntry.FilePath) ?? string.Empty;
+                        var nombre = Path.GetFileNameWithoutExtension(analyzerEntry.FilePath);
+                        var newPath = Path.Combine(carpeta, nombre + Strings.EditedFileSuffix);
                         switch (analyzerEntry.SaveMethod)
                         {
                             case TranslationAnalyzerEntry.SaveMethodEnum.Append:
@@ -427,29 +431,20 @@ namespace RimworldExtractorGUI
                                 break;
                             case TranslationAnalyzerEntry.SaveMethodEnum.Overwrite:
                                 analyzerEntry.MergeTranslation();
-                                IO.ToExcel(analyzerEntry.NewTranslations!,
-                                    Path.Combine(Path.GetDirectoryName(analyzerEntry.FilePath),
-                                        Path.GetFileNameWithoutExtension(analyzerEntry.FilePath)));
+                                IO.ToExcel(analyzerEntry.NewTranslations!, Path.Combine(carpeta, nombre));
                                 break;
                             case TranslationAnalyzerEntry.SaveMethodEnum.RewriteNewFile:
                                 analyzerEntry.MergeTranslation();
-                                newPath = Path.Combine(
-                                    Path.GetDirectoryName(analyzerEntry.FilePath),
-                                    Path.GetFileNameWithoutExtension(analyzerEntry.FilePath) + Strings.EditedFileSuffix);
-                                IO.ToExcel(analyzerEntry.NewTranslations, newPath, true);
+                                IO.ToExcel(analyzerEntry.NewTranslations!, newPath, true);
                                 Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, newPath));
                                 continue;
                             case TranslationAnalyzerEntry.SaveMethodEnum.New:
-                                newPath = Path.Combine(
-                                    Path.GetDirectoryName(analyzerEntry.FilePath),
-                                    Path.GetFileNameWithoutExtension(analyzerEntry.FilePath) + Strings.EditedFileSuffix);
                                 IO.ToExcel(
                                     analyzerEntry.Changes
                                         .Where(x => x.Reason == TranslationAnalyzerEntry.ChangeReason.AddedNewly)
-                                        .Select(x => x.New).ToList(), newPath);
+                                        .Select(x => x.New).OfType<TranslationEntry>().ToList(), newPath);
                                 Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, newPath));
                                 continue;
-                                break;
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }

@@ -17,12 +17,20 @@ namespace RimworldExtractorGUI
     {
         private readonly List<ListViewItem> _items;
 
+        /// <summary>
+        /// La entrada que cuelga de una fila de la lista. El Tag es object? para el
+        /// compilador, pero las filas las arma ConvertToItem y siempre le pone la suya:
+        /// una fila sin entrada seria un error de programacion, no un caso a contemplar.
+        /// </summary>
+        private static TranslationAnalyzerEntry EntradaDe(ListViewItem fila)
+            => (TranslationAnalyzerEntry)fila.Tag!;
+
         public IEnumerable<TranslationAnalyzerEntry> Entries
         {
             get
             {
-                return _items.Where(x => x.Checked && ((TranslationAnalyzerEntry)x.Tag).HasChanges)
-                    .Select(x => (TranslationAnalyzerEntry)x.Tag);
+                return _items.Where(x => x.Checked && EntradaDe(x).HasChanges)
+                    .Select(x => EntradaDe(x));
             }
         }
         public FormTranslationAnalyzer(string[] paths)
@@ -50,7 +58,7 @@ namespace RimworldExtractorGUI
 
                 var path = paths[i];
                 var item = ConvertToItem(path);
-                var tag = (TranslationAnalyzerEntry)item.Tag;
+                var tag = EntradaDe(item);
                 if (tag.Invalid)
                     invailedCnt += 1;
                 _items.Add(item);
@@ -123,7 +131,7 @@ namespace RimworldExtractorGUI
             buttonOpenSelectMod.Enabled = true;
             comboBox1.Enabled = true;
             var selected = listViewResults.SelectedItems[0];
-            var analyzerEntry = (TranslationAnalyzerEntry)selected.Tag;
+            var analyzerEntry = EntradaDe(selected);
             labelModTitle.Text = analyzerEntry.Metadata?.ToString() ?? Strings.OriginalModNotFound;
             comboBox1.SelectedIndex = (int)analyzerEntry.SaveMethod;
 
@@ -132,7 +140,7 @@ namespace RimworldExtractorGUI
         private void buttonOpenSelectMod_Click(object sender, EventArgs e)
         {
             var curSelected = listViewResults.SelectedItems[0];
-            var curEntry = (TranslationAnalyzerEntry)curSelected.Tag;
+            var curEntry = EntradaDe(curSelected);
             var curMetaData = curEntry.Metadata;
             var form = new FormSelectMod(curMetaData);
             form.StartPosition = FormStartPosition.CenterParent;
@@ -155,7 +163,7 @@ namespace RimworldExtractorGUI
 
         private void listViewResults_ItemChecked(object sender, ItemCheckedEventArgs e)
         {
-            if (e.Item.Checked && ((TranslationAnalyzerEntry)e.Item.Tag).Metadata == null)
+            if (e.Item.Checked && EntradaDe(e.Item).Metadata == null)
             {
                 Aviso.Mostrar(Strings.CannotReextractUnknownMod);
                 e.Item.Checked = false;
@@ -172,7 +180,7 @@ namespace RimworldExtractorGUI
         {
             foreach (ListViewItem listViewItem in listViewResults.Items)
             {
-                var entry = ((TranslationAnalyzerEntry)listViewItem.Tag);
+                var entry = EntradaDe(listViewItem);
                 if (entry.Metadata == null || !entry.HasChanges)
                 {
                     continue;
@@ -200,7 +208,7 @@ namespace RimworldExtractorGUI
             var item = listViewResults.FocusedItem;
             if (item == null || !item.Bounds.Contains(e.Location))
                 return;
-            var entry = (TranslationAnalyzerEntry)item.Tag;
+            var entry = EntradaDe(item);
             var contextMenu = new ContextMenuStrip();
 
             var menuItem1 = new ToolStripMenuItem(Strings.MenuOpenXlsxInExplorer);
@@ -225,10 +233,10 @@ namespace RimworldExtractorGUI
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            var curOption = (string)comboBox1.SelectedItem;
+            var curOption = comboBox1.SelectedItem?.ToString() ?? string.Empty;
             var curOptionIdx = comboBox1.SelectedIndex;
             var curSelected = listViewResults.SelectedItems[0];
-            var curEntry = (TranslationAnalyzerEntry)curSelected.Tag;
+            var curEntry = EntradaDe(curSelected);
             var curMetaData = curEntry.Metadata;
             curSelected.SubItems[(int)Column.SaveMethod] = new ListViewItem.ListViewSubItem()
                 { Text = curOption };

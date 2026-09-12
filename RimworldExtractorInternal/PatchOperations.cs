@@ -175,13 +175,17 @@ internal static class PatchOperations
 
         var selectNodes = SeleccionarObjetivo(xpath, prePatchMode);
         if (selectNodes == null) yield break;
-        foreach (XmlElement selectNode in selectNodes)
+        foreach (XmlElement? selectNode in selectNodes)
         {
+            // XmlNodeList no es generica: para el compilador cada elemento puede ser nulo.
+            if (selectNode == null)
+                continue;
+
             var rootDefNode = Extractor.GetRootDefNode(selectNode, out var nodeName);
             var modExtensionNode = selectNode["modExtensions"];
             if (modExtensionNode == null)
             {
-                modExtensionNode = Extractor.CombinedDefs.CreateElement("modExtensions");
+                modExtensionNode = Extractor.CombinedDefs!.CreateElement("modExtensions");
                 selectNode.AppendChild(modExtensionNode);
                 // XmlNode selectNodeImported = selectNode.AppendChild(CombinedDefs.ImportNode())
             }
@@ -218,8 +222,11 @@ internal static class PatchOperations
 
         var selectNodes = SeleccionarObjetivo(xpath, prePatchMode);
         if (selectNodes == null) yield break;
-        foreach (XmlNode selectNode in selectNodes)
+        foreach (XmlNode? selectNode in selectNodes)
         {
+            if (selectNode == null)
+                continue;
+
             var parentNode = selectNode.ParentNode!;
             var rootDefNode = Extractor.GetRootDefNode(parentNode, out var nodeName);
             var defName = rootDefNode?["defName"]?.InnerText;
@@ -227,11 +234,16 @@ internal static class PatchOperations
                             
             if (rootDefNode == null)
             {
-                defName = selectNode?["defName"]?.InnerText;
-                className = (selectNode?.Attributes?["Class"]?.Value ?? selectNode?.Name);
+                defName = selectNode["defName"]?.InnerText;
+                className = (selectNode.Attributes?["Class"]?.Value ?? selectNode.Name);
             }
+            // Sin defName ni className no hay con que nombrar la traduccion: se avisa y se
+            // saltea. Antes se avisaba y se seguia igual, pasando nulos a FindExtractableNodes.
             if (defName is null || className is null)
+            {
                 Log.Wrn(Strings.PatchWithoutDefNameOrClassName(xpath));
+                continue;
+            }
             foreach (XmlNode valueChildNode in value.ChildNodes)
             {
                 XmlNode selectNodeImported = parentNode.InsertBefore(Extractor.CombinedDefs!.ImportNode(valueChildNode, true), selectNode)!;
