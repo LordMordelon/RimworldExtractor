@@ -1,7 +1,7 @@
 Dos descargas que hacen lo mismo:
 
-- **Portable** (`RimworldExtractor-Portable.exe`, ~78 MB): un único archivo que se abre sin instalar nada. Si no sabés cuál elegir, es esta.
-- **Standard** (`RimworldExtractor-Standard.zip`, ~3 MB): hay que descomprimirla y requiere el [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/es-es/download/dotnet/10.0).
+- **Portable** (`RimworldExtractor-Portable.exe`): un único archivo que se abre sin instalar nada. Si no sabés cuál elegir, es esta.
+- **Standard** (`RimworldExtractor-Standard.zip`): hay que descomprimirla y requiere el [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/es-es/download/dotnet/10.0).
 
 Si Windows avisa que el archivo no es seguro, es porque no está firmado: *Más información* → *Ejecutar de todas formas*.
 
