@@ -1,4 +1,5 @@
-﻿using System.Xml;
+﻿using System.IO.Compression;
+using System.Xml;
 using RimworldExtractorInternal;
 using RimworldExtractorInternal.DataTypes;
 
@@ -1208,6 +1209,135 @@ namespace RimworldExtractorTest
             ? string.Join("\n", Directory.GetFiles(carpeta, "*.xml", SearchOption.AllDirectories)
                 .Select(File.ReadAllText))
             : "";
+    }
+
+    /// <summary>
+    /// Cubre que un Patches ya traducido se vuelva a leer aunque su xpath no resuelva.
+    ///
+    /// IO.LeerPatchesLiteral es la red de seguridad para eso, y se apoya en DesarmarXpath: lo que
+    /// no puede reconstruir queda afuera, no entra al cruce, no queda apartado en UNUSED y vuelve
+    /// a TODO sin que nada avise. Dos formas que el propio extractor genera no se invertian, y
+    /// eso se llevo 21 traducciones de tres mods en una sola corrida de «Actualizar todo RML».
+    /// </summary>
+    [TestClass]
+    public class DesarmarXpathTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        /// <summary>
+        /// El caso de Zoology: la clase viene con el ensamblado detras de una coma. GetXpath la
+        /// escribe asi y la lectura tiene que aceptarla.
+        /// </summary>
+        [TestMethod]
+        public void ReleeUnaClaseConEnsamblado()
+        {
+            var leida = LeerPatchSuelto(
+                "/Defs/ZoologyMod.LifeStagePenetrationDef, ZoologyMod[defName=\"AnimalBabyTiny\"]/label",
+                "label", "factores de PA de cría animal diminuta");
+
+            Assert.IsNotNull(leida, "se perdio la traduccion de un xpath con clase con ensamblado");
+            Assert.AreEqual("AnimalBabyTiny.label", leida.Node);
+            Assert.AreEqual("Patches.ZoologyMod.LifeStagePenetrationDef, ZoologyMod", leida.ClassName);
+            Assert.AreEqual("factores de PA de cría animal diminuta", leida.Translated);
+        }
+
+        /// <summary>
+        /// El caso de EvolvedOrgansRedux y The Dead Man's Switch: el predicado que GetXpath arma
+        /// para un TranslationHandle. Adentro esta el handle, que es el token del nodo, asi que
+        /// la vuelta es exacta. Ademas el predicado trae ".//", que obliga a partir la ruta
+        /// respetando los corchetes en vez de cortar por cada '/'.
+        /// </summary>
+        [TestMethod]
+        public void ReleeUnPredicadoDeTranslationHandle()
+        {
+            var leida = LeerPatchSuelto(
+                "/Defs/ThingDef[defName=\"DMS_Apparel_MissilePod\"]/verbs/*[.//*[contains(text(), 'Verb_ShootCE')]]/label",
+                "label", "lanzar misiles");
+
+            Assert.IsNotNull(leida, "se perdio la traduccion de un xpath con predicado");
+            Assert.AreEqual("DMS_Apparel_MissilePod.verbs.Verb_ShootCE.label", leida.Node);
+            Assert.AreEqual("lanzar misiles", leida.Translated);
+        }
+
+        /// <summary>
+        /// La vuelta tiene que dar exactamente lo que GetXpath habia generado, o la traduccion
+        /// releida se engancharia con un nodo que no le corresponde.
+        /// </summary>
+        [TestMethod]
+        public void LaVueltaCoincideConGetXpath()
+        {
+            foreach (var (clase, nodo) in new[]
+                     {
+                         ("ThingDef", "DMS_Apparel_MissilePod.verbs.Verb_ShootCE.label"),
+                         ("ThingDef", "Algo.comps.2.label"),
+                         ("ZoologyMod.LifeStagePenetrationDef, ZoologyMod", "AnimalBabyTiny.label"),
+                         ("HediffDef", "EVOR_X.comps.0.verbs.Verb_ShootCE.label")
+                     })
+            {
+                var leida = LeerPatchSuelto(Utils.GetXpath(clase, nodo), nodo.Split('.').Last(), "x");
+                Assert.IsNotNull(leida, $"no se pudo desarmar el xpath de {clase} {nodo}");
+                Assert.AreEqual(nodo, leida.Node, $"la vuelta de {clase} {nodo} dio otra cosa");
+            }
+        }
+
+        /// <summary>
+        /// Lo que no salio de GetXpath sigue devolviendo null. Reconstruir mal una clave es peor
+        /// que no reconstruirla: un TODO se ve, una traduccion en el campo de al lado no.
+        /// </summary>
+        [TestMethod]
+        public void SigueDescartandoLoQueNoPuedeReconstruir()
+        {
+            Assert.IsNull(LeerPatchSuelto(
+                "/Defs/ThingDef[defName=\"Algo\"]/comps/li[@Class=\"CompProperties_Refuelable\"]/fuelLabel",
+                "fuelLabel", "combustible"));
+
+            Assert.IsNull(LeerPatchSuelto("/Defs/ThingDef/label", "label", "algo"));
+        }
+
+        /// <summary>
+        /// Escribe un Patches con una sola operacion y lo vuelve a leer como lo hace RML, con la
+        /// base de defs vacia: asi ningun xpath resuelve y lo unico que puede rescatarla es la
+        /// lectura literal.
+        /// </summary>
+        private static TranslationEntry? LeerPatchSuelto(string xpath, string etiqueta, string traduccion)
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var raiz = Path.Combine(Path.GetTempPath(), "xp-" + Guid.NewGuid().ToString("N"));
+            var patches = Path.Combine(raiz, "Patches");
+            Directory.CreateDirectory(patches);
+
+            File.WriteAllText(Path.Combine(patches, "OtroMod.xml"), $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>{System.Security.SecurityElement.Escape(xpath)}</xpath>
+                    <value>
+                      <{etiqueta}>{traduccion}</{etiqueta}>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                var vacia = new XmlDocument();
+                vacia.LoadXml("<Defs />");
+                Extractor.RegistrarBaseCompleta(vacia);
+                Extractor.CombinedDefs = vacia;
+
+                return IO.FromLanguageXml(raiz).FirstOrDefault(x => x.Translated == traduccion);
+            }
+            finally
+            {
+                Extractor.RegistrarBaseCompleta(null);
+                Extractor.CombinedDefs = previo;
+                if (Directory.Exists(raiz)) Directory.Delete(raiz, true);
+            }
+        }
     }
 
     /// <summary>

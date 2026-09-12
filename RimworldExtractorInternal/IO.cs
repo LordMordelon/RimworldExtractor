@@ -1,5 +1,6 @@
 ﻿using ClosedXML.Excel;
 using System.Security;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using RimworldExtractorInternal.Compats;
@@ -1026,19 +1027,30 @@ namespace RimworldExtractorInternal
         /// <summary>
         /// La vuelta de <see cref="Utils.GetXpath"/>: del xpath saca la clase y el nodo.
         ///
-        /// Devuelve null para lo que no se puede desarmar sin ambiguedad, que son los xpath con
-        /// predicados de texto —los que GetXpath genera para un TranslationHandle— y cualquier
-        /// forma que no haya salido de ahi. Es a proposito: reconstruir mal una clave es peor que
-        /// no reconstruirla, porque pondria una traduccion en un nodo que no le corresponde.
+        /// Invierte las tres formas que GetXpath genera —el nombre de clase tal cual, li[N] para
+        /// un indice de lista, y el predicado de texto para un TranslationHandle— y devuelve null
+        /// para cualquier otra. Ese null es a proposito: reconstruir mal una clave es peor que no
+        /// reconstruirla, porque pondria una traduccion en un nodo que no le corresponde.
+        ///
+        /// Las dos primeras formas no se invertian y por eso se perdio trabajo: la clase quedaba
+        /// afuera si traia el ensamblado ("ZoologyMod.LifeStagePenetrationDef, ZoologyMod"), y el
+        /// predicado quedaba afuera siempre. Como <see cref="LeerPatchesLiteral"/> se apoya en
+        /// esto, esas traducciones no se releian, no entraban al cruce, no quedaban apartadas en
+        /// UNUSED y volvian a TODO sin que nada avisara. Fueron 21 de tres mods en una sola
+        /// corrida.
         /// </summary>
         private static (string Clase, string Nodo)? DesarmarXpath(string xpath)
         {
-            var m = Regex.Match(xpath, @"^/Defs/([A-Za-z0-9_.]+)\[defName=""([^""]+)""\]/(.+)$");
+            // La clase va tal cual la escribio GetXpath, asi que puede traer el ensamblado
+            // detras de una coma. Se acepta todo menos corchetes, que son los del defName.
+            var m = Regex.Match(xpath, @"^/Defs/([^\[\]/]+)\[defName=""([^""]+)""\]/(.+)$");
             if (!m.Success)
                 return null;
 
-            var tokens = m.Groups[3].Value.Split('/');
-            for (var i = 0; i < tokens.Length; i++)
+            // No se puede partir por '/' a secas: el predicado de un TranslationHandle trae
+            // ".//" adentro y quedaria cortado en pedazos.
+            var tokens = PartirRuta(m.Groups[3].Value);
+            for (var i = 0; i < tokens.Count; i++)
             {
                 // li[N] es 1-based en el xpath y 0-based en el nodo.
                 var li = Regex.Match(tokens[i], @"^li\[(\d+)\]$");
@@ -1048,11 +1060,52 @@ namespace RimworldExtractorInternal
                     continue;
                 }
 
+                // El predicado que GetXpath arma para un TranslationHandle: adentro esta el
+                // handle, que es justo el token del nodo.
+                var handle = Regex.Match(tokens[i], @"^\*\[\.//\*\[contains\(text\(\), '([^']*)'\)\]\]$");
+                if (handle.Success)
+                {
+                    tokens[i] = handle.Groups[1].Value;
+                    continue;
+                }
+
                 if (!Regex.IsMatch(tokens[i], "^[A-Za-z0-9_]+$"))
                     return null;
             }
 
             return (m.Groups[1].Value, $"{m.Groups[2].Value}.{string.Join('.', tokens)}");
+        }
+
+        /// <summary>
+        /// Parte una ruta de xpath por sus '/' de primer nivel, dejando enteros los predicados.
+        /// </summary>
+        private static List<string> PartirRuta(string ruta)
+        {
+            var tramos = new List<string>();
+            var actual = new StringBuilder();
+            var profundidad = 0;
+
+            foreach (var c in ruta)
+            {
+                switch (c)
+                {
+                    case '[':
+                        profundidad++;
+                        break;
+                    case ']':
+                        profundidad--;
+                        break;
+                    case '/' when profundidad == 0:
+                        tramos.Add(actual.ToString());
+                        actual.Clear();
+                        continue;
+                }
+
+                actual.Append(c);
+            }
+
+            tramos.Add(actual.ToString());
+            return tramos;
         }
 
         /// <summary>
