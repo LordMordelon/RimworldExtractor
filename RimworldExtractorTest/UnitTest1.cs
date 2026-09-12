@@ -1341,6 +1341,228 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre el reemplazo de archivos de la actualizacion.
+    ///
+    /// Lo que se protege es que una actualizacion nunca deje la instalacion a medias. El
+    /// procedimiento se apoya en que Windows deja renombrar un archivo en uso aunque no deje
+    /// sobrescribirlo, asi que toca el ejecutable y las DLL que la aplicacion esta usando en
+    /// ese momento: si falla a mitad y no vuelve atras, no queda nada que abrir.
+    /// </summary>
+    [TestClass]
+    public class ActualizadorTests
+    {
+        /// <summary>El caso normal: lo nuevo queda en su lugar y lo viejo corrido a ".viejo".</summary>
+        [TestMethod]
+        public void ReemplazaElEjecutableYLasDll()
+        {
+            var (instalacion, paquete) = Montar();
+            try
+            {
+                var reemplazos = Actualizador.Reemplazos(paquete,
+                    Actualizador.Variante.Standard, "RimworldExtractorGUI.exe");
+
+                Actualizador.Reemplazar(instalacion, reemplazos);
+
+                Assert.AreEqual("exe nuevo", File.ReadAllText(Path.Combine(instalacion, "RimworldExtractorGUI.exe")));
+                Assert.AreEqual("dll nueva", File.ReadAllText(Path.Combine(instalacion, "bin", "Interna.dll")));
+                Assert.AreEqual("exe viejo", File.ReadAllText(Path.Combine(instalacion, "RimworldExtractorGUI.exe.viejo")));
+                Assert.AreEqual("dll vieja", File.ReadAllText(Path.Combine(instalacion, "bin", "Interna.dll.viejo")));
+            }
+            finally
+            {
+                Borrar(instalacion, paquete);
+            }
+        }
+
+        /// <summary>
+        /// El test que importa: si un archivo no se deja mover **despues** de haber reemplazado
+        /// otros, la carpeta tiene que quedar exactamente como estaba.
+        ///
+        /// Se bloquea el .exe y no la DLL a proposito. Los reemplazos van ordenados por ruta,
+        /// asi que "bin\Interna.dll" se hace primero: bloqueando el que va segundo, el fallo
+        /// encuentra trabajo ya hecho y hay algo real que deshacer. Bloqueando el primero el
+        /// test pasa aunque no exista la vuelta atras, y no guardaria nada.
+        ///
+        /// FileShare.None es justamente lo que Windows NO hace con una imagen cargada —esa se
+        /// abre permitiendo el borrado, y por eso el procedimiento funciona en el caso real—.
+        /// </summary>
+        [TestMethod]
+        public void SiAlgoFallaDejaLaCarpetaComoEstaba()
+        {
+            var (instalacion, paquete) = Montar();
+            var bloqueado = Path.Combine(instalacion, "RimworldExtractorGUI.exe");
+            try
+            {
+                var antes = Retrato(instalacion);
+                var reemplazos = Actualizador.Reemplazos(paquete,
+                    Actualizador.Variante.Standard, "RimworldExtractorGUI.exe");
+                Assert.AreEqual(Path.Combine("bin", "Interna.dll"), reemplazos[0].Relativo,
+                    "cambio el orden: el archivo bloqueado tiene que ser el segundo");
+
+                using (File.Open(bloqueado, FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    Assert.ThrowsExactly<IOException>(
+                        () => Actualizador.Reemplazar(instalacion, reemplazos));
+                }
+
+                CollectionAssert.AreEqual(antes, Retrato(instalacion),
+                    "la actualizacion fallo y dejo la instalacion distinta de como estaba");
+            }
+            finally
+            {
+                Borrar(instalacion, paquete);
+            }
+        }
+
+        /// <summary>El arranque siguiente saca los restos y deja intacto lo que se instalo.</summary>
+        [TestMethod]
+        public void LimpiarRestosBorraLosViejosYNoTocaLoDemas()
+        {
+            var (instalacion, paquete) = Montar();
+            try
+            {
+                Actualizador.Reemplazar(instalacion, Actualizador.Reemplazos(paquete,
+                    Actualizador.Variante.Standard, "RimworldExtractorGUI.exe"));
+
+                Assert.AreEqual(2, Actualizador.LimpiarRestos(instalacion));
+
+                Assert.AreEqual(0, Directory.GetFiles(instalacion, "*.viejo", SearchOption.AllDirectories).Length);
+                Assert.AreEqual("exe nuevo", File.ReadAllText(Path.Combine(instalacion, "RimworldExtractorGUI.exe")));
+                Assert.AreEqual("dll nueva", File.ReadAllText(Path.Combine(instalacion, "bin", "Interna.dll")));
+            }
+            finally
+            {
+                Borrar(instalacion, paquete);
+            }
+        }
+
+        /// <summary>Un resto tomado no puede hacer fallar el arranque: se reintenta despues.</summary>
+        [TestMethod]
+        public void LimpiarRestosNoTiraSiUnoEstaTomado()
+        {
+            var instalacion = Temporal();
+            var resto = Path.Combine(instalacion, "algo.dll.viejo");
+            try
+            {
+                File.WriteAllText(resto, "x");
+                using (File.Open(resto, FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    Assert.AreEqual(0, Actualizador.LimpiarRestos(instalacion));
+                }
+                Assert.IsTrue(File.Exists(resto), "se borro un archivo que estaba tomado");
+            }
+            finally
+            {
+                Directory.Delete(instalacion, true);
+            }
+        }
+
+        /// <summary>
+        /// El Portable se descomprime en una carpeta temporal antes de arrancar, asi que su
+        /// AppContext.BaseDirectory no es donde esta el .exe. En el Standard son la misma.
+        /// </summary>
+        [TestMethod]
+        public void DistingueElPortableDelStandard()
+        {
+            Assert.AreEqual(Actualizador.Variante.Standard,
+                Actualizador.VarianteDe(@"C:\apps\rwe\RimworldExtractorGUI.exe", @"C:\apps\rwe"));
+            Assert.AreEqual(Actualizador.Variante.Standard,
+                Actualizador.VarianteDe(@"C:\apps\rwe\RimworldExtractorGUI.exe", @"C:\apps\rwe\"));
+            Assert.AreEqual(Actualizador.Variante.Portable,
+                Actualizador.VarianteDe(@"C:\apps\RimworldExtractor-Portable.exe", @"C:\Temp\.net\abc123"));
+        }
+
+        /// <summary>
+        /// El Portable conserva el nombre que tenga puesto: quien lo bajo pudo renombrarlo, y
+        /// la instalacion es ese archivo y no el nombre con el que se publica.
+        /// </summary>
+        [TestMethod]
+        public void ElPortableReemplazaSuPropioNombre()
+        {
+            var reemplazos = Actualizador.Reemplazos(@"C:\Temp\descarga.exe",
+                Actualizador.Variante.Portable, "extractor viejo.exe");
+
+            Assert.AreEqual(1, reemplazos.Count);
+            Assert.AreEqual("extractor viejo.exe", reemplazos[0].Relativo);
+        }
+
+        /// <summary>Bajar una pagina de error en vez del archivo es el caso real a atajar.</summary>
+        [TestMethod]
+        public void RechazaUnPaqueteQueNoSirve()
+        {
+            var carpeta = Temporal();
+            try
+            {
+                var falso = Path.Combine(carpeta, "falso.exe");
+                File.WriteAllText(falso, "<html>404</html>");
+                Assert.ThrowsExactly<InvalidDataException>(
+                    () => Actualizador.VerificarPaquete(falso, Actualizador.Variante.Portable));
+
+                var vacio = Path.Combine(carpeta, "vacio.zip");
+                File.WriteAllBytes(vacio, Array.Empty<byte>());
+                Assert.ThrowsExactly<InvalidDataException>(
+                    () => Actualizador.VerificarPaquete(vacio, Actualizador.Variante.Standard));
+
+                // Un zip valido pero sin la aplicacion adentro: descomprimirlo encima no
+                // actualizaria nada y dejaria archivos sueltos.
+                var incompleto = Path.Combine(carpeta, "incompleto.zip");
+                using (var zip = ZipFile.Open(incompleto, ZipArchiveMode.Create))
+                    zip.CreateEntry("LEEME.txt");
+                Assert.ThrowsExactly<InvalidDataException>(
+                    () => Actualizador.VerificarPaquete(incompleto, Actualizador.Variante.Standard));
+
+                var bueno = Path.Combine(carpeta, "bueno.zip");
+                using (var zip = ZipFile.Open(bueno, ZipArchiveMode.Create))
+                    zip.CreateEntry("RimworldExtractorGUI.exe");
+                Actualizador.VerificarPaquete(bueno, Actualizador.Variante.Standard);
+            }
+            finally
+            {
+                Directory.Delete(carpeta, true);
+            }
+        }
+
+        /// <summary>Una instalacion de mentira y el paquete que la reemplaza.</summary>
+        private static (string Instalacion, string Paquete) Montar()
+        {
+            var instalacion = Temporal();
+            Directory.CreateDirectory(Path.Combine(instalacion, "bin"));
+            File.WriteAllText(Path.Combine(instalacion, "RimworldExtractorGUI.exe"), "exe viejo");
+            File.WriteAllText(Path.Combine(instalacion, "bin", "Interna.dll"), "dll vieja");
+
+            var paquete = Temporal();
+            Directory.CreateDirectory(Path.Combine(paquete, "bin"));
+            File.WriteAllText(Path.Combine(paquete, "RimworldExtractorGUI.exe"), "exe nuevo");
+            File.WriteAllText(Path.Combine(paquete, "bin", "Interna.dll"), "dll nueva");
+
+            return (instalacion, paquete);
+        }
+
+        /// <summary>Cada archivo de la carpeta con su contenido, para comparar antes y despues.</summary>
+        private static List<string> Retrato(string carpeta) => Directory
+            .GetFiles(carpeta, "*", SearchOption.AllDirectories)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .Select(x => $"{Path.GetRelativePath(carpeta, x)}={File.ReadAllText(x)}")
+            .ToList();
+
+        private static string Temporal()
+        {
+            var ruta = Path.Combine(Path.GetTempPath(), "act-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(ruta);
+            return ruta;
+        }
+
+        private static void Borrar(params string[] carpetas)
+        {
+            foreach (var carpeta in carpetas)
+            {
+                try { Directory.Delete(carpeta, true); }
+                catch { /* el test ya termino */ }
+            }
+        }
+    }
+
+    /// <summary>
     /// Cubre la agrupacion de Data/ por autor.
     ///
     /// Lo que se protege es que un mod nuevo caiga solo en la carpeta de su autor. Cuando eso

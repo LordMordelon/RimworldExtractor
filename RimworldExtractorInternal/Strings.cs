@@ -669,6 +669,50 @@
 
         #endregion
 
+        #region Actualizacion
+
+        public const string DialogTitleUpdate = "Actualizar";
+
+        public static string UpdateAsk(string current, string latest)
+            => $"Tenés la {current} y la última es la {latest}. ¿Querés actualizar ahora?";
+
+        public const string UpdateAskRestart =
+            "La aplicación se va a cerrar y volver a abrir sola. Lo que tengas configurado se conserva.";
+
+        public static string UpdateDownloading(string url) => $"Descargando {url}";
+
+        public static string UpdateReplacing(int files)
+            => $"Reemplazando {files} {(files == 1 ? "archivo" : "archivos")}.";
+
+        public const string UpdateDone = "Listo. La aplicación se reinicia con la versión nueva.";
+
+        public static string UpdateFailed(string message)
+            => $"No se pudo actualizar: {message}. Quedó la versión que tenías, sin tocar.";
+
+        /// <summary>
+        /// Cuando la aplicacion no sabe su propia version no se ofrece actualizar: es una
+        /// compilacion local, y pisarla con una release publicada seria perder ese trabajo.
+        /// </summary>
+        public const string UpdateSkippedDevBuild =
+            "Esto es una compilación local, así que no se actualiza sola. Se abre la página de descargas.";
+
+        public static string UpdateDownloadEmpty(string path)
+            => $"el archivo descargado quedó vacío ({path})";
+
+        public static string UpdateDownloadNotExecutable(string path)
+            => $"lo descargado no es un ejecutable de Windows ({path})";
+
+        public static string UpdateDownloadNotZip(string path)
+            => $"lo descargado no es un archivo comprimido ({path})";
+
+        public static string UpdateDownloadIncomplete(string path, string missing)
+            => $"el comprimido descargado no trae {missing} ({path})";
+
+        public static string UpdateLeftoversCleaned(int count)
+            => $"Se borraron {count} {(count == 1 ? "archivo" : "archivos")} que dejó la actualización anterior.";
+
+        #endregion
+
         #region PatchOperations
 
         public static string UnsupportedPatchOperation(string operation)

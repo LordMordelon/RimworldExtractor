@@ -24,6 +24,22 @@ namespace RimworldExtractorGUI
         /// <summary>Si esta corriendo «Actualizar todo RML».</summary>
         private bool _actualizandoRml;
 
+        /// <summary>
+        /// La ultima version publicada, o null si todavia no se pudo comprobar. La guarda el
+        /// chequeo de arranque para que el clic en el rotulo sepa si hay algo que ofrecer sin
+        /// volver a consultar.
+        /// </summary>
+        private string? _ultimaVersion;
+
+        /// <summary>
+        /// Que trae la version nueva, para poder decirlo antes de actualizar. Null si no hay
+        /// version nueva o si no se pudo leer, que no es motivo para no ofrecer la actualizacion.
+        /// </summary>
+        private string? _notasDeLaUltima;
+
+        /// <summary>Si ya se esta actualizando, para no largar dos descargas encima.</summary>
+        private bool _actualizandoApp;
+
         public FormMain()
         {
             InitializeComponent();
@@ -63,6 +79,7 @@ namespace RimworldExtractorGUI
                 {
                     var latest = GithubVersionCheker.GetLatest();
                     var current = Program.VERSION;
+                    _ultimaVersion = latest;
 
                     void UpdateVersionText()
                     {
@@ -81,6 +98,11 @@ namespace RimworldExtractorGUI
                     {
                         UpdateVersionText();
                     }
+
+                    // Las notas se piden aca y no al hacer clic: es una consulta a la API y en
+                    // el hilo de la interfaz dejaria la ventana congelada hasta que responda.
+                    if (!string.IsNullOrEmpty(current) && latest != current)
+                        _notasDeLaUltima = Actualizador.NotasDe(latest);
                 }
                 catch (Exception e)
                 {
@@ -272,9 +294,131 @@ namespace RimworldExtractorGUI
 
         }
 
+        /// <summary>
+        /// El mismo enlace de siempre, pero si hay una version nueva ofrece pasarse a ella en
+        /// vez de mandar al navegador a elegir la descarga correcta y descomprimir a mano.
+        /// </summary>
         private void linkLabelLatestVersion_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Process.Start("explorer.exe", GithubVersionCheker.ReleasesUrl);
+            if (_actualizandoApp)
+                return;
+
+            var actual = Program.VERSION;
+            var ultima = _ultimaVersion;
+
+            if (ultima == null || ultima == actual)
+            {
+                Process.Start("explorer.exe", GithubVersionCheker.ReleasesUrl);
+                return;
+            }
+
+            // Sin version propia es una compilacion local: el numero lo escribe la CI al
+            // publicar. Pisarla con una release seria reemplazarle a alguien su propio build.
+            if (string.IsNullOrEmpty(actual))
+            {
+                Aviso.Mostrar(Strings.UpdateSkippedDevBuild, Strings.DialogTitleUpdate);
+                Process.Start("explorer.exe", GithubVersionCheker.ReleasesUrl);
+                return;
+            }
+
+            var mensaje = Strings.UpdateAsk(actual, ultima)
+                          + Environment.NewLine + Environment.NewLine + Strings.UpdateAskRestart;
+            if (_notasDeLaUltima != null)
+                mensaje += Environment.NewLine + Environment.NewLine + _notasDeLaUltima;
+
+            if (Aviso.Preguntar(mensaje, Strings.DialogTitleUpdate) != DialogResult.Yes)
+            {
+                Process.Start("explorer.exe", GithubVersionCheker.ReleasesUrl);
+                return;
+            }
+
+            Actualizar(ultima);
+        }
+
+        /// <summary>
+        /// Baja el paquete que corresponde, lo pone en su lugar y reinicia.
+        ///
+        /// La descarga va en segundo plano —son 78 MB en el Portable— y deja el rastro en el
+        /// panel de log, que es donde el usuario ya mira lo que esta pasando. El reemplazo y el
+        /// reinicio vuelven al hilo de la interfaz: Tema.Reiniciar cierra la aplicacion, y eso
+        /// no se hace desde otro hilo.
+        /// </summary>
+        private void Actualizar(string etiqueta)
+        {
+            _actualizandoApp = true;
+            linkLabelLatestVersion.Enabled = false;
+
+            var variante = Actualizador.VarianteActual();
+            var url = Actualizador.UrlDe(etiqueta, variante);
+            var temporal = Path.Combine(Path.GetTempPath(), "RimworldExtractor-" + etiqueta);
+
+            Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    if (Directory.Exists(temporal))
+                        Directory.Delete(temporal, true);
+                    Directory.CreateDirectory(temporal);
+
+                    Log.Msg(Strings.UpdateDownloading(url));
+                    var paquete = Path.Combine(temporal, Path.GetFileName(url));
+                    Actualizador.Descargar(url, paquete);
+                    Actualizador.VerificarPaquete(paquete, variante);
+
+                    var desplegado = Actualizador.Desplegar(paquete, variante, temporal);
+
+                    var nombreDelEjecutable = Path.GetFileName(Environment.ProcessPath) ?? "";
+                    var reemplazos = Actualizador.Reemplazos(desplegado, variante, nombreDelEjecutable);
+
+                    EnLaInterfaz(() =>
+                    {
+                        try
+                        {
+                            Log.Msg(Strings.UpdateReplacing(reemplazos.Count));
+                            Actualizador.Reemplazar(Prefabs.Carpeta, reemplazos);
+                            Aviso.Mostrar(Strings.UpdateDone, Strings.DialogTitleUpdate);
+                            Tema.Reiniciar();
+                        }
+                        catch (Exception e)
+                        {
+                            Fallo(e);
+                        }
+                    });
+                }
+                catch (Exception e)
+                {
+                    EnLaInterfaz(() => Fallo(e));
+                }
+            });
+
+            void Fallo(Exception e)
+            {
+                Log.Err(Strings.UpdateFailed(e.Message));
+                Aviso.Mostrar(Strings.UpdateFailed(e.Message), Strings.DialogTitleUpdate);
+                _actualizandoApp = false;
+                linkLabelLatestVersion.Enabled = true;
+            }
+        }
+
+        /// <summary>
+        /// Corre algo en el hilo de la interfaz, sin romperse si la ventana ya se cerro.
+        ///
+        /// La descarga de la actualizacion tarda, y si alguien cierra mientras tanto el Invoke
+        /// tira ObjectDisposedException desde un hilo de fondo, que no lo ataja nadie y voltea
+        /// la aplicacion entera.
+        /// </summary>
+        private void EnLaInterfaz(Action accion)
+        {
+            try
+            {
+                if (IsDisposed || !IsHandleCreated)
+                    return;
+                Invoke(accion);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Se cerro entre el chequeo y el Invoke. No hay nada que actualizar.
+            }
         }
 
         private void buttonConvertXlsx_Click(object sender, EventArgs e)

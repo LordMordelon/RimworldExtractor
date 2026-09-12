@@ -9,7 +9,9 @@ namespace RimworldExtractorGUI
 {
     internal static class GithubVersionCheker
     {
-        private const string RepoUrl = "https://github.com/LordMordelon/RimworldExtractor";
+        // La misma que usa el actualizador para armar las URL de descarga. Se toma de ahi y no
+        // se repite: dos copias de la direccion del repositorio se desincronizan solas.
+        private const string RepoUrl = RimworldExtractorInternal.Actualizador.RepoUrl;
 
         internal static readonly string ReleasesUrl = $"{RepoUrl}/releases";
 

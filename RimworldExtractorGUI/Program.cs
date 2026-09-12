@@ -66,6 +66,12 @@ namespace RimworldExtractorGUI
                 // Queda el tema por defecto, que es el de Windows.
             }
 
+            // Lo que dejo una actualizacion: mientras la aplicacion corria no se podian borrar,
+            // porque eran el ejecutable y las DLL que estaba usando. Ahora si.
+            var restos = Actualizador.LimpiarRestos(Prefabs.Carpeta);
+            if (restos > 0)
+                Log.Msg(Strings.UpdateLeftoversCleaned(restos));
+
             Tema.Aplicar();
             if (!File.Exists(Prefabs.RutaPorDefecto))
             {
