@@ -20,7 +20,15 @@ def write_output(key, value):
         print(f'{key}={value}')
 
 
-def edit_template(changelog):
+def edit_template(changelog_path):
+    """Antepone el changelog al texto fijo de la release.
+
+    Recibe la ruta de un archivo y no el texto: el changelog tiene varias lineas y
+    pasarlo como argumento obligaba a escaparlo para PowerShell, que se rompe con
+    cualquier comilla en un mensaje de commit.
+    """
+    with open(changelog_path, 'r', encoding='utf-8') as file:
+        changelog = file.read()
     with open(TEMPLATE_PATH, 'r', encoding='utf-8') as file:
         lines = file.readlines()
     # Sin el "##" que se agregaba aca: salia en cada release como un titulo vacio.

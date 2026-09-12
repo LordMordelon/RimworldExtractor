@@ -58,13 +58,26 @@ jobs:
         nueva="$mayor.$menor.$parche"
         echo "Ultima etiqueta: $ultima -> version nueva: $nueva"
         echo "new_tag=$nueva" >> "$GITHUB_OUTPUT"
-        echo "changelog=### [$nueva](https://github.com/$GITHUB_REPOSITORY/compare/$ultima...$nueva) ($(date -u +%F))" >> "$GITHUB_OUTPUT"
+
+        # El cuerpo de la release sale de los asuntos de commit: en este repositorio van en
+        # prosa y en español, asi que la lista ya es el resumen de que cambio. Va a un
+        # archivo y no a GITHUB_OUTPUT porque son varias lineas y de ahi pasaria como
+        # argumento de PowerShell, que se rompe con cualquier comilla en un mensaje.
+        {
+          echo "### [$nueva](https://github.com/$GITHUB_REPOSITORY/compare/$ultima...$nueva) ($(date -u +%F))"
+          echo
+          # Sin el marcador que evita que un commit dispare la CI: es de aca adentro y no le
+          # dice nada a quien lee la release.
+          git log "$ultima"..HEAD --no-merges --format='- %s' \
+            | sed -E 's/ *\[(skip ci|ci skip)\]//g'
+        } > .github/changelog.md
+        cat .github/changelog.md
 
     - name: Escribir la version y el texto de la release
       run: |
         $PSNativeCommandUseErrorActionPreference = $true
         python $env:Script_Path version ${{ steps.version.outputs.new_tag }}
-        python $env:Script_Path template "${{ steps.version.outputs.changelog }}"
+        python $env:Script_Path template .github/changelog.md
 
     - name: Compilar y probar
       run: |

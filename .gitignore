@@ -370,3 +370,6 @@ FodyWeavers.xsd
 # la compilacion ni el flujo de publicacion.
 Prefabs.dat
 log.txt
+
+# Lo genera el paso de publicacion para el cuerpo de la release.
+.github/changelog.md
