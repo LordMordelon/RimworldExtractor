@@ -1834,4 +1834,49 @@ namespace RimworldExtractorTest
             }
         }
     }
+
+    /// <summary>
+    /// Cubre que un packageId con el sufijo "_steam" encuentre a su mod.
+    ///
+    /// Cuando no lo encuentra no falla nada visible: el patch sale con ##packageId## en vez del
+    /// nombre, el PatchOperationFindMod no coincide nunca y la traduccion no se aplica ni con el
+    /// mod puesto. Pasaba con siete mods de AobaKuma que piden CETeam.CombatExtended_steam.
+    /// </summary>
+    [TestClass]
+    public class ModsConPackageIdTests
+    {
+        private static readonly ModMetadata Ce =
+            new(@"D:\mods\ce", "2890901044", "Combat Extended", "CETeam.CombatExtended", false);
+
+        /// <summary>El caso real: el About.xml de CE no lleva el sufijo que piden los patches.</summary>
+        [TestMethod]
+        public void EncuentraAlModAunqueElPackageIdTraigaElSufijoSteam()
+        {
+            var encontrados = ModLister.ModsConPackageId(new[] { Ce }, "CETeam.CombatExtended_steam");
+
+            Assert.AreEqual(Ce, encontrados.Single());
+        }
+
+        /// <summary>
+        /// Si hay un mod que se llama exactamente asi, gana ese: el sufijo es solo el ultimo
+        /// recurso, no una forma de unificar dos mods distintos.
+        /// </summary>
+        [TestMethod]
+        public void SiHayUnoConElSufijoGanaEse()
+        {
+            var conSufijo = new ModMetadata(@"D:\mods\otro", "1", "Otro", "CETeam.CombatExtended_steam", false);
+
+            var encontrados = ModLister.ModsConPackageId(new[] { Ce, conSufijo }, "CETeam.CombatExtended_steam");
+
+            Assert.AreEqual(conSufijo, encontrados.Single());
+        }
+
+        /// <summary>Un mod que no esta instalado sigue sin encontrarse, con sufijo o sin el.</summary>
+        [TestMethod]
+        public void UnPackageIdQueNoEstaNoEncuentraNada()
+        {
+            Assert.AreEqual(0, ModLister.ModsConPackageId(new[] { Ce }, "CerebrexNodeUnleashed.Sentinel").Count);
+            Assert.AreEqual(0, ModLister.ModsConPackageId(new[] { Ce }, "CerebrexNodeUnleashed.Sentinel_steam").Count);
+        }
+    }
 }

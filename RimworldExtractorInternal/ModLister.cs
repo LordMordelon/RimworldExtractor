@@ -340,7 +340,7 @@ namespace RimworldExtractorInternal
             }
 
 
-            var matches = AllMods.Where(x => string.Equals(x.PackageId, packageId, StringComparison.CurrentCultureIgnoreCase)).ToList();
+            var matches = ModsConPackageId(AllMods, packageId);
             switch (matches.Count)
             {
                 case < 1:
@@ -358,6 +358,29 @@ namespace RimworldExtractorInternal
                     Log.Msg(Strings.DuplicatePackageId(packageId, matches.Count));
                     return true;
             }
+        }
+
+        /// <summary>El sufijo con el que RimWorld distingue la copia del Workshop de una local.</summary>
+        private const string SufijoSteam = "_steam";
+
+        /// <summary>
+        /// Los mods que responden a un packageId.
+        ///
+        /// Si no hay ninguno se prueba sin el sufijo "_steam". Hay mods que condicionan con
+        /// MayRequire="CETeam.CombatExtended_steam", y el About.xml de CE dice
+        /// CETeam.CombatExtended: sin esta segunda vuelta el nombre no se resolvia aunque el mod
+        /// estuviera instalado, y el patch salia con ##packageId## y no se aplicaba nunca. Eran
+        /// siete de AobaKuma.
+        /// </summary>
+        internal static List<ModMetadata> ModsConPackageId(IEnumerable<ModMetadata> mods, string packageId)
+        {
+            var lista = mods.ToList();
+            var matches = lista.Where(x => string.Equals(x.PackageId, packageId, StringComparison.CurrentCultureIgnoreCase)).ToList();
+            if (matches.Count > 0 || !packageId.EndsWith(SufijoSteam, StringComparison.OrdinalIgnoreCase))
+                return matches;
+
+            var sinSufijo = packageId[..^SufijoSteam.Length];
+            return lista.Where(x => string.Equals(x.PackageId, sinSufijo, StringComparison.CurrentCultureIgnoreCase)).ToList();
         }
 
         /// <summary>
