@@ -22,48 +22,50 @@ namespace RimworldExtractorInternal
             List<TranslationEntry> Rescatadas) Merge(
             IEnumerable<TranslationEntry> nuevas, IEnumerable<TranslationEntry> existentes)
         {
-            // La clave es la misma que usa el analizador de traducciones, con el prefijo de
-            // patches normalizado (ver Clave).
+            // Dos indices, y en los dos gana la ultima: quien arma la lista decide el orden.
+            //
+            // El normalizado es la clave que usa el analizador de traducciones, con el prefijo
+            // de patches sacado (ver Clave). El exacto conserva el prefijo, y hace falta porque
+            // un mismo nodo puede tener dos traducciones legitimas: en GravTech, el def dice
+            // "(110 t)" y el patch de Combat Extended lo cambia a "(130 t)". Con solo la clave
+            // normalizada las dos colapsaban y el patch de CE se quedaba con "(110 t)".
+            var exactas = new Dictionary<(string, string), TranslationEntry>();
             var previas = new Dictionary<(string, string), TranslationEntry>();
             foreach (var previa in existentes)
             {
-                var clave = Clave(previa);
-
-                // Gana la ultima, y quien arma la lista decide el orden. Pero si las dos estan
-                // traducidas y no dicen lo mismo, sobra una: se avisa en vez de elegir callado,
-                // que es como veinte traducciones correctas se dieron vuelta sin que nada lo
-                // marcara.
-                if (previas.TryGetValue(clave, out var anterior)
-                    && !string.IsNullOrEmpty(anterior.Translated)
-                    && !string.IsNullOrEmpty(previa.Translated)
-                    && anterior.Translated != previa.Translated)
-                {
-                    Log.Wrn(Strings.TraduccionDuplicadaEnConflicto(
-                        previa.ClassName, previa.Node, anterior.Translated!, previa.Translated!));
-                }
-
-                previas[clave] = previa;
+                exactas[(previa.ClassName, previa.Node)] = previa;
+                previas[Clave(previa)] = previa;
             }
 
             var usadas = new HashSet<(string, string)>();
+            var usadasExactas = new HashSet<(string, string)>();
             var resultado = new List<TranslationEntry>();
 
             foreach (var nueva in nuevas)
             {
                 var clave = Clave(nueva);
-                if (previas.TryGetValue(clave, out var previa) && !string.IsNullOrEmpty(previa.Translated))
+
+                // Primero la de la misma forma de entrega; si no esta traducida, la de la otra.
+                var previa = exactas.GetValueOrDefault((nueva.ClassName, nueva.Node));
+                if (string.IsNullOrEmpty(previa?.Translated))
+                    previa = previas.GetValueOrDefault(clave);
+
+                if (previa != null && !string.IsNullOrEmpty(previa.Translated))
                 {
                     // Se conserva la traduccion y se toma el original nuevo: si el texto en
                     // ingles cambio, el comentario EN queda actualizado y el cambio se ve en
                     // el diff, que es donde se revisa.
                     resultado.Add(nueva with { Translated = previa.Translated });
                     usadas.Add(clave);
+                    usadasExactas.Add((previa.ClassName, previa.Node));
                 }
                 else
                 {
                     resultado.Add(nueva);
                 }
             }
+
+            AvisarDescartadas(exactas.Values, previas, usadas, usadasExactas);
 
             // Las que no encontraron su clave. Lo que estaba sin traducir no cuenta: no hay
             // nada que rescatar.
@@ -75,6 +77,43 @@ namespace RimworldExtractorInternal
             var rescatadas = Rescatar(resultado, huerfanas);
 
             return (resultado, huerfanas.Except(rescatadas).ToList(), rescatadas);
+        }
+
+        /// <summary>
+        /// Avisa por cada traduccion que se descarta porque su nodo esta traducido distinto en
+        /// la otra forma de entrega.
+        ///
+        /// Se avisa en vez de elegir callado, que es como veinte traducciones correctas se
+        /// dieron vuelta sin que nada lo marcara. Pero se mira al final y no al leer: al leer
+        /// todavia no se sabe si la extraccion trae las dos formas, y cuando las trae no se
+        /// descarta ninguna. Avisar ahi era decir que sobraba una que no sobraba.
+        /// </summary>
+        private static void AvisarDescartadas(IEnumerable<TranslationEntry> exactas,
+            Dictionary<(string, string), TranslationEntry> previas,
+            HashSet<(string, string)> usadas, HashSet<(string, string)> usadasExactas)
+        {
+            foreach (var grupo in exactas.Where(x => !string.IsNullOrEmpty(x.Translated)).GroupBy(Clave))
+            {
+                // Una lista de TranslationEntry tiene su propio Count(), que cuenta por tipo.
+                var formas = grupo.ToList();
+                if (formas.Count < 2)
+                    continue;
+
+                // Lo que queda en pie: lo que se uso, o si no se uso nada, la que va a huerfanas.
+                var conservadas = usadas.Contains(grupo.Key)
+                    ? formas.Where(x => usadasExactas.Contains((x.ClassName, x.Node))).ToList()
+                    : new List<TranslationEntry> { previas[grupo.Key] };
+
+                foreach (var descartada in formas.Except(conservadas))
+                {
+                    var usada = conservadas.FirstOrDefault(x => !string.IsNullOrEmpty(x.Translated));
+                    if (usada != null && conservadas.All(x => x.Translated != descartada.Translated))
+                    {
+                        Log.Wrn(Strings.TraduccionDuplicadaEnConflicto(
+                            descartada.ClassName, descartada.Node, descartada.Translated!, usada.Translated!));
+                    }
+                }
+            }
         }
 
         /// <summary>

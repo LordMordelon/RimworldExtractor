@@ -196,6 +196,12 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   gana `DefInjected`, que es lo que el juego aplica al final. En `ActualizacionRml` el
   `UNUSED` va antes que todo, para que nunca le gane a lo que está en uso.
 
+  Eso vale cuando la extracción trae **una sola** forma. Si trae las dos, no es un duplicado:
+  son dos textos válidos —en GravTech el def dice «(110 t)» y el patch de Combat Extended lo
+  cambia a «(130 t)»— y cada nueva busca primero la previa de su misma forma. Unificar ahí le
+  daba al patch la traducción del def. El aviso de traducción descartada sale al final del
+  cruce, solo por lo que de verdad no se usó.
+
 - **El `UNUSED.xml` se relee.** Si no se releyera duraría una sola extracción: la corrida
   que aparta una traducción la saca de `Languages/`, así que la siguiente no la encuentra,
   no le sobra nada y borra el archivo con todo adentro.

@@ -266,6 +266,57 @@ namespace RimworldExtractorTest
         }
 
         /// <summary>
+        /// Cuando la extraccion trae el mismo nodo de las dos formas, cada una conserva la suya.
+        ///
+        /// No es un duplicado: son dos textos distintos y validos. Es GravTech, donde el def dice
+        /// "(110 t)" y el patch de Combat Extended lo cambia a "(130 t)". Unificar la clave hacia
+        /// que las dos tomaran la misma traduccion, y el patch de CE se quedaba con "(110 t)".
+        /// </summary>
+        [TestMethod]
+        public void LasDosFormasDelMismoNodoConservanCadaUnaLaSuya()
+        {
+            const string nodo = "GravRifle_LooongShot.description";
+            var extraccion = new[]
+            {
+                new TranslationEntry("AbilityDef", nodo, "Long-range shot. (110 t)", null, null, null),
+                new TranslationEntry("Patches.AbilityDef", nodo, "Long-range shot. (130 t)", null, null, null)
+            };
+            // En el orden en que las lee IO.FromLanguageXml: primero Patches, despues DefInjected.
+            var previas = new[]
+            {
+                new TranslationEntry("Patches.AbilityDef", nodo, "", "Disparo de largo alcance. (130 t)", null, null),
+                new TranslationEntry("AbilityDef", nodo, "Long-range shot. (110 t)", "Disparo de largo alcance. (110 t)", null, null)
+            };
+
+            var (resultado, sinUso, _) = TranslationMerge.Merge(extraccion, previas);
+
+            Assert.AreEqual("Disparo de largo alcance. (110 t)", resultado.Single(x => x.ClassName == "AbilityDef").Translated);
+            Assert.AreEqual("Disparo de largo alcance. (130 t)", resultado.Single(x => x.ClassName == "Patches.AbilityDef").Translated,
+                "el patch de CE se quedo con la traduccion del def");
+            Assert.AreEqual(0, sinUso.Count);
+        }
+
+        /// <summary>
+        /// El caso real que motivo que gane DefInjected sigue igual: si la extraccion trae una
+        /// sola forma, la otra traduccion era de una version anterior y no se usa.
+        /// </summary>
+        [TestMethod]
+        public void ConUnaSolaFormaEnLaExtraccionGanaLaDeEsaForma()
+        {
+            var extraccion = new[] { new TranslationEntry("ThingDef", "Cuchillo.tools.1.label", "point", null, null, null) };
+            var previas = new[]
+            {
+                new TranslationEntry("Patches.ThingDef", "Cuchillo.tools.1.label", "", "filo", null, null),
+                new TranslationEntry("ThingDef", "Cuchillo.tools.1.label", "point", "punta", null, null)
+            };
+
+            var (resultado, sinUso, _) = TranslationMerge.Merge(extraccion, previas);
+
+            Assert.AreEqual("punta", resultado.Single().Translated);
+            Assert.AreEqual(0, sinUso.Count, "el duplicado viejo no tiene que ir a UNUSED");
+        }
+
+        /// <summary>
         /// El caso que motivo el segundo pase: el mod dejo de nombrar las partes de un cuerpo
         /// y paso a indexarlas por posicion. La clave cambio, el ingles no, y la traduccion
         /// terminaba en UNUSED mientras la misma frase volvia a salir como TODO.
