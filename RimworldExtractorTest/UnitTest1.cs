@@ -1046,6 +1046,28 @@ namespace RimworldExtractorTest
         }
 
         /// <summary>
+        /// El mismo mod pedido dos veces da una sola condicion. Es GravTech, que pide Cerebrex
+        /// en el IfModActive de la carpeta y en el MayRequire del patch.
+        /// </summary>
+        [TestMethod]
+        public void ElMismoModPedidoDosVecesDaUnaSolaCondicion()
+        {
+            var requiere = new RequiredMods();
+            requiere.AddAllowedByPackageId(SinInstalar);
+            requiere.AddAllowedByPackageId(SinInstalar);
+
+            var raiz = Escribir(Entrada(requiere));
+            try
+            {
+                Assert.AreEqual(1, LeerPatch(raiz).SelectNodes("//li[@MayRequire]")!.Count);
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
         /// Varios mods en "||" van en un solo MayRequireAnyOf: un MayRequire con coma los
         /// exigiria todos.
         /// </summary>

@@ -502,7 +502,10 @@ namespace RimworldExtractorInternal
                         var packageIds = PackageIdsParaMayRequire(allowedMod.Split(RequiredMods.OR_IDENTIFIER));
                         if (packageIds != null)
                         {
-                            porPackageId.Add(packageIds);
+                            // El mismo mod puede llegar dos veces, por el IfModActive de la
+                            // carpeta y por el MayRequire del patch: GravTech pide Cerebrex asi.
+                            if (!porPackageId.Any(x => x.SequenceEqual(packageIds, StringComparer.OrdinalIgnoreCase)))
+                                porPackageId.Add(packageIds);
                             continue;
                         }
 
@@ -906,18 +909,19 @@ namespace RimworldExtractorInternal
             if (!tokens.Any(x => x.StartsWith(RequiredMods.PACKAGE_ID_PREFIX, StringComparison.Ordinal)))
                 return null;
 
-            var packageIds = new string[tokens.Length];
-            for (var i = 0; i < tokens.Length; i++)
+            var packageIds = new List<string>();
+            foreach (var token in tokens)
             {
-                var packageId = tokens[i].StartsWith(RequiredMods.PACKAGE_ID_PREFIX, StringComparison.Ordinal)
-                    ? tokens[i][RequiredMods.PACKAGE_ID_PREFIX.Length..]
-                    : ModLister.GetModMetadataByModName(tokens[i])?.PackageId;
+                var packageId = token.StartsWith(RequiredMods.PACKAGE_ID_PREFIX, StringComparison.Ordinal)
+                    ? token[RequiredMods.PACKAGE_ID_PREFIX.Length..]
+                    : ModLister.GetModMetadataByModName(token)?.PackageId;
                 if (packageId == null)
                     return null;
-                packageIds[i] = packageId;
+                if (!packageIds.Contains(packageId, StringComparer.OrdinalIgnoreCase))
+                    packageIds.Add(packageId);
             }
 
-            return packageIds;
+            return packageIds.ToArray();
         }
 
         /// <summary>
