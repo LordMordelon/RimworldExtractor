@@ -101,7 +101,7 @@ namespace RimworldExtractorInternal
                     var combinedRequiredMods = entry.RequiredMods.ToString();
                     var cellRequiredMods = sheet.Cell(2 + i, 4);
                     cellRequiredMods.Value = combinedRequiredMods;
-                    if (combinedRequiredMods.Contains("##packageId##") && entry.ClassName.StartsWith("Patches."))
+                    if (SinNombreEnNomatch(entry.RequiredMods) && entry.ClassName.StartsWith("Patches."))
                     {
                         Log.WrnOnce(Strings.InvalidRequiredModsValue(combinedRequiredMods),
                             $"RequiredMods-warn-{combinedRequiredMods}".GetHashCode());
@@ -294,7 +294,7 @@ namespace RimworldExtractorInternal
                     {
                         var combinedRequiredMods = entry.RequiredMods.ToString();
                         mainSheet.Cell(2 + i + rows.Count, colRequiredMods).Value = combinedRequiredMods;
-                        if (combinedRequiredMods.Contains("##packageId##") && entry.ClassName.StartsWith("Patches."))
+                        if (SinNombreEnNomatch(entry.RequiredMods) && entry.ClassName.StartsWith("Patches."))
                         {
                             Log.WrnOnce(Strings.InvalidRequiredModsValue(combinedRequiredMods),
                                 $"RequiredMods-warn-{combinedRequiredMods}".GetHashCode());
@@ -492,8 +492,20 @@ namespace RimworldExtractorInternal
                         continue;
 
                     var aboveNode = root.AppendElement("Operation");
+
+                    // Los grupos que nombran un mod por packageId sin nombre conocido no pueden
+                    // ir por FindMod, que compara nombres: se juntan aca y van por MayRequire,
+                    // mas abajo, dentro de la secuencia.
+                    var porPackageId = new List<string[]>();
                     foreach (var allowedMod in requiredMods.AllowedMods)
                     {
+                        var packageIds = PackageIdsParaMayRequire(allowedMod.Split(RequiredMods.OR_IDENTIFIER));
+                        if (packageIds != null)
+                        {
+                            porPackageId.Add(packageIds);
+                            continue;
+                        }
+
                         aboveNode.Append(operationFindMod =>
                         {
                             operationFindMod.AppendAttribute("Class", "PatchOperationFindMod");
@@ -544,7 +556,22 @@ namespace RimworldExtractorInternal
                     {
                         operationSequence.AppendAttribute("Class", "PatchOperationSequence");
                         operationSequence.AppendElement("success", "Always");
-                        entryDict[requiredMods.ToString()] = operationSequence.AppendElement("operations");
+                        var operations = operationSequence.AppendElement("operations");
+
+                        // MayRequire en un li de lista es lo que RimWorld resuelve siempre, en
+                        // cualquier nivel. Un nivel por grupo: cada li lleva un solo atributo, y
+                        // anidados quedan en AND como los FindMod de arriba.
+                        foreach (var packageIds in porPackageId)
+                        {
+                            var condicion = operations.AppendElement("li");
+                            condicion.AppendAttribute("Class", "PatchOperationSequence");
+                            condicion.AppendAttribute(packageIds.Length == 1 ? "MayRequire" : "MayRequireAnyOf",
+                                string.Join(",", packageIds));
+                            condicion.AppendElement("success", "Always");
+                            operations = condicion.AppendElement("operations");
+                        }
+
+                        entryDict[requiredMods.ToString()] = operations;
                     });
                 }
 
@@ -860,6 +887,46 @@ namespace RimworldExtractorInternal
             return translations;
         }
 
+
+        /// <summary>
+        /// Los packageId con los que condicionar por MayRequire un grupo de RequiredMods (los
+        /// mods de un "||"), o null si el grupo se escribe como PatchOperationFindMod.
+        ///
+        /// PatchOperationFindMod compara nombres de mod. Cuando el mod no esta instalado en esta
+        /// maquina el nombre no se conoce y queda el packageId con su prefijo, y escrito asi el
+        /// FindMod no coincide nunca: la traduccion no se aplica ni teniendo el mod. Paso con
+        /// Cerebrex en GravTech. MayRequire, en cambio, toma packageIds, que es justo lo que hay.
+        ///
+        /// Los grupos que se resuelven del todo por nombre siguen como FindMod, para no cambiar
+        /// lo que ya estaba bien escrito. Y vuelve a FindMod el grupo en el que algun nombre no
+        /// tiene packageId conocido: no hay forma de armarlo entero, y el FindMod lo avisa.
+        /// </summary>
+        private static string[]? PackageIdsParaMayRequire(string[] tokens)
+        {
+            if (!tokens.Any(x => x.StartsWith(RequiredMods.PACKAGE_ID_PREFIX, StringComparison.Ordinal)))
+                return null;
+
+            var packageIds = new string[tokens.Length];
+            for (var i = 0; i < tokens.Length; i++)
+            {
+                var packageId = tokens[i].StartsWith(RequiredMods.PACKAGE_ID_PREFIX, StringComparison.Ordinal)
+                    ? tokens[i][RequiredMods.PACKAGE_ID_PREFIX.Length..]
+                    : ModLister.GetModMetadataByModName(tokens[i])?.PackageId;
+                if (packageId == null)
+                    return null;
+                packageIds[i] = packageId;
+            }
+
+            return packageIds;
+        }
+
+        /// <summary>
+        /// Si hay un packageId sin nombre en la parte que exige que un mod NO este. Es lo unico
+        /// que sigue sin poder escribirse: no hay un MayRequire al reves, y un nomatch de
+        /// FindMod necesita el nombre. Lo demas lo resuelve PackageIdsParaMayRequire.
+        /// </summary>
+        private static bool SinNombreEnNomatch(RequiredMods requiredMods)
+            => requiredMods.DisallowedMods.Any(x => x.Contains(RequiredMods.PACKAGE_ID_PREFIX, StringComparison.Ordinal));
 
         /// <summary>El prefijo con el que el extractor marca lo que sale por un patch.</summary>
         private static string SinPrefijoDePatches(string className) =>

@@ -910,6 +910,192 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre la condicion de un patch cuyo mod solo se conoce por packageId.
+    ///
+    /// PatchOperationFindMod compara nombres. Cuando el mod no esta instalado no hay nombre, y
+    /// el patch salia con "##packageId##..." como si lo fuera: no coincide nunca, asi que la
+    /// traduccion no se aplicaba ni teniendo el mod, y el juego no avisa nada. Paso con Cerebrex
+    /// en GravTech y estaba en diez mods de RML.
+    /// </summary>
+    [TestClass]
+    public class CondicionPorPackageIdTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        /// <summary>Un packageId que no puede estar instalado en ninguna maquina.</summary>
+        private const string SinInstalar = "nadie.mod.que.no.esta";
+
+        private const string Defs = """
+            <Defs>
+              <ThingDef>
+                <defName>NucleoDeComputadora</defName>
+                <description>Computer core.</description>
+              </ThingDef>
+            </Defs>
+            """;
+
+        private static TranslationEntry Entrada(RequiredMods requiere) =>
+            new("Patches.ThingDef", "NucleoDeComputadora.description", "Computer core.",
+                "Núcleo de computadora.", requiere, null);
+
+        /// <summary>
+        /// Sin nombre, la condicion va por MayRequire en un li de la secuencia, y la operacion
+        /// queda adentro. Nada de FindMod ni del prefijo.
+        /// </summary>
+        [TestMethod]
+        public void SinNombreSaleComoMayRequire()
+        {
+            var requiere = new RequiredMods();
+            requiere.AddAllowedByPackageId(SinInstalar);
+
+            var raiz = Escribir(Entrada(requiere));
+            try
+            {
+                var patch = LeerPatch(raiz);
+
+                Assert.IsFalse(patch.OuterXml.Contains(RequiredMods.PACKAGE_ID_PREFIX), "salio el packageId como nombre");
+                Assert.IsNull(patch.SelectSingleNode("//*[@Class='PatchOperationFindMod']"),
+                    "un FindMod con un packageId no coincide nunca");
+                Assert.IsNotNull(patch.SelectSingleNode(
+                        $"/Patch/Operation[@Class='PatchOperationSequence']/operations/li[@MayRequire='{SinInstalar}']" +
+                        "/operations/li[@Class='PatchOperationReplace']"),
+                    "la operacion no quedo dentro de la condicion");
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Con un grupo por nombre y otro por packageId, los dos condicionan: el FindMod por
+        /// fuera y el MayRequire por dentro, en AND como estaban. Lo que ya salia bien no cambia.
+        /// </summary>
+        [TestMethod]
+        public void ConviveConUnFindModPorNombre()
+        {
+            var requiere = new RequiredMods();
+            requiere.AddAllowedByModName("Combat Extended");
+            requiere.AddAllowedByPackageId(SinInstalar);
+
+            var raiz = Escribir(Entrada(requiere));
+            try
+            {
+                var patch = LeerPatch(raiz);
+
+                Assert.IsNotNull(patch.SelectSingleNode(
+                    "/Patch/Operation[@Class='PatchOperationFindMod'][mods/li='Combat Extended']" +
+                    $"/match[@Class='PatchOperationSequence']/operations/li[@MayRequire='{SinInstalar}']" +
+                    "/operations/li[@Class='PatchOperationReplace']"));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Varios mods en "||" van en un solo MayRequireAnyOf: un MayRequire con coma los
+        /// exigiria todos.
+        /// </summary>
+        [TestMethod]
+        public void UnGrupoConAlternativasSaleComoMayRequireAnyOf()
+        {
+            var requiere = new RequiredMods();
+            requiere.AddAllowedByPackageIds(new[] { SinInstalar, "otro.mod.que.no.esta" });
+
+            var raiz = Escribir(Entrada(requiere));
+            try
+            {
+                var patch = LeerPatch(raiz);
+
+                Assert.IsNotNull(patch.SelectSingleNode(
+                    $"//li[@MayRequireAnyOf='{SinInstalar},otro.mod.que.no.esta']/operations/li[@Class='PatchOperationReplace']"));
+                Assert.IsNull(patch.SelectSingleNode("//@MayRequire"));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Lo escrito asi se tiene que poder releer, o la proxima actualizacion lo pierde: con
+        /// el def cargado, que evalua el xpath dentro de la secuencia anidada, y sin el, que es
+        /// lo que lee LeerPatchesLiteral.
+        /// </summary>
+        [TestMethod]
+        public void SeReleeConElDefYSinEl()
+        {
+            var requiere = new RequiredMods();
+            requiere.AddAllowedByPackageId(SinInstalar);
+
+            var raiz = Escribir(Entrada(requiere));
+            try
+            {
+                foreach (var defs in new[] { Defs, "<Defs />" })
+                {
+                    var leidas = ConLaBase(defs, () => IO.FromLanguageXml(raiz));
+
+                    var entrada = leidas.FirstOrDefault(x => x.Node == "NucleoDeComputadora.description");
+                    Assert.IsNotNull(entrada, $"no se releyo la traduccion con la base {defs}");
+                    Assert.AreEqual("Núcleo de computadora.", entrada.Translated);
+                }
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>Escribe las entradas en un mod de mentira y devuelve su carpeta.</summary>
+        private static string Escribir(params TranslationEntry[] entradas)
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var raiz = Path.Combine(Path.GetTempPath(), "mayrequire-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(raiz);
+
+            var politica = Prefabs.Policy;
+            Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
+            try
+            {
+                IO.ToLanguageXml(entradas.ToList(), false, XmlCommentStyle.TranslationTemplate, "UnMod", raiz);
+            }
+            finally
+            {
+                Prefabs.Policy = politica;
+            }
+
+            return raiz;
+        }
+
+        private static XmlDocument LeerPatch(string raiz)
+        {
+            var doc = new XmlDocument();
+            doc.Load(Directory.GetFiles(Path.Combine(raiz, "Patches"), "*.xml").Single());
+            return doc;
+        }
+
+        private static T ConLaBase<T>(string defs, Func<T> hacer)
+        {
+            var previo = Extractor.CombinedDefs;
+            var doc = new XmlDocument();
+            doc.LoadXml(defs);
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                return hacer();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+        }
+    }
+
+    /// <summary>
     /// Cubre que no se le pida al traductor traducir la nada.
     ///
     /// Hay mods que traen claves vacias en su propio archivo en ingles, del estilo

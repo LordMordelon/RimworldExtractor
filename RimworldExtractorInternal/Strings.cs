@@ -128,7 +128,7 @@
         #region IO
 
         public static string InvalidRequiredModsValue(string token)
-            => $"La columna Required Mods tiene un valor inválido. Para que los Patches se generen bien, hay que reemplazar a mano ese texto del Excel: \"{token}\" por el nombre del mod.";
+            => $"No se conoce el nombre del mod de \"{token}\" y esa condición no se puede escribir con su packageId, así que ese patch no se va a aplicar. Instalá el mod y volvé a extraer, o reemplazá ese texto por el nombre del mod en la columna Required Mods del Excel.";
 
         public static string PackageIdInsteadOfModName(string prefix)
             => $"Hay un nombre de paquete ({prefix}) en lugar del nombre del mod. Corregilo al nombre del mod.";
