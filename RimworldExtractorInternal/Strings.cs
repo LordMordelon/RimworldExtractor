@@ -204,13 +204,13 @@
             "Se rehicieron el LoadFolders.xml y el ModList.tsv de RML: el mod ya se puede probar en el juego.";
 
         public const string LoadFoldersBuilderNotFound =
-            "La carpeta de RML no tiene el código de LoadFoldersBuilder, así que el índice quedó viejo. Corré regenerar-indice.cmd en tu clon de RML antes de probar en el juego.";
+            "La carpeta de RML no tiene el código de LoadFoldersBuilder, así que el índice quedó viejo. Corré 01-regenerar-indice.cmd en tu clon de RML antes de probar en el juego.";
 
         public static string LoadFoldersBuilderFailed(int exitCode)
             => $"LoadFoldersBuilder terminó con el código {exitCode}, así que el LoadFolders.xml quedó viejo. La traducción se guardó igual.";
 
         public static string LoadFoldersBuilderTimedOut(int minutes)
-            => $"LoadFoldersBuilder no terminó en {minutes} minutos y se lo cerró, así que el LoadFolders.xml quedó viejo. La traducción se guardó igual: corré regenerar-indice.cmd en tu clon de RML.";
+            => $"LoadFoldersBuilder no terminó en {minutes} minutos y se lo cerró, así que el LoadFolders.xml quedó viejo. La traducción se guardó igual: corré 01-regenerar-indice.cmd en tu clon de RML.";
 
         public static string LoadFoldersBuilderError(string message)
             => $"No se pudo lanzar LoadFoldersBuilder, así que el LoadFolders.xml quedó viejo: {message}";
