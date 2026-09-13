@@ -412,7 +412,7 @@ namespace RimworldExtractorInternal
             translations = translations.Where(HayAlgoQueEscribir).ToList();
 
             var languagesDir = PathCombineCreateDir(rootDirPath, "Languages");
-            var translationDir = PathCombineCreateDir(languagesDir, Prefabs.TranslationLanguage);
+            var translationDir = PathCombineCreateDir(languagesDir, Utils.CarpetaDelIdiomaDestino());
             var defInjected = new List<TranslationEntry>();
             var defInjectedFullListTranslations = new List<TranslationEntry>();
             var keyed = new List<TranslationEntry>();
@@ -799,9 +799,11 @@ namespace RimworldExtractorInternal
 
         public static List<TranslationEntry> FromLanguageXml(string rootPath)
         {
-            var translationsDir = Path.Combine(rootPath, "Languages", Prefabs.TranslationLanguage);
+            // Primero el nombre corto, que es como se escribe ahora; el largo queda para las
+            // traducciones escritas antes del cambio y las de otros.
+            var translationsDir = Path.Combine(rootPath, "Languages", Utils.CarpetaDelIdiomaDestino());
             if (!Directory.Exists(translationsDir))
-                translationsDir = Path.Combine(rootPath, "Languages", Prefabs.TranslationLanguage.Split(' ').First());
+                translationsDir = Path.Combine(rootPath, "Languages", Prefabs.TranslationLanguage);
 
             var defInjectedDir = Path.Combine(translationsDir, "DefInjected");
             var keyedDir = Path.Combine(translationsDir, "Keyed");

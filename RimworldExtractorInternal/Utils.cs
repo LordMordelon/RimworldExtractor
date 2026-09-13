@@ -278,6 +278,23 @@ namespace RimworldExtractorInternal
                    || nombre.Equals(destino.Split(' ').First(), StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Como se llama la carpeta de Languages en la que se escribe la traduccion: la primera
+        /// palabra del idioma de destino, "SpanishLatin" y no "SpanishLatin (Español(Latinoamérica))".
+        ///
+        /// Es por el largo de las rutas. Instalado desde el Workshop con Steam en su carpeta
+        /// por defecto, RML arranca en una ruta de 74 caracteres, y con el nombre completo del
+        /// idioma algunos archivos de DefInjected pasaban los 260 que aguanta Windows. RimWorld
+        /// no los puede abrir, la carga del idioma se corta y el juego queda en negro. A quien
+        /// lo tiene en Mods\ no le pasa, porque ahi la ruta es mas corta.
+        ///
+        /// El juego acepta los dos nombres: el corto es el nombre legado del idioma
+        /// (LoadedLanguage.LegacyFolderName) y lo usan muchos mods. La lectura sigue aceptando
+        /// el largo, ver <see cref="EsElIdiomaDestino"/> e IO.FromLanguageXml.
+        /// </summary>
+        public static string CarpetaDelIdiomaDestino()
+            => Prefabs.TranslationLanguage.Split(' ').First();
+
         public static (int cntDefs, int cntKeyed, int cntStrings, int cntPatches) Count(
             this IEnumerable<TranslationEntry> entries)
         {

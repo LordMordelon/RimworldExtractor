@@ -654,8 +654,43 @@ namespace RimworldExtractorTest
         }
 
         /// <summary>
+        /// Una traduccion guardada con el nombre largo del idioma, como estaban todas antes de
+        /// pasar al corto, se lee igual y al reescribirse queda solo bajo el corto. Si quedaran
+        /// las dos carpetas, el juego cargaria las dos.
+        ///
+        /// El nombre corto es por el largo de las rutas: ver Utils.CarpetaDelIdiomaDestino.
+        /// </summary>
+        [TestMethod]
+        public void PasaElIdiomaAlNombreCortoSinPerderNada()
+        {
+            var rml = Montar(out var carpeta);
+            try
+            {
+                var resultado = ActualizacionRml.Escribir(
+                    Mod(), Extraccion("Sigue.label", "Vieja.label"), rml);
+
+                Assert.AreEqual(2, resultado.Conservadas,
+                    "no se leyo lo traducido bajo el nombre largo del idioma");
+                Assert.IsFalse(Directory.Exists(Path.Combine(carpeta, "Languages", Idioma)),
+                    "quedo la carpeta con el nombre largo al lado de la nueva");
+
+                var corta = Path.Combine(carpeta, "Languages", "SpanishLatin", "DefInjected");
+                Assert.IsTrue(Directory.Exists(corta), "no se escribio con el nombre corto");
+                StringAssert.Contains(
+                    string.Join("\n", Directory.GetFiles(corta, "*.xml", SearchOption.AllDirectories)
+                        .Select(File.ReadAllText)),
+                    "artilugio");
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
         /// Un RML de mentira con las dos entradas ya traducidas, de las cuales la extraccion
-        /// va a traer una sola.
+        /// va a traer una sola. Van bajo el nombre largo del idioma, como quedaron escritas
+        /// antes de pasar al corto.
         /// </summary>
         private static string Montar(out string carpetaDelMod)
         {
@@ -1455,7 +1490,7 @@ namespace RimworldExtractorTest
                     Prefabs.Policy = politica;
                 }
 
-                return (Juntar(Path.Combine(raiz, "Languages", Idioma, "DefInjected")),
+                return (Juntar(Path.Combine(raiz, "Languages", Utils.CarpetaDelIdiomaDestino(), "DefInjected")),
                         Juntar(Path.Combine(raiz, "Patches")));
             }
             finally

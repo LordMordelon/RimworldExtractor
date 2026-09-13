@@ -206,6 +206,15 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   que aparta una traducción la saca de `Languages/`, así que la siguiente no la encuentra,
   no le sobra nada y borra el archivo con todo adentro.
 
+- **La carpeta de idioma se escribe con el nombre corto**: `Languages/SpanishLatin`, no
+  `Languages/SpanishLatin (Español(Latinoamérica))`. Es `Utils.CarpetaDelIdiomaDestino`.
+  Con el nombre largo, RML instalado desde el Workshop con Steam en su carpeta por defecto
+  (74 caracteres de ruta base) tenía archivos de `DefInjected` de más de 260 caracteres. El
+  juego no los abre y queda en pantalla negra al cargar. A quien lo tiene en `Mods\` no le
+  pasa, así que no se ve probando en local. RimWorld acepta el nombre corto como nombre
+  legado del idioma. La lectura acepta los dos, y `BorrarArbolAnterior` borra los dos para
+  que una carpeta vieja no quede duplicada al lado de la nueva.
+
 - **Un `Patches` no le puede ganar a la traducción oficial.** RimWorld aplica las
   `PatchOperation` y recién después inyecta los `DefInjected`, así que sobre un def de Core o
   de un DLC que el juego ya traduce, el patch se aplica y se pisa un paso más tarde: en

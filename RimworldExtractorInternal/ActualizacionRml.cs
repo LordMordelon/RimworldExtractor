@@ -77,12 +77,19 @@ namespace RimworldExtractorInternal
         /// Borra lo que la herramienta genera, y solo eso: el idioma de destino dentro de
         /// Languages —los demas idiomas, si los hubiera, no son asunto nuestro— y los Patches
         /// de traduccion.
+        ///
+        /// El idioma se borra con los dos nombres, el largo y el corto. Si no, al reescribir
+        /// una carpeta de antes del cambio de nombre quedarian las dos, y el juego cargaria
+        /// las dos.
         /// </summary>
         private static void BorrarArbolAnterior(string destino)
         {
-            var idioma = Path.Combine(destino, "Languages", Prefabs.TranslationLanguage);
-            if (Directory.Exists(idioma))
-                Directory.Delete(idioma, true);
+            foreach (var nombre in new[] { Prefabs.TranslationLanguage, Utils.CarpetaDelIdiomaDestino() }.Distinct())
+            {
+                var idioma = Path.Combine(destino, "Languages", nombre);
+                if (Directory.Exists(idioma))
+                    Directory.Delete(idioma, true);
+            }
 
             var patches = Path.Combine(destino, "Patches");
             if (Directory.Exists(patches))
