@@ -42,11 +42,6 @@ Si vas a traducir y no a programar, empezá por la
   (un glifo katakana) para que la secuencia `--` no rompiera los comentarios XML.
   En textos latinos eso destruía el original (`re-arm` → `reーarm`). Ahora se
   escapa únicamente la secuencia ilegal.
-- **Fuente de las planillas:** Calibri en lugar de Malgun Gothic, que no existe en
-  un Windows en español.
-- **Cabeceras de Excel más tolerantes:** se acepta cualquier columna terminada en
-  `[Source string]` / `[Translation]`, así que una planilla vieja se puede
-  reimportar aunque se haya cambiado el idioma configurado.
 - **Chequeo de versión y enlaces apuntando acá**, no al original. Al abrir la
   aplicación se consulta la última release publicada y se muestra abajo a la
   izquierda; si la consulta falla, queda un aviso en el log y nada más.
@@ -57,8 +52,8 @@ Si vas a traducir y no a programar, empezá por la
   al tema: con la interfaz en oscuro seguía saliendo en blanco.
 - **Log con formato:** hora, un símbolo por nivel y colores que salen del fondo real,
   en vez de una línea con el nombre del método que la escribió.
-- **Modo "Archivo XML para traducir a mano"**, que deja el original en un comentario y
-  `TODO` donde falta traducir:
+- **Un solo formato de salida**, el XML que deja el original en un comentario y `TODO`
+  donde falta traducir:
 
   ```xml
   <!-- EN: Storage -->
@@ -81,6 +76,34 @@ Si vas a traducir y no a programar, empezá por la
   mientras tanto los que faltan se miden y se acomodan al arrancar. Ver [AGENTS.md](AGENTS.md).
 - **Sin el empaquetador de imágenes**, que pegaba un `.zip` dentro de un `.jpg` para
   foros coreanos.
+
+## Qué se sacó en la 1.0
+
+> Mientras la 1.0 sea beta, la versión publicada como estable sigue teniendo todo esto.
+> La beta se baja a mano desde la página de releases; no aparece como actualización.
+
+El extractor acumulaba herramientas de cuando servía para varios flujos a la vez. Hoy el
+uso real es uno solo —extraer un mod y escribirlo en RML— y lo demás se mantenía sin que
+nadie lo abriera. Quedó anotado acá por si alguna vez hace falta rehacerlo; el código
+está en el historial, en el commit que lo sacó.
+
+- **La planilla de Excel** (`.xlsx`), que era el formato pensado para repartir la
+  traducción entre varias personas, junto con los botones **XML → XLSX** y
+  **XLSX → XML** de la ventana principal. Se iba con ella `ClosedXML` y sus cinco DLL.
+  Para volver a tenerla hace falta el paquete, `IO.ToExcel`/`FromExcel` y el arreglo de
+  LibreOffice (`LibreExcelFixer`), que existe porque LibreOffice escribe un `.xlsx` que
+  la biblioteca no lee de entrada.
+- **El analizador de traducciones**, que estaba marcado *(WIP)*. Comparába planillas ya
+  extraídas contra el mod actual y avisaba qué texto original había cambiado y qué nodos
+  eran nuevos. Lo que hace hoy ese trabajo es la traducción rápida, que cruza contra lo
+  que ya está en RML en vez de contra una planilla. Rehacerlo sin Excel significaría
+  compararlo contra el árbol de `Languages/`, que es un problema distinto.
+- **Los otros tres formatos de extracción** del selector de Opciones: la planilla, el
+  «XML distribuible» sin comentarios y el mismo con el original como valor. Quedó el
+  cuarto, que es el que usa RML.
+
+Lo que **no** cambia es la traducción rápida ni «Actualizar todo RML»: nunca pasaron por
+ese selector.
 
 ## Compilar
 
@@ -107,7 +130,9 @@ El resultado queda en `RimworldExtractorGUI/bin/Release/net10.0-windows/win-x64/
 ## Publicar
 
 Cada push a `master` etiqueta una versión nueva y publica una release, con las dos
-variantes de descarga. Antes de tocar el código conviene leer
+variantes de descarga. Un push a la rama de la 1.0 publica lo mismo, pero numerado
+`1.0.0-beta.N` y marcado como *pre-release*: no le aparece a nadie como actualización.
+Antes de tocar el código conviene leer
 **[AGENTS.md](AGENTS.md)**: están las reglas del proyecto y las trampas que ya costaron
 tiempo una vez.
 
