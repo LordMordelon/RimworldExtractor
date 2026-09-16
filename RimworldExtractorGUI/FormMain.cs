@@ -84,9 +84,11 @@ namespace RimworldExtractorGUI
                     {
                         linkLabelLatestVersion.Text = string.IsNullOrEmpty(current)
                             ? Strings.VersionDevBuild(latest)
-                            : latest == current
-                                ? Strings.VersionUpToDate(current)
-                                : Strings.VersionUpdateAvailable(current, latest);
+                            : EsBeta(current)
+                                ? Strings.VersionBeta(current, latest)
+                                : latest == current
+                                    ? Strings.VersionUpToDate(current)
+                                    : Strings.VersionUpdateAvailable(current, latest);
                     }
 
                     if (linkLabelLatestVersion.InvokeRequired)
@@ -270,6 +272,16 @@ namespace RimworldExtractorGUI
                 return;
             }
 
+            // Y una beta tampoco se actualiza sola: GetLatest consulta releases/latest, de
+            // donde GitHub excluye las prereleases, asi que "la ultima" es siempre la
+            // estable anterior y actualizar reemplazaria la beta por algo mas viejo.
+            if (EsBeta(actual))
+            {
+                Aviso.Mostrar(Strings.UpdateSkippedBeta, Strings.DialogTitleUpdate);
+                Process.Start("explorer.exe", GithubVersionCheker.ReleasesUrl);
+                return;
+            }
+
             var mensaje = Strings.UpdateAsk(actual, ultima)
                           + Environment.NewLine + Environment.NewLine + Strings.UpdateAskRestart;
             if (_notasDeLaUltima != null)
@@ -283,6 +295,12 @@ namespace RimworldExtractorGUI
 
             Actualizar(ultima);
         }
+
+        /// <summary>
+        /// Si la version que corre es una prerelease. El sufijo con guion lo pone la CI
+        /// fuera de master: "1.0.0-beta.1".
+        /// </summary>
+        private static bool EsBeta(string version) => version.Contains('-');
 
         /// <summary>
         /// Baja el paquete que corresponde, lo pone en su lugar y reinicia.

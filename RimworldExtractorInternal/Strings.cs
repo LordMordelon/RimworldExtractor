@@ -545,6 +545,13 @@
         public static string VersionDevBuild(string latest)
             => $"compilación local — la última publicada es {latest}";
 
+        /// <summary>
+        /// Una beta no se compara con la ultima estable: releases/latest deja afuera las
+        /// prereleases, asi que "la ultima" siempre va a ser anterior a la beta que corre.
+        /// </summary>
+        public static string VersionBeta(string current, string latest)
+            => $"{current} — beta; la última estable es {latest}";
+
         public static string VersionCheckFailed(string message)
             => $"No se pudo comprobar si hay una versión nueva: {message}";
 
@@ -578,6 +585,10 @@
         /// </summary>
         public const string UpdateSkippedDevBuild =
             "Esto es una compilación local, así que no se actualiza sola. Se abre la página de descargas.";
+
+        public const string UpdateSkippedBeta =
+            "Esto es una beta, y lo que figura como última versión es la estable anterior: "
+            + "actualizar sería volver atrás. Se abre la página de descargas.";
 
         public static string UpdateDownloadEmpty(string path)
             => $"el archivo descargado quedó vacío ({path})";
