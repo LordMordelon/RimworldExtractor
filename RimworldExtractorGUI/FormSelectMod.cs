@@ -29,20 +29,17 @@ namespace RimworldExtractorGUI
         public List<ModMetadata> ReferenceMods { get; init; }
 
         /// <summary>
-        /// Casilla de la traduccion rapida. Se crea en codigo, como todo lo que agrega el
-        /// fork, para no tocar el .Designer.cs.
+        /// La unica casilla que queda. Antes eran dos —traduccion rapida y extraccion
+        /// completa—, las dos marcadas siempre: ese es el modo normal y ahora no se elige.
+        /// Esta desmarcada porque nombra la excepcion: dejar el resultado en una carpeta
+        /// suelta en vez de escribirlo en RML. Se crea en codigo, como todo lo que agrega
+        /// el fork, para no tocar el .Designer.cs.
         /// </summary>
-        private readonly System.Windows.Forms.CheckBox _checkBoxQuickUpdate =
-            new() { Name = "checkBoxQuickUpdate", AutoSize = true, Checked = true };
+        private readonly System.Windows.Forms.CheckBox _checkBoxExtraerEnCarpeta =
+            new() { Name = "checkBoxExtraerEnCarpeta", AutoSize = true, Checked = false };
 
-        /// <summary>Si hay que actualizar sobre RML en vez de dejar una carpeta suelta.</summary>
-        public bool QuickUpdate { get; private set; }
-
-        /// <summary>
-        /// Casilla de la extraccion completa: carga el contenido oficial como referencia.
-        /// </summary>
-        private readonly System.Windows.Forms.CheckBox _checkBoxFullExtraction =
-            new() { Name = "checkBoxFullExtraction", AutoSize = true, Checked = true };
+        /// <summary>Si hay que dejar una carpeta suelta en vez de actualizar sobre RML.</summary>
+        public bool ExtraerEnCarpeta { get; private set; }
 
         private readonly List<ModMetadata> _officialModsCached;
         private readonly List<ModMetadata> _localModsCached;
@@ -93,7 +90,7 @@ namespace RimworldExtractorGUI
             }
         }
 
-        private void ResetListBoxMods(bool filterSelected = false)
+        private void ResetListBoxMods()
         {
             listBoxMods.Items.Clear();
             var keyword = textBoxSearch.Text.ToLower();
@@ -103,8 +100,6 @@ namespace RimworldExtractorGUI
             {
                 if (string.IsNullOrEmpty(keyword) || officialContent.Identifier.ToLower().Contains(keyword))
                 {
-                    if (filterSelected && !ReferenceMods.Contains(officialContent) && SelectedMod != officialContent)
-                        continue;
                     listBoxMods.Items.Add(officialContent);
                 }
             }
@@ -113,8 +108,6 @@ namespace RimworldExtractorGUI
             {
                 if (string.IsNullOrEmpty(keyword) || localMod.Identifier.ToLower().Contains(keyword))
                 {
-                    if (filterSelected && !ReferenceMods.Contains(localMod) && SelectedMod != localMod)
-                        continue;
                     listBoxMods.Items.Add(localMod);
                 }
             }
@@ -123,9 +116,6 @@ namespace RimworldExtractorGUI
             {
                 if (string.IsNullOrEmpty(keyword) || workshopMod.Identifier.ToLower().Contains(keyword))
                 {
-                    if (filterSelected && !ReferenceMods.Contains(workshopMod) && SelectedMod != workshopMod)
-                        continue;
-
                     listBoxMods.Items.Add(workshopMod);
                 }
             }
@@ -255,7 +245,7 @@ namespace RimworldExtractorGUI
         private void buttonDone_Click(object sender, EventArgs e)
         {
             DialogResult = DialogResult.OK;
-            QuickUpdate = _checkBoxQuickUpdate.Checked;
+            ExtraerEnCarpeta = _checkBoxExtraerEnCarpeta.Checked;
 
             foreach (ExtractableFolder extractableFolder in listBoxExtractableFolders.SelectedItems)
             {
@@ -266,7 +256,11 @@ namespace RimworldExtractorGUI
             // defs se cargan para resolver los patches, pero no se traducen. Son dos
             // fuentes, las dos declaradas por el propio mod: el contenido oficial mas sus
             // dependencias, y los mods que sus patches nombran en PatchOperationFindMod.
-            if (_checkBoxFullExtraction.Checked && SelectedMod?.IsOfficialContent != true && SelectedMod != null)
+            //
+            // Esto era la casilla «Extraccion completa» y ahora se hace siempre: sin las
+            // referencias, un mod que se apoya en un framework sale con la mitad del texto
+            // sin resolver, y era lo que habia que marcar todas las veces.
+            if (SelectedMod != null && !SelectedMod.IsOfficialContent)
             {
                 var declarados = ModLister.FindAllReferenceMods(SelectedMod)
                     .Concat(ModLister.FindModsNamedInPatches(SelectedFolders));
@@ -382,9 +376,6 @@ namespace RimworldExtractorGUI
 
                         break;
                     }
-                case Keys.D:
-                    checkBoxFilterSelected.Checked = !checkBoxFilterSelected.Checked;
-                    break;
             }
         }
         private void listBoxMods_DrawItem(object sender, DrawItemEventArgs e)
@@ -460,10 +451,6 @@ namespace RimworldExtractorGUI
                 e.Font ?? listBoxExtractableFolders.Font, pincel, e.Bounds, StringFormat.GenericDefault);
             e.DrawFocusRectangle();
         }
-        private void checkBoxFilterSelected_CheckedChanged(object sender, EventArgs e)
-        {
-            ResetListBoxMods(checkBoxFilterSelected.Checked);
-        }
         private void FormSelectMod_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Right)
@@ -519,11 +506,11 @@ namespace RimworldExtractorGUI
             panel1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             Text = Strings.TitleSelectMod;
-            buttonDone.Text = Strings.BtnSelectionDone;
+            // Este boton es el que extrae: la ventana principal ya no tiene un paso 2.
+            buttonDone.Text = Strings.BtnExtract;
             label1.Text = Strings.LabelSelectModControls;
             label3.Text = Strings.LabelSelectFolder;
             labelSelectedMod.Text = Strings.LabelSelectExtractionMode;
-            checkBoxFilterSelected.Text = Strings.CheckBoxFilterSelected;
 
             // Sin esto el buscador es un recuadro vacio sin ninguna pista de para que
             // sirve. El texto lo dibuja el propio TextBox y desaparece al escribir, asi
@@ -532,12 +519,7 @@ namespace RimworldExtractorGUI
 
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
-            AutoAjuste.Ajustar(buttonDone, label3, checkBoxFilterSelected);
-
-            // La casilla arranca la columna de la izquierda, asi que se alinea con el
-            // buscador y con la lista que tiene debajo. En el diseño original quedaba
-            // suelta contra el borde derecho de esa columna.
-            checkBoxFilterSelected.Left = textBoxSearch.Left;
+            AutoAjuste.Ajustar(buttonDone, label3);
 
             // Lo mismo del otro lado: el rotulo de la carpeta venia indentado dentro de su
             // columna, con lo cual se leia como si estuviera centrado. Se alinea con la
@@ -545,8 +527,8 @@ namespace RimworldExtractorGUI
             label3.TextAlign = ContentAlignment.MiddleLeft;
             label3.Left = listBoxExtractableFolders.Left;
 
-            // La columna izquierda no lleva rotulo: repetia el titulo de la ventana. La fila
-            // de casillas ocupa su lugar y la lista de mods se queda con el espacio que sobra.
+            // La columna izquierda no lleva rotulo: repetia el titulo de la ventana. La
+            // casilla ocupa su lugar y la lista de mods se queda con el espacio que sobra.
 
             // El panel arranca y termina donde la lista que tiene debajo, para que el
             // nombre del mod quede sobre la misma vertical que el rotulo de la carpeta.
@@ -554,27 +536,18 @@ namespace RimworldExtractorGUI
                 listBoxExtractableFolders.Left, panel1.Top,
                 listBoxExtractableFolders.Width, panel1.Height);
 
-            // Comparte fila con la otra casilla: las dos cambian que hace el boton de
-            // aceptar, y esa fila tenia lugar de sobra.
-            _checkBoxQuickUpdate.Text = Strings.CheckBoxQuickUpdate;
-            _checkBoxFullExtraction.Text = Strings.CheckBoxFullExtraction;
-            Controls.Add(_checkBoxQuickUpdate);
-            Controls.Add(_checkBoxFullExtraction);
-            toolTip1.SetToolTip(_checkBoxQuickUpdate, Strings.TooltipQuickUpdate);
-            toolTip1.SetToolTip(_checkBoxFullExtraction, Strings.TooltipFullExtraction);
+            // Queda una sola casilla, en el lugar donde estaban las tres: arriba de la
+            // columna izquierda, alineada con el buscador y con la lista que tiene debajo.
+            _checkBoxExtraerEnCarpeta.Text = Strings.CheckBoxExtraerEnCarpeta;
+            Controls.Add(_checkBoxExtraerEnCarpeta);
+            toolTip1.SetToolTip(_checkBoxExtraerEnCarpeta, Strings.TooltipExtraerEnCarpeta);
 
-            // Las tres casillas se reparten el ancho de la columna izquierda. Con una
-            // separacion fija de 24 px la ultima se metia en la columna de la derecha,
-            // encima del panel del mod elegido. Se mide despues de agregarlas a la ventana,
-            // que es cuando toman su fuente y su ancho definitivos.
-            var libre = listBoxMods.Right - checkBoxFilterSelected.Right
-                        - _checkBoxQuickUpdate.Width - _checkBoxFullExtraction.Width;
-            var separacion = Math.Max(8, libre / 2);
-
-            _checkBoxQuickUpdate.Top = checkBoxFilterSelected.Top;
-            _checkBoxQuickUpdate.Left = checkBoxFilterSelected.Right + separacion;
-            _checkBoxFullExtraction.Top = checkBoxFilterSelected.Top;
-            _checkBoxFullExtraction.Left = _checkBoxQuickUpdate.Right + separacion;
+            // La extraccion completa dejo de ser una casilla y ahora se hace siempre, pero
+            // es la que explica por que esto tarda: la ayuda queda sobre el boton que la
+            // dispara, que es donde el usuario esta mirando cuando empieza la espera.
+            toolTip1.SetToolTip(buttonDone, Strings.TooltipExtraccionCompleta);
+            _checkBoxExtraerEnCarpeta.SetBounds(textBoxSearch.Left, 9,
+                _checkBoxExtraerEnCarpeta.Width, _checkBoxExtraerEnCarpeta.Height);
 
             AcomodarModElegido();
             Shown += (_, _) => AcomodarModElegido();

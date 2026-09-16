@@ -30,7 +30,6 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMain));
             buttonSelectMod = new Button();
-            buttonExtract = new Button();
             button2 = new Button();
             label1 = new Label();
             label2 = new Label();
@@ -51,20 +50,9 @@
             buttonSelectMod.UseVisualStyleBackColor = true;
             buttonSelectMod.Click += buttonSelectMod_Click;
             // 
-            // buttonExtract
-            // 
-            buttonExtract.Enabled = false;
-            buttonExtract.Location = new Point(12, 64);
-            buttonExtract.Name = "buttonExtract";
-            buttonExtract.Size = new Size(200, 46);
-            buttonExtract.TabIndex = 1;
-            buttonExtract.Text = "2. 번역 데이터 추출";
-            buttonExtract.UseVisualStyleBackColor = true;
-            buttonExtract.Click += buttonExtract_Click;
-            // 
             // button2
             // 
-            button2.Location = new Point(12, 168);
+            button2.Location = new Point(12, 116);
             button2.Name = "button2";
             button2.Size = new Size(200, 46);
             button2.TabIndex = 2;
@@ -103,6 +91,10 @@
             // 
             // labelSelectedMods
             // 
+            // Su alto es el que fija donde puede empezar la franja del log: llega hasta
+            // y=214 y el boton de reportar problemas vive en esa franja, del lado derecho.
+            // Subirla mas lo deja tapado por este rotulo, que va delante en el orden Z y no
+            // se nota hasta que alguien busca el boton.
             labelSelectedMods.Location = new Point(218, 32);
             labelSelectedMods.Name = "labelSelectedMods";
             labelSelectedMods.Size = new Size(570, 182);
@@ -131,7 +123,7 @@
             // 
             // buttonUpdateAllRml
             // 
-            buttonUpdateAllRml.Location = new Point(12, 116);
+            buttonUpdateAllRml.Location = new Point(12, 64);
             buttonUpdateAllRml.Name = "buttonUpdateAllRml";
             buttonUpdateAllRml.Size = new Size(97, 46);
             buttonUpdateAllRml.TabIndex = 12;
@@ -152,7 +144,6 @@
             Controls.Add(label2);
             Controls.Add(label1);
             Controls.Add(button2);
-            Controls.Add(buttonExtract);
             Controls.Add(buttonSelectMod);
             Name = "FormMain";
             Text = "Rimworld Extractor GUI (림추출기)";
@@ -162,7 +153,6 @@
         #endregion
 
         private Button buttonSelectMod;
-        private Button buttonExtract;
         private Button button2;
         private Label label1;
         private Label label2;

@@ -160,7 +160,9 @@
             => $"La traducción actualizada quedó en {path}";
 
         public const string QuickUpdateNoRmlPath =
-            "La traducción rápida necesita saber dónde está el mod RML. Configuralo en Opciones, en «Carpeta del mod RML».";
+            "Extraer necesita saber dónde está el mod RML, porque el resultado se escribe ahí. "
+            + "Configuralo en Opciones, en «Carpeta del mod RML», o marcá «Extraer en carpeta» "
+            + "al elegir el mod para que quede en una carpeta suelta.";
 
         public static string LoadFoldersYamlWritten(string folderName)
             => $"Se generó el {LoadFoldersBuild.FileName} del mod. Para sumarlo a RML, copiá esta carpeta a Data/{folderName}";
@@ -397,8 +399,8 @@
         // formulario los aplica desde su ApplyStrings().
 
         // --- FormMain ---
-        public const string BtnSelectMod = "1. Elegir el mod a extraer";
-        public const string BtnExtract = "2. Extraer los datos de traducción";
+        public const string BtnSelectMod = "Elegir un mod y extraer";
+        public const string BtnExtract = "Extraer los datos de traducción";
         public const string BtnOptions = "Opciones";
 
         // El boton del tema muestra el que esta puesto y al pulsarlo pasa al siguiente,
@@ -441,7 +443,7 @@
         public const string LabelDuplicatePolicy = "Si al guardar hay archivos duplicados:";
         public const string GroupRimworldSettings = "Ajustes de RimWorld";
         public const string GroupBasicSettings = "Ajustes básicos de extracción y guardado";
-        public const string LabelPathRml = "Carpeta del mod RML (para la traducción rápida):";
+        public const string LabelPathRml = "Carpeta del mod RML (donde se escribe la traducción):";
         public const string SelectRmlPath = "Elegí la carpeta del mod RML, la que contiene Data";
 
         public const string LabelBaseRefListPath = "Ruta de la lista de mods de referencia por defecto:";
@@ -452,49 +454,54 @@
         public const string CheckBoxTkey = "(provisorio) Usar extracción de TKey";
 
         // --- FormSelectMod ---
-        public const string BtnSelectionDone = "Listo";
         public const string LabelSelectModControls =
-            "Controles: 'clic izquierdo' = elegir como mod a extraer, 'clic derecho' = abrir el menú, 'A' = abrir en el explorador, 'S' = elegir como mod de referencia, 'D' = ver solo los elegidos\r\n";
+            "Controles: 'clic izquierdo' = elegir como mod a extraer, 'clic derecho' = abrir el menú, 'A' = abrir en el explorador, 'S' = elegir como mod de referencia\r\n";
         public const string LabelSelectExtractionMode = "Elegí el mod que querés extraer";
         public const string LabelSelectFolder = "Elegí la carpeta que querés extraer";
-        public const string CheckBoxQuickUpdate = "Traducción rápida";
-
-        public const string CheckBoxFullExtraction = "Extracción completa";
-
-        public const string TooltipFullExtraction =
-            """
-            Carga el contenido oficial (Core y los DLC) como referencia antes de extraer.
-
-            Hace falta para los mods que modifican cosas del juego base: un patch que le cambia
-            el nombre a un objeto de Core solo se puede extraer si Core está cargado. Sin esto,
-            esas líneas no aparecen y el log te avisa cuántas fueron.
-
-            A cambio, la extracción tarda bastante más.
-            """;
+        public const string CheckBoxExtraerEnCarpeta = "Extraer en carpeta";
 
         /// <summary>
-        /// La ayuda emergente de la casilla. Es larga a proposito: describe todo lo que
-        /// hace el modo, que es donde el usuario va a buscar antes de marcarlo.
+        /// La ayuda emergente de la unica casilla que queda. Describe el modo normal —el de
+        /// la casilla sin marcar— y despues la excepcion, porque lo que hay que entender
+        /// antes de marcarla es que se pierde.
         /// </summary>
-        public const string TooltipQuickUpdate =
+        public const string TooltipExtraerEnCarpeta =
             """
-            Actualiza la traducción que ya está en RML, en vez de dejar una carpeta suelta.
+            Sin marcar, la extracción se escribe directamente en RML, en Data/<Mod> - <ID>:
 
             • Lo que ya estaba traducido se conserva, aunque el texto original en inglés
               haya cambiado; el comentario EN se actualiza, así que el cambio se ve en el diff.
             • Queda TODO solamente en lo que es nuevo.
             • Lo que ya no existe en el mod sale del árbol y se guarda en UNUSED.xml, en la
               raíz de la carpeta del mod.
-            • El resultado se escribe directamente en RML, en Data/<Mod> - <ID>.
 
             Necesita que la carpeta del mod RML esté configurada en Opciones.
+
+            Marcada, deja el resultado en una carpeta suelta al lado del programa, con todo
+            en TODO: no cruza con lo que RML ya tenga traducido.
             """;
 
-        public const string CheckBoxFilterSelected = "Ver solo los mods elegidos";
+        /// <summary>
+        /// Por que la extraccion tarda. Era la ayuda de la casilla «Extraccion completa»,
+        /// que se saco porque siempre iba marcada: el texto sigue valiendo y ahora explica
+        /// una espera que no se puede evitar.
+        /// </summary>
+        public const string TooltipExtraccionCompleta =
+            """
+            Antes de extraer se carga el contenido oficial (Core y los DLC) como referencia.
+
+            Hace falta para los mods que modifican cosas del juego base: un patch que le cambia
+            el nombre a un objeto de Core solo se puede extraer si Core está cargado. Sin esto,
+            esas líneas no aparecen y el log te avisa cuántas fueron.
+
+            Por eso la extracción tarda.
+            """;
+
 
         // --- FormInitialPathSelect ---
         public const string LabelRimworldPathShort = "Ruta de RimWorld";
         public const string LabelWorkshopPathShort = "Ruta del workshop";
+        public const string LabelPathRmlShort = "Carpeta del mod RML";
 
         // --- FormStopCallback ---
         public const string LabelDuplicateFileFound = "Se encontró un archivo duplicado al guardar.";
@@ -514,7 +521,7 @@
         // literal y no queda ninguna referencia que resolver en tiempo de ejecucion.
         public const string TitleStartupError = "No se pudo abrir el extractor";
 
-        public const string TitleInitialPathSelect = "Indicá las rutas de RimWorld y del workshop";
+        public const string TitleInitialPathSelect = "Indicá las rutas de RimWorld, del workshop y del mod RML";
         public const string TitleSelectMod = "Elegí el mod que querés extraer";
         public const string TitleSettings = "Ajustes";
         public const string TitleStopCallback = "Archivo duplicado";

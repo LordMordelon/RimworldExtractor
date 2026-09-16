@@ -122,8 +122,7 @@ namespace RimworldExtractorGUI
                 SelectedMod = formSelectMod.SelectedMod!;
                 ReferenceMods = formSelectMod.ReferenceMods.Except(Enumerable.Repeat(SelectedMod, 1)).ToList();
                 SelectedFolders = formSelectMod.SelectedFolders;
-                _quickUpdate = formSelectMod.QuickUpdate;
-                buttonExtract.Enabled = true;
+                _quickUpdate = !formSelectMod.ExtraerEnCarpeta;
 
                 labelSelectedMods.Text = Strings.SelectedMod(SelectedMod.ModName);
                 if (ReferenceMods?.Count > 0)
@@ -134,10 +133,21 @@ namespace RimworldExtractorGUI
                         stripedText += "...";
                     labelSelectedMods.Text += Strings.SelectedReferenceMods(stripedText);
                 }
+
+                // El boton del dialogo ya dice «extraer», asi que se extrae al volver de el.
+                // Va despues del rotulo y no antes: la extraccion corre en este mismo hilo y
+                // puede tardar minutos, y mientras tanto se ve que mod se esta extrayendo.
+                labelSelectedMods.Refresh();
+                Extraer();
             }
         }
 
-        private void buttonExtract_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Extrae el mod elegido. Antes era el boton «2. Extraer los datos de traduccion» de
+        /// esta ventana; ahora lo dispara el boton del dialogo de seleccion, que es donde ya
+        /// estaba toda la decision.
+        /// </summary>
+        private void Extraer()
         {
             if (ReferenceMods is null || SelectedFolders is null || SelectedMod is null)
             {
@@ -486,9 +496,6 @@ namespace RimworldExtractorGUI
         {
             foreach (var boton in Controls.OfType<Button>())
                 boton.Enabled = habilitar;
-
-            // Extraer sigue dependiendo de que haya un mod elegido, como al abrir la ventana.
-            buttonExtract.Enabled = habilitar && SelectedMod is not null;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -515,7 +522,6 @@ namespace RimworldExtractorGUI
 
             Text = Strings.FormMainTitle;
             buttonSelectMod.Text = Strings.BtnSelectMod;
-            buttonExtract.Text = Strings.BtnExtract;
             button2.Text = Strings.BtnOptions;
             label1.Text = Strings.LabelMainDescription;
             buttonUpdateAllRml.Text = Strings.BtnUpdateAllRml;
@@ -543,13 +549,12 @@ namespace RimworldExtractorGUI
             // que despues corre las etiquetas de la derecha para que no queden tapadas.
             Rejilla.Columna(buttonSelectMod.Left,
                 Rejilla.Linea(buttonSelectMod),
-                Rejilla.Linea(buttonExtract),
                 Rejilla.Linea(buttonUpdateAllRml),
                 Rejilla.Linea(button2, _buttonTema));
 
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
-            AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, _buttonTema, buttonUpdateAllRml,
+            AutoAjuste.Ajustar(buttonSelectMod, button2, _buttonTema, buttonUpdateAllRml,
                 button1, labelSelectedMods, label1);
 
             // La franja del log la comparten tres cosas: el rotulo, el enlace de version
