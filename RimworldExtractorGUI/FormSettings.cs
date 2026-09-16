@@ -226,24 +226,27 @@ namespace RimworldExtractorGUI
                     new Rejilla.Celda(label13, textBoxFullListTranslation, buttonHelp4),
                     checkBox1));
 
-            // La carpeta de RML va con los ajustes de extraccion, que es lo que decide a
-            // donde sale el resultado.
+            // La carpeta de RML va con las otras dos rutas: es una ruta mas, y desde que
+            // escribir en RML es el modo normal de extraccion dejo de ser el ajuste de un
+            // modo alterno. Se mide contra la fila de la ruta de RimWorld, que es la misma
+            // forma —rotulo, campo y boton de examinar— y ocupa el ancho entero.
             _labelPathRml.Text = Strings.LabelPathRml;
-            _buttonPathRml.Text = buttonBaseRefList.Text;
-            _labelPathRml.SetBounds(label14.Left, textBoxBaseRefList.Bottom + 6, label14.Width, label14.Height);
-            _textBoxPathRml.SetBounds(textBoxBaseRefList.Left, _labelPathRml.Bottom + 2,
-                textBoxBaseRefList.Width, textBoxBaseRefList.Height);
-            _buttonPathRml.SetBounds(buttonBaseRefList.Left, _textBoxPathRml.Top,
-                buttonBaseRefList.Width, buttonBaseRefList.Height);
+            _buttonPathRml.Text = buttonSelectPathRimworld.Text;
+            _labelPathRml.SetBounds(label1.Left, textBoxVersionPattern.Bottom + 6,
+                label1.Width, label1.Height);
+            _textBoxPathRml.SetBounds(textBoxPathRimworld.Left, _labelPathRml.Bottom + 2,
+                textBoxPathRimworld.Width, textBoxPathRimworld.Height);
+            _buttonPathRml.SetBounds(buttonSelectPathRimworld.Left, _textBoxPathRml.Top,
+                buttonSelectPathRimworld.Width, buttonSelectPathRimworld.Height);
             _buttonPathRml.Click += (_, _) =>
             {
                 var dialog = new CommonOpenFileDialog { IsFolderPicker = true, Title = Strings.SelectRmlPath };
                 if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
                     _textBoxPathRml.Text = dialog.FileName;
             };
-            groupBox2.Controls.Add(_labelPathRml);
-            groupBox2.Controls.Add(_textBoxPathRml);
-            groupBox2.Controls.Add(_buttonPathRml);
+            groupBox1.Controls.Add(_labelPathRml);
+            groupBox1.Controls.Add(_textBoxPathRml);
+            groupBox1.Controls.Add(_buttonPathRml);
 
             Text = Strings.TitleSettings;
             label1.Text = Strings.LabelRimworldPath;
@@ -280,12 +283,13 @@ namespace RimworldExtractorGUI
             // La columna izquierda se parte en dos secciones que se reparten el alto.
             Rejilla.EnDosFilas(this, groupBox1, groupBox2);
 
-            // La fila agregada no entra en el alto original. Se crece la ventana despues de
-            // repartir, no antes: EnDosFilas se queda con los margenes que encuentra al
-            // llamarla, asi que crecer primero solo agranda el margen de abajo y la seccion
-            // se queda igual. Va el doble de lo que hace falta, porque el alto se parte en
-            // dos mitades.
-            var altoDeLaFila = _textBoxPathRml.Bottom - textBoxBaseRefList.Bottom + 6;
+            // La fila de RML no entra en el alto original de su seccion —probado sacando
+            // esto: el rotulo queda cortado por el borde del grupo y el campo no se ve—,
+            // asi que la ventana crece. Va despues de repartir y no antes: EnDosFilas se
+            // queda con los margenes que encuentra al llamarla, asi que crecer primero solo
+            // agranda el margen de abajo y la seccion se queda igual. Y va el doble de lo
+            // que hace falta, porque el alto se parte en dos mitades.
+            var altoDeLaFila = _textBoxPathRml.Bottom - textBoxVersionPattern.Bottom + 6;
             ClientSize = new Size(ClientSize.Width, ClientSize.Height + altoDeLaFila * 2);
             MinimumSize = Size;
 
@@ -296,7 +300,9 @@ namespace RimworldExtractorGUI
                 Rejilla.Linea(label2),
                 Rejilla.Linea(new Rejilla.Campo(textBoxPathWorkshop, buttonSelectPathWorkshop)),
                 Rejilla.Linea(label3, label5),
-                Rejilla.Linea(textBoxVersionPattern, new Rejilla.Campo(textBoxRimworldVersion, buttonAutoDetect)));
+                Rejilla.Linea(textBoxVersionPattern, new Rejilla.Campo(textBoxRimworldVersion, buttonAutoDetect)),
+                Rejilla.Linea(_labelPathRml),
+                Rejilla.Linea(new Rejilla.Campo(_textBoxPathRml, _buttonPathRml)));
 
             Rejilla.EstirarAlAncho(groupBox2,
                 Rejilla.Linea(label6, label7),
@@ -304,9 +310,7 @@ namespace RimworldExtractorGUI
                 Rejilla.Linea(label11),
                 Rejilla.Linea(comboBoxFileDuplication),
                 Rejilla.Linea(label14),
-                Rejilla.Linea(new Rejilla.Campo(textBoxBaseRefList, buttonBaseRefList)),
-                Rejilla.Linea(_labelPathRml),
-                Rejilla.Linea(new Rejilla.Campo(_textBoxPathRml, _buttonPathRml)));
+                Rejilla.Linea(new Rejilla.Campo(textBoxBaseRefList, buttonBaseRefList)));
         }
     }
 }
