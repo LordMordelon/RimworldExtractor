@@ -117,15 +117,6 @@
         public static string PackageIdInsteadOfModName(string prefix)
             => $"Hay un nombre de paquete ({prefix}) en lugar del nombre del mod. Corregilo al nombre del mod.";
 
-        public static string CommentDeleted(string dateString, string previousTranslation)
-            => $"Eliminado el {dateString}. Traducción anterior: '{previousTranslation}'\n";
-
-        public static string CommentPreviousOriginal(string dateString, string previousOriginal)
-            => $"Texto original anterior al {dateString}: '{previousOriginal}'\n";
-
-        public static string CommentNewlyAdded(string dateString, int count)
-            => $"Nodos agregados el {dateString} ({count})";
-
         public const string OfficialContentKeepsFileNames =
             "A diferencia de los mods, el contenido oficial se extrae conservando los nombres de archivo.";
 
