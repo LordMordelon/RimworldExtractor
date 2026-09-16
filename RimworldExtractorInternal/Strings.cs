@@ -28,22 +28,6 @@
 
         #endregion
 
-        #region Utils / Excel
-
-        public static string ErrorReadingCell(string address, string message)
-            => $"Error al leer el texto de una celda del archivo Excel: {address}-{message}";
-
-        /// <summary>
-        /// Fuente de las planillas generadas. Upstream usaba "맑은 고딕" (Malgun Gothic),
-        /// que no existe en un Windows en español.
-        /// </summary>
-        public const string ExcelFontName = "Calibri";
-
-        public const string XlsxHeaderReadingErrorFormat =
-            "Ocurrió un error al leer los encabezados del archivo Excel: {0}";
-
-        #endregion
-
         #region ModLister
 
         public static string CouldNotReadAboutXml(string pathAbout, string message)
@@ -128,7 +112,7 @@
         #region IO
 
         public static string InvalidRequiredModsValue(string token)
-            => $"No se conoce el nombre del mod de \"{token}\" y esa condición no se puede escribir con su packageId, así que ese patch no se va a aplicar. Instalá el mod y volvé a extraer, o reemplazá ese texto por el nombre del mod en la columna Required Mods del Excel.";
+            => $"No se conoce el nombre del mod de \"{token}\" y esa condición no se puede escribir con su packageId, así que ese patch no se va a aplicar. Instalá el mod y volvé a extraer.";
 
         public static string PackageIdInsteadOfModName(string prefix)
             => $"Hay un nombre de paquete ({prefix}) en lugar del nombre del mod. Corregilo al nombre del mod.";
@@ -138,9 +122,6 @@
 
         public static string CommentPreviousOriginal(string dateString, string previousOriginal)
             => $"Texto original anterior al {dateString}: '{previousOriginal}'\n";
-
-        public static string CommentOriginalRestored(string dateString)
-            => $"Se restauró el {dateString} un texto original que se había perdido.\n";
 
         public static string CommentNewlyAdded(string dateString, int count)
             => $"Nodos agregados el {dateString} ({count})";
@@ -246,12 +227,6 @@
         public static string ModDependencySuffix(string requiredPackageId)
             => $"\n[dependencia del mod={requiredPackageId}]";
 
-        public static string NotAValidTranslationXlsx(string path, string message)
-            => $"El archivo Excel no tiene el formato de traducción esperado: {path}, {message}";
-
-        public static string XlsxIsOpen(string path)
-            => $"No se pudo leer el archivo Excel porque está abierto. Cerralo y volvé a intentar: {path}";
-
         #endregion
 
         #region Compats
@@ -313,18 +288,6 @@
             "Terminó, pero hubo errores durante la extracción. ¿Abro igual la carpeta con los archivos extraídos?";
 
         public const string DoneOpenFolder = "¡Listo! ¿Abro la carpeta con los archivos extraídos?";
-        public const string DoneOpenConvertedFolder = "¡Listo! ¿Abro la carpeta con los archivos convertidos?";
-
-        public const string SelectExtractorXlsx = "Elegí un archivo Excel generado por el extractor.";
-        public const string FilterTranslationData = "Archivo de datos de traducción|*.xlsx";
-
-        public static string ProgressFixed(int current, int total, string path)
-            => $"{current}/{total}::Corregido: {path}";
-
-        public const string ConversionDone = "¡La conversión terminó!";
-        public const string EditedFileSuffix = "- editado";
-
-        public static string FilesFixed(int count) => $"Se corrigieron {count} archivos.";
 
         public static string RmlPathWithoutData(string path)
             => $"La carpeta de RML configurada no tiene una carpeta Data:\n{path}\n\nSi moviste el clon de lugar, actualizá la ruta en Opciones, en «Carpeta del mod RML».";
@@ -364,11 +327,6 @@
         #endregion
 
         #region FormSettings
-
-        public const string ExtractionMethodExcel = "Archivo Excel (.xlsx) para trabajar la traducción";
-        public const string ExtractionMethodXml = "Archivo XML distribuible";
-        public const string ExtractionMethodXmlComments = "Archivo XML distribuible (con comentarios)";
-        public const string ExtractionMethodXmlToTranslate = "Archivo XML para traducir a mano";
 
         /// <summary>Valor que se escribe cuando la entrada todavia no esta traducida.</summary>
         public const string UntranslatedPlaceholder = "TODO";
@@ -435,40 +393,7 @@
 
         #endregion
 
-        #region FormTranslationAnalyzer
-
-        public static string AnalyzingProgress(int current, int total)
-            => $"Analizando los datos de traducción... {current}/{total}";
-
-        public const string AnalysisDone = "¡Análisis terminado!";
-        public const string SomeFilesFailedToAnalyze =
-            "Algunos archivos Excel no se pudieron analizar. Revisá el panel de log y volvé a intentar.";
-
-        public const string NeedsAssignment = "Hay que asignarlo";
-        public const string Automatic = "Automático";
-        public const string Append = "Agregar al final";
-        public const string Manual = "Manual";
-
-        public const string SelectModToFix = "Elegí el mod que querés corregir.";
-        public const string OriginalModNotFound = "No se encontró el mod original. Asignalo a mano.";
-        public const string CannotReextractUnknownMod =
-            "No se puede volver a extraer porque no se conoce el mod original de este archivo.";
-
-        public const string MenuOpenXlsxInExplorer = "Abrir el archivo Excel en el explorador";
-        public const string MenuOpenModRootInExplorer = "Abrir la carpeta raíz del mod en el explorador";
-
-        public const string SelectXlsxFile = "Elegí el archivo Excel (.xlsx).";
-        public const string FilterTranslationXlsx = "Archivo Excel de traducción";
-        public const string SelectXlsxRootFolder = "Elegí la carpeta raíz donde están los archivos Excel.";
-
-        #endregion
-
-        #region FormXmlister / FormStopCallback / Program
-
-        public const string SelectLanguagesRootFolder = "Elegí la carpeta raíz que contiene la carpeta Languages.";
-
-        public static string CouldNotSaveFileInUse(string message)
-            => $"No se pudo guardar el archivo porque ya está en uso. {message}";
+        #region Program
 
         public const string CompleteFolderSelection = "Completá la selección de carpetas.";
 
@@ -505,7 +430,6 @@
         public const string LabelMainDescription =
             "Extrae los datos de traducción de RimWorld y de sus mods.";
         public const string BtnUpdateAllRml = "Actualizar todo RML";
-        public const string BtnOpenTranslationAnalyzer = "Abrir el analizador\r\nde traducciones (WIP)";
         public const string LabelNoModSelected = "No hay ningún mod elegido.";
 
         // --- FormSettings ---
@@ -518,7 +442,6 @@
         public const string BtnAutoDetect = "Detectar solo";
         public const string LabelOriginalLanguage = "Idioma original:";
         public const string LabelTranslationLanguage = "Idioma de traducción:";
-        public const string LabelExtractionFormat = "Formato de extracción:";
         public const string BtnSaveAndClose = "Guardar y cerrar";
         public const string BtnCancel = "Cancelar";
         public const string BtnReset = "Restablecer\r\nvalores por defecto";
@@ -578,43 +501,6 @@
 
         public const string CheckBoxFilterSelected = "Ver solo los mods elegidos";
 
-        // --- FormTranslationAnalyzer ---
-        // Titulos de columna: cortos a proposito. Son siete columnas en una sola tabla y
-        // los titulos largos no entraban, con lo cual se cortaban o dejaban al usuario con
-        // una barra de desplazamiento horizontal. Los del original tambien eran cortos.
-        public const string ColumnSelect = "Elegir";
-
-        public const string ColumnModInfo = "Mod";
-        public const string ColumnFileName = "Archivo";
-        public const string ColumnOriginalCount = "Originales";
-        public const string ColumnChanges = "Cambios";
-        public const string ColumnReextractMethod = "Re-extracción";
-        public const string ColumnSaveMethod = "Guardado";
-        public const string BtnSelectModManually = "Elegir a mano el mod a re-extraer";
-        public const string BtnFixSelectedFiles = "Corregir los archivos elegidos";
-        public const string BtnDeselectAll = "Deseleccionar todo";
-        public const string BtnSelectAllPossible = "Elegir todos los posibles";
-        public const string LabelSaveMethod = "Método de guardado:";
-
-        public const string SaveMethodAppend = "Agregar al final";
-        public const string SaveMethodRebuildOverwrite = "Reconstruir (sobrescribir)";
-        public const string SaveMethodRebuildNew = "Reconstruir (crear nuevo)";
-        public const string SaveMethodOnlyNewNodes = "Crear nuevo solo con los nodos agregados";
-
-        // --- FormTranslationAnalyzerPathSelect ---
-        // El titulo de la ventana ya dice que son archivos Excel, asi que los botones no
-        // lo repiten: con el texto completo uno media mas del doble que el otro y la fila
-        // quedaba desbalanceada.
-        public const string BtnSelectSingleXlsx = "Elegir archivo";
-
-        public const string BtnSelectXlsxDir = "Elegir carpeta";
-        public const string LabelAnalyzerFaq =
-            "P. ¿Qué es el analizador de traducciones?\r\n" +
-            "R. Lee y analiza los archivos Excel que extrajiste antes,\r\n" +
-            "y te avisa si el texto original cambió por una actualización del mod\r\n" +
-            "o si se agregaron nodos nuevos que hay que traducir.\r\n" +
-            "Si hay algo que corregir, actualiza automáticamente el Excel existente.\r\n";
-
         // --- FormInitialPathSelect ---
         public const string LabelRimworldPathShort = "Ruta de RimWorld";
         public const string LabelWorkshopPathShort = "Ruta del workshop";
@@ -641,9 +527,6 @@
         public const string TitleSelectMod = "Elegí el mod que querés extraer";
         public const string TitleSettings = "Ajustes";
         public const string TitleStopCallback = "Archivo duplicado";
-        public const string TitleTranslationAnalyzer = "Analizador de traducciones";
-        public const string TitleAnalyzerPathSelect = "Elegí la ruta con los archivos Excel (se puede elegir más de una)";
-        public const string TitleXmlister = "Herramienta de extracción XML -> XLSX";
 
         #endregion
 

@@ -44,8 +44,6 @@
             label7 = new Label();
             comboBoxOriginalLanguage = new ComboBox();
             comboBoxTranslationLanguage = new ComboBox();
-            label8 = new Label();
-            comboBoxExtractionMethod = new ComboBox();
             buttonSaveAndClose = new Button();
             buttonCancel = new Button();
             buttonReset = new Button();
@@ -214,24 +212,6 @@
             comboBoxTranslationLanguage.Size = new Size(233, 23);
             comboBoxTranslationLanguage.TabIndex = 17;
             // 
-            // label8
-            // 
-            label8.Location = new Point(6, 71);
-            label8.Name = "label8";
-            label8.Size = new Size(233, 23);
-            label8.TabIndex = 18;
-            label8.Text = "추출 형식:";
-            label8.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // comboBoxExtractionMethod
-            // 
-            comboBoxExtractionMethod.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBoxExtractionMethod.FormattingEnabled = true;
-            comboBoxExtractionMethod.Location = new Point(6, 97);
-            comboBoxExtractionMethod.Name = "comboBoxExtractionMethod";
-            comboBoxExtractionMethod.Size = new Size(233, 23);
-            comboBoxExtractionMethod.TabIndex = 19;
-            // 
             // buttonSaveAndClose
             // 
             buttonSaveAndClose.Location = new Point(540, 353);
@@ -329,8 +309,6 @@
             groupBox2.Controls.Add(label7);
             groupBox2.Controls.Add(label11);
             groupBox2.Controls.Add(comboBoxTranslationLanguage);
-            groupBox2.Controls.Add(label8);
-            groupBox2.Controls.Add(comboBoxExtractionMethod);
             groupBox2.Location = new Point(12, 206);
             groupBox2.Name = "groupBox2";
             groupBox2.Size = new Size(488, 191);
@@ -537,8 +515,6 @@
         private Label label7;
         private ComboBox comboBoxOriginalLanguage;
         private ComboBox comboBoxTranslationLanguage;
-        private Label label8;
-        private ComboBox comboBoxExtractionMethod;
         private Button buttonSaveAndClose;
         private Button buttonCancel;
         private Button buttonReset;

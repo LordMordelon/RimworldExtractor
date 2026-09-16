@@ -32,8 +32,6 @@
             buttonSelectMod = new Button();
             buttonExtract = new Button();
             button2 = new Button();
-            buttonConvertXlsx = new Button();
-            buttonConvertXml = new Button();
             label1 = new Label();
             label2 = new Label();
             richTextBoxLog = new RichTextBox();
@@ -41,7 +39,6 @@
             button1 = new Button();
             linkLabelLatestVersion = new LinkLabel();
             buttonUpdateAllRml = new Button();
-            buttonOpenTranslationAnalyzer = new Button();
             SuspendLayout();
             // 
             // buttonSelectMod
@@ -67,33 +64,13 @@
             // 
             // button2
             // 
-            button2.Location = new Point(12, 220);
+            button2.Location = new Point(12, 168);
             button2.Name = "button2";
             button2.Size = new Size(200, 46);
             button2.TabIndex = 2;
             button2.Text = "옵션";
             button2.UseVisualStyleBackColor = true;
             button2.Click += button2_Click;
-            // 
-            // buttonConvertXlsx
-            // 
-            buttonConvertXlsx.Location = new Point(12, 116);
-            buttonConvertXlsx.Name = "buttonConvertXlsx";
-            buttonConvertXlsx.Size = new Size(97, 46);
-            buttonConvertXlsx.TabIndex = 3;
-            buttonConvertXlsx.Text = "XML -> XLSX";
-            buttonConvertXlsx.UseVisualStyleBackColor = true;
-            buttonConvertXlsx.Click += buttonConvertXlsx_Click;
-            // 
-            // buttonConvertXml
-            // 
-            buttonConvertXml.Location = new Point(115, 116);
-            buttonConvertXml.Name = "buttonConvertXml";
-            buttonConvertXml.Size = new Size(97, 46);
-            buttonConvertXml.TabIndex = 4;
-            buttonConvertXml.Text = "XLSX -> XML";
-            buttonConvertXml.UseVisualStyleBackColor = true;
-            buttonConvertXml.Click += buttonConvertXml_Click;
             // 
             // label1
             // 
@@ -106,7 +83,7 @@
             // 
             // label2
             // 
-            label2.Location = new Point(12, 271);
+            label2.Location = new Point(12, 219);
             label2.Name = "label2";
             label2.Size = new Size(776, 23);
             label2.TabIndex = 7;
@@ -116,11 +93,11 @@
             // richTextBoxLog
             // 
             richTextBoxLog.BackColor = SystemColors.ControlText;
-            richTextBoxLog.Location = new Point(12, 297);
+            richTextBoxLog.Location = new Point(12, 245);
             richTextBoxLog.Name = "richTextBoxLog";
             richTextBoxLog.ReadOnly = true;
             richTextBoxLog.ScrollBars = RichTextBoxScrollBars.ForcedVertical;
-            richTextBoxLog.Size = new Size(776, 192);
+            richTextBoxLog.Size = new Size(776, 244);
             richTextBoxLog.TabIndex = 8;
             richTextBoxLog.Text = "";
             // 
@@ -135,7 +112,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(650, 268);
+            button1.Location = new Point(650, 216);
             button1.Name = "button1";
             button1.Size = new Size(138, 23);
             button1.TabIndex = 10;
@@ -145,7 +122,7 @@
             // 
             // linkLabelLatestVersion
             // 
-            linkLabelLatestVersion.Location = new Point(12, 269);
+            linkLabelLatestVersion.Location = new Point(12, 217);
             linkLabelLatestVersion.Name = "linkLabelLatestVersion";
             linkLabelLatestVersion.Size = new Size(200, 23);
             linkLabelLatestVersion.TabIndex = 11;
@@ -154,7 +131,7 @@
             // 
             // buttonUpdateAllRml
             // 
-            buttonUpdateAllRml.Location = new Point(115, 168);
+            buttonUpdateAllRml.Location = new Point(12, 116);
             buttonUpdateAllRml.Name = "buttonUpdateAllRml";
             buttonUpdateAllRml.Size = new Size(97, 46);
             buttonUpdateAllRml.TabIndex = 12;
@@ -162,22 +139,11 @@
             buttonUpdateAllRml.UseVisualStyleBackColor = true;
             buttonUpdateAllRml.Click += buttonUpdateAllRml_Click;
             // 
-            // buttonOpenTranslationAnalyzer
-            // 
-            buttonOpenTranslationAnalyzer.Location = new Point(12, 168);
-            buttonOpenTranslationAnalyzer.Name = "buttonOpenTranslationAnalyzer";
-            buttonOpenTranslationAnalyzer.Size = new Size(97, 46);
-            buttonOpenTranslationAnalyzer.TabIndex = 13;
-            buttonOpenTranslationAnalyzer.Text = "번역 분석기\r\n열기 (WIP)";
-            buttonOpenTranslationAnalyzer.UseVisualStyleBackColor = true;
-            buttonOpenTranslationAnalyzer.Click += buttonOpenTranslationAnalyzer_Click;
-            // 
             // FormMain
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 496);
-            Controls.Add(buttonOpenTranslationAnalyzer);
             Controls.Add(buttonUpdateAllRml);
             Controls.Add(linkLabelLatestVersion);
             Controls.Add(button1);
@@ -185,8 +151,6 @@
             Controls.Add(richTextBoxLog);
             Controls.Add(label2);
             Controls.Add(label1);
-            Controls.Add(buttonConvertXml);
-            Controls.Add(buttonConvertXlsx);
             Controls.Add(button2);
             Controls.Add(buttonExtract);
             Controls.Add(buttonSelectMod);
@@ -200,8 +164,6 @@
         private Button buttonSelectMod;
         private Button buttonExtract;
         private Button button2;
-        private Button buttonConvertXlsx;
-        private Button buttonConvertXml;
         private Label label1;
         private Label label2;
         private RichTextBox richTextBoxLog;
@@ -209,6 +171,5 @@
         private Button button1;
         private LinkLabel linkLabelLatestVersion;
         private Button buttonUpdateAllRml;
-        private Button buttonOpenTranslationAnalyzer;
     }
 }

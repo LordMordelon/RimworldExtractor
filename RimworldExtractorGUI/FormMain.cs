@@ -57,7 +57,6 @@ namespace RimworldExtractorGUI
                 Aviso.Mostrar(Strings.BatchStillRunning, Strings.DialogTitleNotice);
             };
             Log.Out = new RichTextBoxWriter(richTextBoxLog);
-            Prefabs.StopCallbackXlsx = FormStopCallback.StopCallbackXlsx;
             Prefabs.StopCallbackXml = FormStopCallback.StopCallbackXml;
             Prefabs.StopCallbackTxt = FormStopCallback.StopCallbackTxt;
             try
@@ -173,26 +172,12 @@ namespace RimworldExtractorGUI
                 return;
             }
 
-            switch (Prefabs.Method)
-            {
-                case Prefabs.ExtractionMethod.Excel:
-                    IO.ToExcel(extraction, Path.Combine(outPath, outPath));
-                    break;
-                case Prefabs.ExtractionMethod.Languages:
-                    IO.ToLanguageXml(extraction, false, XmlCommentStyle.None, outPath, outPath);
-                    LoadFoldersBuild.Write(SelectedMod, outPath);
-                    break;
-                case Prefabs.ExtractionMethod.LanguagesWithComments:
-                    IO.ToLanguageXml(extraction, false, XmlCommentStyle.Original, outPath, outPath);
-                    LoadFoldersBuild.Write(SelectedMod, outPath);
-                    break;
-                case Prefabs.ExtractionMethod.LanguagesToTranslate:
-                    IO.ToLanguageXml(extraction, false, XmlCommentStyle.TranslationTemplate, outPath, outPath);
-                    LoadFoldersBuild.Write(SelectedMod, outPath);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            // Sin traduccion rapida el mod sale a una carpeta propia, en el mismo formato
+            // que se escribe sobre RML: el original en un comentario y un TODO por valor.
+            // Antes habia cuatro formatos a elegir en Opciones, y los otros tres —la
+            // planilla y los dos XML sin marcador— no los usaba nadie.
+            IO.ToLanguageXml(extraction, false, XmlCommentStyle.TranslationTemplate, outPath, outPath);
+            LoadFoldersBuild.Write(SelectedMod, outPath);
 
             TerminarExtraccion(extraction, outPath);
         }
@@ -248,42 +233,6 @@ namespace RimworldExtractorGUI
             Log.Msg(Strings.QuickUpdateWrittenTo(destino));
 
             return destino;
-        }
-
-
-
-        private void buttonConvertXml_Click(object sender, EventArgs e)
-        {
-            var openfileDialog = new OpenFileDialog();
-            openfileDialog.Title = Strings.SelectExtractorXlsx;
-            openfileDialog.FileName = "";
-            openfileDialog.Filter = Strings.FilterTranslationData;
-
-            if (openfileDialog.ShowDialog() == DialogResult.OK)
-            {
-                try
-                {
-                    var path = openfileDialog.FileName;
-                    var translations = IO.FromExcel(path);
-                    var carpeta = Path.GetDirectoryName(path) ?? "";
-                    IO.ToLanguageXml(translations, true,
-                        Prefabs.CommentOriginal ? XmlCommentStyle.Original : XmlCommentStyle.None,
-                        Path.GetFileName(path), carpeta);
-
-                    // De que mod es se deduce del nombre del archivo, que es para lo que la
-                    // planilla tiene que volver con el nombre con el que salio.
-                    LoadFoldersBuild.Write(TranslationAnalyzerTool.GetModMetadataFromFilePath(path), carpeta);
-                    if (Aviso.Preguntar(Strings.DoneOpenConvertedFolder, Strings.DialogTitleDone) == DialogResult.Yes)
-                    {
-                        Process.Start("explorer.exe", Path.GetDirectoryName(path) ?? "");
-                    }
-                }
-                catch (Exception exception)
-                {
-                    Console.WriteLine(exception);
-                    throw;
-                }
-            }
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -421,25 +370,6 @@ namespace RimworldExtractorGUI
             }
         }
 
-        private void buttonConvertXlsx_Click(object sender, EventArgs e)
-        {
-            var form = new FormXmlister();
-            form.StartPosition = FormStartPosition.CenterParent;
-            if (form.ShowDialog(this) == DialogResult.OK)
-            {
-                var roots = form.FileNames;
-                for (var i = 0; i < roots.Length; i++)
-                {
-                    var root = roots[i];
-                    var translations = IO.FromLanguageXml(root);
-                    IO.ToExcel(translations, Path.Combine(root, Path.GetFileNameWithoutExtension(root)));
-                    Log.Msg(Strings.ProgressFixed(i + 1, roots.Length, root));
-                }
-
-                Aviso.Mostrar(Strings.ConversionDone);
-            }
-        }
-
         /// <summary>
         /// Vuelve a extraer de una vez todos los mods que RML ya tiene traducidos, que es lo
         /// que hace falta despues de una actualizacion del juego o de una tanda de mods.
@@ -548,58 +478,6 @@ namespace RimworldExtractorGUI
             Process.Start("explorer.exe", GithubVersionCheker.IssueUrl);
         }
 
-        private void buttonOpenTranslationAnalyzer_Click(object sender, EventArgs e)
-        {
-            var form = new FormTranslationAnalyzerPathSelect();
-            form.StartPosition = FormStartPosition.CenterParent;
-            if (form.ShowDialog(this) == DialogResult.OK)
-            {
-                var paths = form.Paths;
-                var analyzer = new FormTranslationAnalyzer(paths);
-                analyzer.StartPosition = FormStartPosition.CenterParent;
-                if (analyzer.ShowDialog(this) == DialogResult.OK)
-                {
-                    var analyzerEntries = analyzer.Entries.ToList();
-                    for (var i = 0; i < analyzerEntries.Count; i++)
-                    {
-                        var analyzerEntry = analyzerEntries[i];
-                        // Path.GetDirectoryName devuelve null para una ruta sin carpeta; el
-                        // archivo siempre viene de una, asi que la cadena vacia alcanza.
-                        var carpeta = Path.GetDirectoryName(analyzerEntry.FilePath) ?? string.Empty;
-                        var nombre = Path.GetFileNameWithoutExtension(analyzerEntry.FilePath);
-                        var newPath = Path.Combine(carpeta, nombre + Strings.EditedFileSuffix);
-                        switch (analyzerEntry.SaveMethod)
-                        {
-                            case TranslationAnalyzerEntry.SaveMethodEnum.Append:
-                                IO.ModifyExcel(analyzerEntry.Changes.ToList(), analyzerEntry.FilePath);
-                                break;
-                            case TranslationAnalyzerEntry.SaveMethodEnum.Overwrite:
-                                analyzerEntry.MergeTranslation();
-                                IO.ToExcel(analyzerEntry.NewTranslations!, Path.Combine(carpeta, nombre));
-                                break;
-                            case TranslationAnalyzerEntry.SaveMethodEnum.RewriteNewFile:
-                                analyzerEntry.MergeTranslation();
-                                IO.ToExcel(analyzerEntry.NewTranslations!, newPath, true);
-                                Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, newPath));
-                                continue;
-                            case TranslationAnalyzerEntry.SaveMethodEnum.New:
-                                IO.ToExcel(
-                                    analyzerEntry.Changes
-                                        .Where(x => x.Reason == TranslationAnalyzerEntry.ChangeReason.AddedNewly)
-                                        .Select(x => x.New).OfType<TranslationEntry>().ToList(), newPath);
-                                Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, newPath));
-                                continue;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-                        Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, analyzerEntry.FilePath));
-                    }
-
-                    Aviso.Mostrar(Strings.FilesFixed(analyzerEntries.Count));
-                }
-            }
-        }
-    
         /// <summary>
         /// Pone los textos y acomoda la ventana. Todavia maqueta en tiempo de ejecucion,
         /// con Rejilla y AutoAjuste, hasta que pase a TableLayoutPanel como
@@ -623,7 +501,6 @@ namespace RimworldExtractorGUI
             button2.Text = Strings.BtnOptions;
             label1.Text = Strings.LabelMainDescription;
             buttonUpdateAllRml.Text = Strings.BtnUpdateAllRml;
-            buttonOpenTranslationAnalyzer.Text = Strings.BtnOpenTranslationAnalyzer;
             labelSelectedMods.Text = Strings.LabelNoModSelected;
 
             // El Designer lo deja negro fijo; que acompanie al tema.
@@ -649,15 +526,13 @@ namespace RimworldExtractorGUI
             Rejilla.Columna(buttonSelectMod.Left,
                 Rejilla.Linea(buttonSelectMod),
                 Rejilla.Linea(buttonExtract),
-                Rejilla.Linea(buttonConvertXlsx, buttonConvertXml),
-                Rejilla.Linea(buttonOpenTranslationAnalyzer, buttonUpdateAllRml),
+                Rejilla.Linea(buttonUpdateAllRml),
                 Rejilla.Linea(button2, _buttonTema));
 
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
             AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, _buttonTema, buttonUpdateAllRml,
-                buttonOpenTranslationAnalyzer, buttonConvertXlsx, buttonConvertXml, button1,
-                labelSelectedMods, label1);
+                button1, labelSelectedMods, label1);
 
             // La franja del log la comparten tres cosas: el rotulo, el enlace de version
             // y el boton de reportar problemas. En el diseño original las tres arrancaban

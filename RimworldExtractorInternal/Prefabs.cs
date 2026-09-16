@@ -1,5 +1,4 @@
-﻿using ClosedXML.Excel;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -29,7 +28,6 @@ namespace RimworldExtractorInternal
         public static string PatternVersionWithV = string.Empty;
         public static string OriginalLanguage = string.Empty;
         public static string TranslationLanguage = string.Empty;
-        public static bool CommentOriginal = false;
 
         /// <summary>Tema de la interfaz. No afecta a la extraccion, solo a como se ve.</summary>
         public static ColorTheme Theme = ColorTheme.System;
@@ -171,10 +169,7 @@ namespace RimworldExtractorInternal
         public static List<string> TranslationHandles = new();
 
         public static DuplicatesPolicy Policy = default;
-        public static ExtractionMethod Method = default;
 
-
-        public static Action<XLWorkbook, string>? StopCallbackXlsx = null;
         public static Action<XmlDocument, string>? StopCallbackXml = null; 
         public static Action<IEnumerable<string>, string>? StopCallbackTxt = null;
 
@@ -193,7 +188,6 @@ namespace RimworldExtractorInternal
             PatternVersionWithV = @"^v[1]\.\d+";
             OriginalLanguage = "English";
             TranslationLanguage = "SpanishLatin (Español(Latinoamérica))";
-            CommentOriginal = false;
             ExtractableTags = new(
                 "label/rulesStrings/description/baseDesc/title/titleShort/customLabel/symbol/jobString/reportString/labelNoun/slateRef/verb/gerund/adjective/member/tips/ideoName/thoughtStageDescriptions/jobReportString/theme/labelShortAdj/labelPlural/letterText/deathMessage/labelShort/letterLabel/helpText/text/baseInspectLine/labelFemale/descriptionShort/beginLetter/ingestCommandString/ingestReportString/titleShortFemale/titleFemale/gerundLabel/pawnLabel/stageName/shortDescription/customEffectDescriptions/endMessage/leaderTitle/pawnSingular/pawnsPlural/desc/recoveryMessage/chargeNoun/cooldownGerund/type/potentialExtraOutcomeDesc/labelNounPretty/headerTip/rejectInputMessage/spectatorGerund/spectatorsLabel/fuelLabel/formatString/useLabel/RMBLabel/permanentLabel/name/missingDesc/worshipRoomLabel/labelAbstract/fuelGizmoLabel/destroyedLabel/outOfFuelMessage/summary/ritualExpectedDesc/customSummary/meatLabel/labelForFullStatList/tooltip/gizmoLabel/onMapInstruction/letterTitle/textEnemy/destroyedOutLabel/beginLetterLabel/labelMale/groupName/gizmoDescription/names/arrivalTextEnemy/letterLabelEnemy/arrivedLetter/calledOffMessage/finishedMessage/approachingReportString/approachOrderString/expectedThingLabelTip/skillLabel/extraPredictedOutcomeDescriptions/modNameReadable/descriptionFuture/textWillArrive/arrivalTextFriendly/letterLabelFriendly/helpTextController/successfullyRemovedHediffMessage/textFriendly/eventLabel/textController/descOverride/shortDescOverride/content/discoveredLetterText/discoveredLetterTitle/beginLetterContinue/resourceLabel/message/overrideLabel/extraTooltip/offMessage/successMessage/effectDesc/letterInfoText/categoryLabel/groupLabel/battleStateLabel/customizationTitle/fixedName/noun/lockedReason/descriptionExtra/labelPrefix/labelMechanoids/ingestReportStringEat/failMessage/valueFormat/structureLabel/labelSocial/labelInBracketsExtraForHediff/ChooseDesc/ChooseLabel/ritualExplanation/resourceDescription/discoverLetterText/countdownLabel/inspectString/completedLetterText/completedLetterTitle/leaderDescription/formatStringUnfinalized/jobReportOverride/discoverLetterLabel/instantlyPermanentLabel/notifyMessage/onCooldownString/invalidTargetPawn/noAssignablePawnsDesc/reportText/statLabel/visualLabel/commandDescriptions/successMessageNoNegativeThought/tipLabelOverride/mainPartAllThreatsLabel/customChildDisallowMessage/ritualExpectedDescNoAdjective/loweredName/cancelLabel/texName/labelOverride/messageText/proficiencyAdjective/stuffAdjective/unit/labelTendedWell/labelTendedWellInner/labelSolidTendedWell/overrideTooltip/royalFavorLabel/extraReportString/spawnInBackstories/customLetterLabel/customLetterText/confirmationDialogText/tip/outcomeDescription/generalDescription/generalTitle/dialogue/activateDescString/activateLabelString/completedLetter/completedLetterLabel/guiLabelString/gizmoDesc/activatedMessageKey/appendString/gizmoDesc1/gizmoDesc2/gizmoLabel1/gizmoLabel"
                     .Split('/'));
@@ -219,9 +213,6 @@ namespace RimworldExtractorInternal
                 // "hediff"
             };
             Policy = DuplicatesPolicy.Overwrite;
-            // El XML con TODO es el que alimenta la traduccion rapida, que es el flujo
-            // normal de este fork.
-            Method = ExtractionMethod.LanguagesToTranslate;
             Theme = ColorTheme.System;
             PathRml = string.Empty;
         }
@@ -255,13 +246,22 @@ namespace RimworldExtractorInternal
                 PatternVersionWithV,
                 OriginalLanguage,
                 TranslationLanguage,
-                CommentOriginal.ToString(),
+
+                // Reservada: aca iba CommentOriginal, que se fue con el boton XLSX -> XML.
+                // La linea se sigue escribiendo porque el archivo se lee por posicion:
+                // sacarla corre todo lo que viene despues y obliga a subir Version, y eso
+                // descarta el archivo entero y le borra la configuracion a todo el mundo.
+                // Se escribe un valor que una version anterior tambien sepa leer.
+                "False",
                 string.Join('/', ExtractableTags),
                 string.Join('/', FullListTranslationTags),
                 string.Join('/', NodeReplacement.Select(x => $"{x.Key}|{x.Value}")),
                 string.Join('/', TranslationHandles),
                 Policy.ToString(),
-                Method.ToString(),
+
+                // Reservada, por lo mismo: aca iba Method, cuando habia cuatro formatos
+                // de extraccion a elegir.
+                "LanguagesToTranslate",
 
                 // Los campos nuevos van al final y se leen solo si estan. Asi un
                 // Prefabs.dat viejo sigue sirviendo: si se agregaran en el medio habria
@@ -294,7 +294,7 @@ namespace RimworldExtractorInternal
             PatternVersionWithV = lines[idx++];
             OriginalLanguage = lines[idx++];
             TranslationLanguage = lines[idx++];
-            CommentOriginal = bool.Parse(lines[idx++]);
+            idx++; // Reservada: CommentOriginal. Ver el comentario de Save().
             ExtractableTags = new(lines[idx++].Split('/'));
             FullListTranslationTags = new(lines[idx++].Split("/"));
             NodeReplacement = new(lines[idx++].Split('/').Select(x =>
@@ -304,7 +304,7 @@ namespace RimworldExtractorInternal
             }));
             TranslationHandles = new(lines[idx++].Split('/'));
             Policy = Enum.Parse<DuplicatesPolicy>(lines[idx++]);
-            Method = Enum.Parse<ExtractionMethod>(lines[idx++]);
+            idx++; // Reservada: Method. Ver el comentario de Save().
 
             // Un archivo guardado por una version anterior no llega hasta aca: se queda
             // con el valor por defecto en vez de fallar.
@@ -351,11 +351,5 @@ namespace RimworldExtractorInternal
             System = 0, Light, Dark
         }
 
-        public enum ExtractionMethod
-        {
-            // Los valores se guardan por nombre en Prefabs.dat, pero el combo de
-            // Ajustes se lee por indice: agregar siempre al final.
-            Excel = 0, Languages, LanguagesWithComments, LanguagesToTranslate
-        }
     }
 }

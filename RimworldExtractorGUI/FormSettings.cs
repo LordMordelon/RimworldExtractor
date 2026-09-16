@@ -58,13 +58,6 @@ namespace RimworldExtractorGUI
                 "SpanishLatin (Español(Latinoamérica))", "Swedish (Svenska)", "Turkish (Türkçe)",
                 "Ukrainian (Українська)"
             });
-            comboBoxExtractionMethod.Items.AddRange(new object[]
-            {
-                Strings.ExtractionMethodExcel,
-                Strings.ExtractionMethodXml,
-                Strings.ExtractionMethodXmlComments,
-                Strings.ExtractionMethodXmlToTranslate
-            });
             comboBoxFileDuplication.Items.AddRange(new object[]
             {
                 Strings.DuplicatePolicyAsk, Strings.DuplicatePolicyOverwrite, Strings.DuplicatePolicySkip
@@ -84,7 +77,6 @@ namespace RimworldExtractorGUI
 
             comboBoxOriginalLanguage.SelectedItem = Prefabs.OriginalLanguage;
             comboBoxTranslationLanguage.SelectedItem = Prefabs.TranslationLanguage;
-            comboBoxExtractionMethod.SelectedIndex = (int)Prefabs.Method;
             comboBoxFileDuplication.SelectedIndex = (int)Prefabs.Policy;
             textBoxBaseRefList.Text = Prefabs.PathBaseRefList;
             _textBoxPathRml.Text = Prefabs.PathRml;
@@ -108,7 +100,6 @@ namespace RimworldExtractorGUI
             // vacio en Prefabs.dat: se conserva el que ya estaba.
             Prefabs.OriginalLanguage = comboBoxOriginalLanguage.SelectedItem as string ?? Prefabs.OriginalLanguage;
             Prefabs.TranslationLanguage = comboBoxTranslationLanguage.SelectedItem as string ?? Prefabs.TranslationLanguage;
-            Prefabs.Method = Enum.GetValues<Prefabs.ExtractionMethod>()[comboBoxExtractionMethod.SelectedIndex];
             Prefabs.Policy = Enum.GetValues<Prefabs.DuplicatesPolicy>()[comboBoxFileDuplication.SelectedIndex];
             Prefabs.PathBaseRefList = textBoxBaseRefList.Text;
             Prefabs.PathRml = _textBoxPathRml.Text;
@@ -263,7 +254,6 @@ namespace RimworldExtractorGUI
             buttonAutoDetect.Text = Strings.BtnAutoDetect;
             label6.Text = Strings.LabelOriginalLanguage;
             label7.Text = Strings.LabelTranslationLanguage;
-            label8.Text = Strings.LabelExtractionFormat;
             buttonSaveAndClose.Text = Strings.BtnSaveAndClose;
             buttonCancel.Text = Strings.BtnCancel;
             buttonReset.Text = Strings.BtnReset;
@@ -280,7 +270,7 @@ namespace RimworldExtractorGUI
 
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
-            AutoAjuste.Ajustar(label1, label2, label3, label5, label6, label7, label8, label9, label10, label11, label12, label13, label14,
+            AutoAjuste.Ajustar(label1, label2, label3, label5, label6, label7, label9, label10, label11, label12, label13, label14,
                 buttonAutoDetect, buttonSaveAndClose, buttonCancel, buttonReset, checkBox1);
 
             // Los tres botones del pie estan uno al lado del otro: al ensancharse
@@ -311,8 +301,8 @@ namespace RimworldExtractorGUI
             Rejilla.EstirarAlAncho(groupBox2,
                 Rejilla.Linea(label6, label7),
                 Rejilla.Linea(comboBoxOriginalLanguage, comboBoxTranslationLanguage),
-                Rejilla.Linea(label8, label11),
-                Rejilla.Linea(comboBoxExtractionMethod, comboBoxFileDuplication),
+                Rejilla.Linea(label11),
+                Rejilla.Linea(comboBoxFileDuplication),
                 Rejilla.Linea(label14),
                 Rejilla.Linea(new Rejilla.Campo(textBoxBaseRefList, buttonBaseRefList)),
                 Rejilla.Linea(_labelPathRml),
