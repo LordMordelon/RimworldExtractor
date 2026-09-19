@@ -8,6 +8,7 @@ namespace RimworldExtractorTest
     /// <summary>
     /// Cubre la configuracion persistida, que se lee por posicion y sin nombres de campo.
     /// </summary>
+
     [TestClass]
     public class PrefabsTests
     {
@@ -2161,6 +2162,85 @@ namespace RimworldExtractorTest
     /// nombre, el PatchOperationFindMod no coincide nunca y la traduccion no se aplica ni con el
     /// mod puesto. Pasaba con siete mods de AobaKuma que piden CETeam.CombatExtended_steam.
     /// </summary>
+    /// <summary>
+    /// El cache de defs de referencia y la lectura en paralelo no pueden cambiar la extraccion.
+    ///
+    /// Las dos cosas se pusieron para que «Actualizar todo RML» no reparsee los 1558 archivos
+    /// del juego base una vez por mod, que eran 408.196 parseos donde alcanzaban 1558. Pero
+    /// tocan justo el armado de la base de defs: si el arbol combinado sale distinto, las
+    /// traducciones salen distintas y nada falla.
+    /// </summary>
+    [TestClass]
+    public class CacheDeDefsTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        /// <summary>
+        /// La misma extraccion, con el cache apagado y con el cache ya lleno, tiene que dar
+        /// exactamente las mismas entradas y en el mismo orden.
+        /// </summary>
+        [TestMethod]
+        public void ElCacheNoCambiaLaExtraccion()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            if (!Directory.Exists(Path.Combine(Prefabs.PathRimworld, "Data", "Core")))
+                Assert.Inconclusive("Este test necesita RimWorld instalado.");
+
+            // Un mod con Defs propios y con dependencias, que es lo que hace pasar por
+            // LoadReferenceDefs, que es lo que el cache toca.
+            var mod = ModLister.AllMods.FirstOrDefault(x =>
+                !x.IsOfficialContent &&
+                ModLister.GetExtractableFolders(x).Any(f => Path.GetFileName(f.FolderName) == "Defs"));
+
+            if (mod == null)
+                Assert.Inconclusive("No hay ningun mod con Defs instalado.");
+
+            var sinCache = Extraer(mod);
+
+            CacheDeDefs.Abrir();
+            try
+            {
+                // Dos veces: la primera llena el cache y la segunda lo usa, que es la
+                // situacion real a partir del segundo mod de la corrida.
+                Extraer(mod);
+                var conCache = Extraer(mod);
+
+                Assert.AreEqual(sinCache.Count, conCache.Count,
+                    "el cache cambio cuantas entradas salen de la extraccion");
+
+                for (var i = 0; i < sinCache.Count; i++)
+                {
+                    Assert.AreEqual(sinCache[i].ClassName, conCache[i].ClassName, $"entrada {i}");
+                    Assert.AreEqual(sinCache[i].Node, conCache[i].Node, $"entrada {i}");
+                    Assert.AreEqual(sinCache[i].Original, conCache[i].Original,
+                        $"entrada {i}: {sinCache[i].Node}");
+                    Assert.AreEqual(sinCache[i].Translated, conCache[i].Translated,
+                        $"entrada {i}: {sinCache[i].Node}");
+                }
+            }
+            finally
+            {
+                CacheDeDefs.Cerrar();
+            }
+
+            Assert.IsFalse(CacheDeDefs.Encendido, "el cache quedo encendido despues de cerrarlo");
+        }
+
+        /// <summary>Una extraccion completa de ese mod, como la que hace la corrida por lotes.</summary>
+        private static List<TranslationEntry> Extraer(ModMetadata mod)
+        {
+            var extraibles = ModLister.GetExtractableFolders(mod).Where(x => x.IsAutoSelectable()).ToList();
+            var referencias = ModLister.FindAllReferenceMods(mod)
+                .Concat(ModLister.FindModsNamedInPatches(extraibles))
+                .Distinct()
+                .ToList();
+
+            return Extractor.ExtractTranslationData(mod, extraibles, referencias);
+        }
+    }
+
     [TestClass]
     public class ModsConPackageIdTests
     {

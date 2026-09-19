@@ -1065,14 +1065,19 @@ namespace RimworldExtractorInternal
 
         internal static XmlDocument ReadXml(string filePath)
         {
-            var contents = File.ReadAllText(filePath);
             var readerSettings = new XmlReaderSettings
             {
                 IgnoreComments = true,
                 IgnoreWhitespace = true,
                 CheckCharacters = false
             };
-            using var stringReader = new StringReader(contents);
+            // El File.ReadAllText no sobra, aunque parezca una copia de mas por archivo.
+            // Decodifica con reemplazo: un byte que no es UTF-8 valido se convierte en el
+            // caracter de reemplazo y el XML se parsea igual. XmlReader.Create sobre la ruta
+            // respeta la declaracion de encoding del archivo y tira "Invalid character in the
+            // given encoding". Hay mods con archivos en CP949 y en otras codificaciones raras
+            // —ver AGENTS.md—, y con la lectura directa la extraccion se corta en el primero.
+            using var stringReader = new StringReader(File.ReadAllText(filePath));
             using var xmlReader = XmlReader.Create(stringReader, readerSettings);
             var childDoc = new XmlDocument();
             childDoc.Load(xmlReader);

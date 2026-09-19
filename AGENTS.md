@@ -137,6 +137,13 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   válido, así que un `grep` de texto coreano no los encuentra: parecen ya traducidos y
   no lo están. `PatchOperations.cs` estuvo así. Hoy los 62 `.cs` están en UTF-8 y la CI ya
   no convierte nada, así que lo que se traiga a mano de upstream hay que revisarlo antes.
+- **`IO.ReadXml` pasa por `File.ReadAllText` a proposito.** Parece una copia de mas por
+  archivo —y son miles por corrida— pero decodifica con reemplazo: un byte que no es UTF-8
+  válido se convierte en el carácter de reemplazo y el XML se parsea igual. Pasarle la ruta
+  directamente a `XmlReader.Create` respeta la declaración de encoding del archivo y tira
+  `Invalid character in the given encoding` en el primer mod con un archivo en CP949 o
+  parecido, que los hay. Lo atrapó `ElCacheNoCambiaLaExtraccion`.
+
 - **Guiones en comentarios XML.** La secuencia `--` es ilegal dentro de un comentario
   XML. El original resolvía eso reemplazando *todos* los guiones por `ー` (katakana),
   lo que destruía el texto latino (`re-arm` → `reーarm`). Ahora se escapa únicamente la
@@ -247,6 +254,28 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
 uno detrás de otro, en segundo plano. Mientras corre, la ventana no se deja cerrar: hacerlo
 mataría el hilo a mitad de un `Escribir`, con el árbol del mod ya borrado y sin reescribir.
 Al terminar agrupa y regenera el índice una sola vez.
+
+**Dos cosas sostienen que esa corrida no se quede pegada, y conviene no deshacerlas:**
+
+- **`CacheDeDefs`**, encendido solo mientras dura la corrida. Cada mod rearma su base de defs
+  desde cero y `FindAllReferenceMods` siempre devuelve todo el contenido oficial, así que los
+  1558 archivos de Core y los DLC se parseaban una vez por mod: 408.196 parseos donde
+  alcanzaban 1558. El caché entrega el mismo `XmlDocument` a todos los mods de la corrida,
+  y por eso **nadie lo puede modificar**: los dos que lo usan copian con `ImportNode` y le
+  ponen los atributos a la copia. Lo cubre `ElCacheNoCambiaLaExtraccion`, que compara la
+  extracción con el caché apagado y encendido, entrada por entrada. La lectura y el parseo
+  van en paralelo; la inserción en `CombinedDefs` **no**, porque el orden decide quién gana
+  en `ParentNodeLookUp` y en el `DistinctBy` final.
+
+- **El log no espera a la ventana.** `RichTextBoxWriter` encola las líneas y las pinta de a
+  tandas con `BeginInvoke`. Antes cada línea hacía un `Invoke` **síncrono** más un `Flush()`
+  al disco, leía `Text.Length` —hasta 327.670 caracteres— y llamaba a `ScrollToCaret()`: el
+  hilo que extrae avanzaba al ritmo del repintado, y eso era el pegado. Volver a escribir
+  directo en el control lo reinstala.
+
+Medido sobre seis mods reales, el caché solo bajó de 43,9 s a 32,4 s: lo que queda es
+`ImportNode` copiando nodo por nodo al árbol combinado y `DoXmlInheritance` copiándolo entero
+otra vez, que es secuencial por naturaleza. Ahí está la próxima optimización, si hace falta.
 
 Los tests de `PatchesRoundTripTests`, `UnusedSobreviveTests` y `PatchesDeRmlTests` cubren
 estos cuatro casos. Todos se verificaron fallando sin su arreglo: un test de regresión que

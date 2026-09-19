@@ -25,6 +25,13 @@ namespace RimworldExtractorGUI
         private bool _actualizandoRml;
 
         /// <summary>
+        /// El destino del log, guardado para poder vaciarlo antes de mostrar un resumen: la
+        /// ventana pinta de a tandas, asi que al terminar una corrida larga quedan lineas sin
+        /// pintar y el resumen apareceria antes que ellas.
+        /// </summary>
+        private RichTextBoxWriter? _salidaDelLog;
+
+        /// <summary>
         /// La ultima version publicada, o null si todavia no se pudo comprobar. La guarda el
         /// chequeo de arranque para que el clic en el rotulo sepa si hay algo que ofrecer sin
         /// volver a consultar.
@@ -56,7 +63,8 @@ namespace RimworldExtractorGUI
                 e.Cancel = true;
                 Aviso.Mostrar(Strings.BatchStillRunning, Strings.DialogTitleNotice);
             };
-            Log.Out = new RichTextBoxWriter(richTextBoxLog);
+            _salidaDelLog = new RichTextBoxWriter(richTextBoxLog);
+            Log.Out = _salidaDelLog;
             Prefabs.StopCallbackXml = FormStopCallback.StopCallbackXml;
             Prefabs.StopCallbackTxt = FormStopCallback.StopCallbackTxt;
             try
@@ -449,6 +457,7 @@ namespace RimworldExtractorGUI
                 });
 
                 InformarLote(renglones);
+                _salidaDelLog?.Vaciar();
                 Aviso.Mostrar(Strings.BatchDone, Strings.DialogTitleDone);
             }
             catch (Exception ex)

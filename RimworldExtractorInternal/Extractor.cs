@@ -251,12 +251,36 @@ namespace RimworldExtractorInternal
             {
                 var defsRoot = extractableFolder.FullPath;
                 var requiredPackageId = extractableFolder.RequiredPackageId;
-                foreach (var filePath in IO.DescendantFiles(defsRoot).Where(x => x.ToLower().EndsWith(".xml")))
+                var rutas = IO.DescendantFiles(defsRoot)
+                    .Where(x => x.ToLower().EndsWith(".xml"))
+                    .ToList();
+
+                // Igual que en LoadReferenceDefs: se lee y se parsea en paralelo, y se inserta
+                // en orden. Un archivo que no se pudo leer queda en null —ya avisado— y se
+                // saltea al insertar, que es lo que hacia el catch cuando esto iba en un paso.
+                var documentos = new XmlDocument?[rutas.Count];
+                Parallel.For(0, rutas.Count, i =>
                 {
                     try
                     {
+                        documentos[i] = CacheDeDefs.Leer(rutas[i]);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Err(Strings.ErrorReadingFile(rutas[i], e.Message));
+                    }
+                });
+
+                for (var indice = 0; indice < rutas.Count; indice++)
+                {
+                    var filePath = rutas[indice];
+                    var childDoc = documentos[indice];
+                    if (childDoc == null)
+                        continue;
+
+                    try
+                    {
                         var fileName = Path.GetFileNameWithoutExtension(filePath);
-                        var childDoc = IO.ReadXml(filePath);
 
                         foreach (XmlNode node in childDoc.DocumentElement!.ChildNodes)
                         {

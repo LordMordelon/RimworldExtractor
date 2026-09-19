@@ -299,6 +299,9 @@
         public static string BatchSummary(int updated, int total, int kept, int pending, int unused, int rescued)
             => $"Actualización de RML: {updated} de {total} mods actualizados. {kept} traducciones conservadas, {pending} sin traducir, {unused} sin uso y {rescued} rescatadas por su texto original.";
 
+        public static string BatchTiempo(int mods, System.TimeSpan tardanza)
+            => $"Tardó {(int)tardanza.TotalMinutes} min {tardanza.Seconds} s en recorrer {mods} carpetas.";
+
         public static string BatchNotInstalled(int count, string names)
             => $"{count} no están instalados y quedaron como estaban: {names}";
 
