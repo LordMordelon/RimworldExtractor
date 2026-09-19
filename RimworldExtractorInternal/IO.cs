@@ -271,10 +271,20 @@ namespace RimworldExtractorInternal
 
                 }
 
-                // Con el nombre del mod y no codificado: es lo que hace legible la carpeta, y
-                // sigue siendo estable —mismo mod, mismo archivo—, que es la propiedad por la
-                // que se codificaban, para que una re-extraccion sobrescriba en vez de duplicar.
-                docPatch.SaveSafely(Path.Combine(outputPath, grupoDePatches.Key.StripInvaildChars() + ".xml"));
+                // Codificado con el mismo generador que los Keyed y los DefInjected, y no
+                // con el nombre del mod dueño, que seria legible: el nombre tiene que ser unico
+                // en todo Data/ y ahi el largo de la ruta es el recurso escaso. Las carpetas de
+                // Data/ son carpetas de un solo mod de RimWorld, que las recorre deduplicando
+                // por ruta relativa, asi que de nueve "Patches/Odyssey.xml" cargaba uno y
+                // descartaba los otros ocho sin decir nada: 30 archivos de 107, con 336
+                // traducciones que no llegaban a la pantalla. Ponerle el id del workshop
+                // adelante tambien los hacia unicos, pero dejaba el peor archivo en 242 de los
+                // 259 que RimWorld puede abrir instalado desde el Workshop; asi queda en 174.
+                //
+                // No es aleatorio: sale del mod y del dueño, asi que el mismo mod escribe
+                // siempre el mismo archivo y una re-extraccion sobrescribe en vez de duplicar.
+                docPatch.SaveSafely(Path.Combine(outputPath,
+                    Utils.GenerateFileName(ModName, grupoDePatches.Key) + ".xml"));
             }
 
             if (defInjected.Count > 0)
