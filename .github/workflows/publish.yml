@@ -21,6 +21,8 @@ jobs:
       # en los tests, que no lo tienen, y cada corrida terminaba con un error NETSDK1005.
       Project: RimworldExtractorGUI/RimworldExtractorGUI.csproj
       Script_Path: tools.py
+      # Que version hornea esta rama. Se declara y no se deduce: ver "Calcular la version".
+      Version_Beta: 1.0.0
 
     steps:
     - name: Checkout repository
@@ -56,27 +58,36 @@ jobs:
         # --exclude hace falta ademas del --match: el * de un glob se come el guion, asi
         # que "[0-9]*.[0-9]*.[0-9]*" tambien casa con "1.0.0-beta.1".
         ultima=$(git describe --tags --abbrev=0 --match '[0-9]*' --exclude '*-*')
-        IFS=. read -r mayor menor parche <<< "$ultima"
-        if git log "$ultima"..HEAD --format='%s%n%b' | grep -qE '^[a-z]+(\(.+\))?!:|^BREAKING CHANGE'; then
-          mayor=$((mayor + 1))
-          menor=0
-          parche=0
-        elif git log "$ultima"..HEAD --format=%s | grep -qE '^feat(\(.+\))?:'; then
-          menor=$((menor + 1))
-          parche=0
+
+        if [ "$GITHUB_REF_NAME" = "master" ]; then
+          IFS=. read -r mayor menor parche <<< "$ultima"
+          if git log "$ultima"..HEAD --format='%s%n%b' | grep -qE '^[a-z]+(\(.+\))?!:|^BREAKING CHANGE'; then
+            mayor=$((mayor + 1))
+            menor=0
+            parche=0
+          elif git log "$ultima"..HEAD --format=%s | grep -qE '^feat(\(.+\))?:'; then
+            menor=$((menor + 1))
+            parche=0
+          else
+            parche=$((parche + 1))
+          fi
+          nueva="$mayor.$menor.$parche"
         else
-          parche=$((parche + 1))
+          # Fuera de master la version no se deduce de los mensajes de commit: la rama dice
+          # cual esta horneando, en Version_Beta. Deducirla la ataba a que el commit que sube
+          # el numero siguiera en el rango desde la ultima etiqueta estable, y el dia que
+          # master publique una estable que ya lo incluya, la beta siguiente saldria con otra
+          # version en vez de seguir la serie.
+          #
+          # El numero sale del maximo que ya exista y no de contar las etiquetas: contarlas
+          # reutiliza un numero si alguna se borra, y entonces la release choca con una que
+          # todavia esta. El cut parte por puntos, asi que "1.0.0-beta.12" da 12 en el campo 4.
+          ultimo=$(git tag --list "$Version_Beta-beta.*" | cut -d. -f4 | sort -n | tail -1)
+          nueva="$Version_Beta-beta.$(( ${ultimo:-0} + 1 ))"
         fi
-        nueva="$mayor.$menor.$parche"
 
-        # Fuera de master la version sale como beta, numerada por cuantas lleva ya la
-        # misma version estable. La release se marca prerelease mas abajo, y GitHub deja
-        # las prereleases fuera de releases/latest, que es donde mira la aplicacion.
-        if [ "$GITHUB_REF_NAME" != "master" ]; then
-          n=$(( $(git tag --list "$nueva-beta.*" | wc -l) + 1 ))
-          nueva="$nueva-beta.$n"
-        fi
-
+        # La release se marca prerelease mas abajo, y GitHub deja las prereleases fuera de
+        # releases/latest, que es donde mira la aplicacion.
         echo "Ultima etiqueta estable: $ultima -> version nueva: $nueva"
         echo "new_tag=$nueva" >> "$GITHUB_OUTPUT"
 

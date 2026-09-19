@@ -307,11 +307,23 @@ cuando se quiere marcar una versión: el resto de los mensajes van en prosa.
 
 **Fuera de `master` la versión sale como beta**, `1.0.0-beta.N`, y la release se marca
 `prerelease`. Eso la deja fuera de `releases/latest`, que es lo que consulta la aplicación,
-así que a nadie le aparece como actualización. Dos cosas que hay que mantener juntas:
+así que a nadie le aparece como actualización.
 
+**La versión de una beta no se deduce: la declara la rama**, en el `Version_Beta` del
+workflow. Toda beta de esta rama es `1.0.0-beta.N` —`.4`, `.5`, `.6`…— y todas pertenecen a
+la 1.0.0. Antes se deducía de que hubiera un commit `feat!:` en el rango desde la última
+etiqueta estable, y eso se caía solo: el día que `master` publique una estable que ya incluya
+ese commit, la rama deja de verlo y la beta siguiente saldría `0.x`.
+
+Tres cosas que hay que mantener juntas:
+
+- `N` sale del **máximo** de los `1.0.0-beta.*` que ya existen, con `cut -d. -f4 | sort -n`,
+  y no de contarlos. Contar reutiliza un número si alguna etiqueta se borra, y entonces la
+  release choca con una que todavía está. El `sort -n` tampoco sobra: alfabéticamente
+  `beta.9` es mayor que `beta.12`.
 - La etiqueta base se busca con `--match '[0-9]*' --exclude '*-*'`. El `--exclude` no
   sobra: el `*` de un glob se come el guión, así que `[0-9]*.[0-9]*.[0-9]*` también casa
-  con `1.0.0-beta.1`, y entonces la beta siguiente se calcularía a partir de la anterior.
+  con `1.0.0-beta.1`. Sigue haciendo falta para el rango del changelog.
 - `FormMain.EsBeta` corta la oferta de actualizar cuando la versión que corre lleva guión.
   Sin eso, una beta ve como «última» a la estable anterior —la comparación es igualdad de
   cadenas— y el enlace ofrece actualizar hacia atrás.
