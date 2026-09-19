@@ -228,6 +228,21 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   cubren los tests de `TraduccionOficialPisaTests`. Apareció con `LargeChemfuelTank` de
   Odyssey y afectaba a 50 operaciones de RML.
 
+- **El nombre de cada archivo de `Patches/` va codificado**, con el mismo `Utils.GenerateFileName`
+  que nombra los `Keyed` y los `DefInjected`. Antes salía del mod dueño del def —`Odyssey.xml`—,
+  que es legible pero no único: las carpetas de `Data/` son carpetas de un solo mod de RimWorld,
+  que las recorre deduplicando por ruta relativa, igual que cuando una carpeta de versión
+  sobrescribe a la común. De nueve `Patches/Odyssey.xml` cargaba uno y descartaba los otros ocho
+  sin decir nada: 30 archivos de 107, con 336 traducciones que no llegaban a la pantalla. El
+  síntoma es una traducción que está escrita, no falla nada y no se ve.
+
+  Ponerle el id del workshop adelante también los hacía únicos y se probó así, pero dejaba el
+  peor archivo en 242 de los 259 caracteres que RimWorld puede abrir instalado desde el Workshop.
+  Con el código queda en 174. **En `Data/` el largo de la ruta es el recurso escaso**, y por eso
+  gana sobre la legibilidad. El código no es aleatorio: sale del mod y del dueño, así que el
+  mismo mod escribe siempre el mismo archivo y una re-extracción sobrescribe en vez de duplicar.
+  `LoadFoldersBuilder -rutas` comprueba las dos cosas del lado de RML.
+
 «Actualizar todo RML» (`ActualizacionPorLotes.Correr`) hace lo mismo con cada mod de RML,
 uno detrás de otro, en segundo plano. Mientras corre, la ventana no se deja cerrar: hacerlo
 mataría el hilo a mitad de un `Escribir`, con el árbol del mod ya borrado y sin reescribir.

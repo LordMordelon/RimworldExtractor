@@ -959,6 +959,69 @@ namespace RimworldExtractorTest
         }
 
         /// <summary>
+        /// Dos carpetas de RML que traducen defs del mismo mod escribian el mismo nombre de
+        /// archivo, y las de Data/ son carpetas de un solo mod de RimWorld, que las recorre
+        /// deduplicando por ruta relativa: cargaba una y descartaba el resto sin decir nada.
+        /// De nueve "Patches/Odyssey.xml" quedaba uno, y con el las traducciones de los otros
+        /// ocho no llegaban nunca al juego. Por eso el nombre lleva el id del workshop adelante.
+        /// </summary>
+        [TestMethod]
+        public void DosModsQueParcheanElMismoDuenioNoEscribenElMismoArchivo()
+        {
+            var unMod = EscribirPatchDeOtroMod("Un Mod - 3609835606");
+            var otroMod = EscribirPatchDeOtroMod("Otro Mod - 3545374124");
+            try
+            {
+                var unNombre = Path.GetFileName(Directory.GetFiles(Path.Combine(unMod, "Patches")).Single());
+                var otroNombre = Path.GetFileName(Directory.GetFiles(Path.Combine(otroMod, "Patches")).Single());
+
+                Assert.AreEqual(Utils.GenerateFileName("Un Mod - 3609835606", "Odyssey") + ".xml", unNombre,
+                    "el nombre no sale del generador, asi que no se puede rehacer sin reextraer");
+                Assert.AreNotEqual(unNombre, otroNombre,
+                    "los dos archivos se llaman igual: el juego carga uno y descarta el otro");
+            }
+            finally
+            {
+                Directory.Delete(unMod, true);
+                Directory.Delete(otroMod, true);
+            }
+        }
+
+        /// <summary>
+        /// Escribe una carpeta de mod cuyo unico patch traduce un def de otro mod, que es el
+        /// caso en el que el nombre del archivo sale del dueño y no del mod que se traduce.
+        /// </summary>
+        private static string EscribirPatchDeOtroMod(string modName)
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var raiz = Path.Combine(Path.GetTempPath(), "rml-nombres-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(raiz);
+
+            // Un defName que no exista en ningun lado: asi no se lo lleva el reencaminado de lo
+            // que el juego ya traduce, que sacaria el patch de Patches/ y no habria que mirar.
+            var entrada = new TranslationEntry("Patches.ThingDef", "UnDefDeOdyssey.label",
+                "grav anchor", "ancla gravitacional", null, null);
+
+            var politica = Prefabs.Policy;
+            Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
+            Extractor.DuenioPorDefName["UnDefDeOdyssey"] = "Odyssey";
+            try
+            {
+                IO.ToLanguageXml(new List<TranslationEntry> { entrada }, false,
+                    XmlCommentStyle.TranslationTemplate, modName, raiz);
+            }
+            finally
+            {
+                Extractor.DuenioPorDefName.Remove("UnDefDeOdyssey");
+                Prefabs.Policy = politica;
+            }
+
+            return raiz;
+        }
+
+        /// <summary>
         /// Corre algo con una base de defs vacia, que es el estado en el que los xpath de RML no
         /// encuentran nada. Es justo el caso que se perdia.
         /// </summary>
