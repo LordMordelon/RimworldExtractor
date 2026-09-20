@@ -1,6 +1,6 @@
 ---
 name: Reporte de error
-about: Ayudanos a mejorar la herramienta
+about: Ayúdanos a mejorar la herramienta
 title: ''
 labels: ''
 assignees: ''
@@ -16,5 +16,5 @@ Qué pasó:
 Qué esperabas que pasara:
 
 
-Tip: adjuntá también el `log.txt` que queda en la misma carpeta que el extractor.
+Tip: adjunta también el `log.txt` que queda en la misma carpeta que el extractor.
 Con eso el problema se resuelve mucho más rápido.
