@@ -29,7 +29,7 @@ hay dos descargas que hacen exactamente lo mismo:
   menos y requiere el
   [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/es-es/download/dotnet/10.0).
 
-Si vas a traducir y no a programar, empezá por la
+Si vas a traducir y no a programar, empieza por la
 **[guía para traductores](https://github.com/LordMordelon/RML/blob/master/TRADUCIR.md)**.
 
 ## Qué cambia respecto del original

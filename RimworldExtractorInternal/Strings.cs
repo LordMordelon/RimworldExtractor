@@ -112,10 +112,10 @@
         #region IO
 
         public static string InvalidRequiredModsValue(string token)
-            => $"No se conoce el nombre del mod de \"{token}\" y esa condición no se puede escribir con su packageId, así que ese patch no se va a aplicar. Instalá el mod y volvé a extraer.";
+            => $"No se conoce el nombre del mod de \"{token}\" y esa condición no se puede escribir con su packageId, así que ese patch no se va a aplicar. Instala el mod y vuelve a extraer.";
 
         public static string PackageIdInsteadOfModName(string prefix)
-            => $"Hay un nombre de paquete ({prefix}) en lugar del nombre del mod. Corregilo al nombre del mod.";
+            => $"Hay un nombre de paquete ({prefix}) en lugar del nombre del mod. Corrígelo al nombre del mod.";
 
         public const string OfficialContentKeepsFileNames =
             "A diferencia de los mods, el contenido oficial se extrae conservando los nombres de archivo.";
@@ -133,7 +133,7 @@
             => $"Otras {count} apuntan a defs que sí están cargados, pero a un nodo interno que no existe: probablemente lo agregue otro mod.";
 
         public const string PatchesWithoutTargetHint =
-            "Marcá «Extracción completa» al elegir el mod para cargar el contenido oficial, o elegí esos mods como referencia con la tecla 'S', y volvé a extraer.";
+            "Marca «Extracción completa» al elegir el mod para cargar el contenido oficial, o elige esos mods como referencia con la tecla 'S', y vuelve a extraer.";
 
         public static string ModShipsOwnTranslation(string language, int files)
             => $"Este mod ya trae su propia traducción a {language} ({files} {(files == 1 ? "archivo" : "archivos")}). El extractor no la usa: extrae desde el inglés, así que igual te va a salir todo sin traducir.";
@@ -161,11 +161,11 @@
 
         public const string QuickUpdateNoRmlPath =
             "Extraer necesita saber dónde está el mod RML, porque el resultado se escribe ahí. "
-            + "Configuralo en Opciones, en «Carpeta del mod RML», o marcá «Extraer en carpeta» "
+            + "Configúralo en Opciones, en «Carpeta del mod RML», o marca «Extraer en carpeta» "
             + "al elegir el mod para que quede en una carpeta suelta.";
 
         public static string LoadFoldersYamlWritten(string folderName)
-            => $"Se generó el {LoadFoldersBuild.FileName} del mod. Para sumarlo a RML, copiá esta carpeta a Data/{folderName}";
+            => $"Se generó el {LoadFoldersBuild.FileName} del mod. Para sumarlo a RML, copia esta carpeta a Data/{folderName}";
 
         /// <summary>
         /// El mismo archivo, pero cuando ya se escribió dentro de RML. Antes salía el de arriba
@@ -178,13 +178,13 @@
             "Se rehicieron el LoadFolders.xml y el ModList.tsv de RML: el mod ya se puede probar en el juego.";
 
         public const string LoadFoldersBuilderNotFound =
-            "La carpeta de RML no tiene el código de LoadFoldersBuilder, así que el índice quedó viejo. Corré 01-regenerar-indice.cmd en tu clon de RML antes de probar en el juego.";
+            "La carpeta de RML no tiene el código de LoadFoldersBuilder, así que el índice quedó viejo. Ejecuta 01-regenerar-indice.cmd en tu clon de RML antes de probar en el juego.";
 
         public static string LoadFoldersBuilderFailed(int exitCode)
             => $"LoadFoldersBuilder terminó con el código {exitCode}, así que el LoadFolders.xml quedó viejo. La traducción se guardó igual.";
 
         public static string LoadFoldersBuilderTimedOut(int minutes)
-            => $"LoadFoldersBuilder no terminó en {minutes} minutos y se lo cerró, así que el LoadFolders.xml quedó viejo. La traducción se guardó igual: corré 01-regenerar-indice.cmd en tu clon de RML.";
+            => $"LoadFoldersBuilder no terminó en {minutes} minutos y se lo cerró, así que el LoadFolders.xml quedó viejo. La traducción se guardó igual: ejecuta 01-regenerar-indice.cmd en tu clon de RML.";
 
         public static string LoadFoldersBuilderError(string message)
             => $"No se pudo lanzar LoadFoldersBuilder, así que el LoadFolders.xml quedó viejo: {message}";
@@ -193,13 +193,13 @@
             => $"{folderName} se movió a Data/{authorFolder}/, con el resto de las traducciones de ese autor.";
 
         public static string AgrupadoDuplicado(string folderName, string authorFolder)
-            => $"{folderName} no se agrupó: en Data/{authorFolder}/ ya hay una carpeta con ese nombre. Revisalas y dejá una sola.";
+            => $"{folderName} no se agrupó: en Data/{authorFolder}/ ya hay una carpeta con ese nombre. Revísalas y deja una sola.";
 
         public static string AgrupadoFallo(string folderName, string message)
             => $"{folderName} no se pudo mover a la carpeta de su autor, y quedó donde estaba: {message}";
 
         public static string AutorSinAgrupar(string author, int count)
-            => $"{author} ya tiene {count} traducciones sueltas en Data/. Si le armás una carpeta Data/{Agrupador.Prefijo}{author}/, aunque sea vacía, se acomodan solas en la próxima traducción rápida.";
+            => $"{author} ya tiene {count} traducciones sueltas en Data/. Si le armas una carpeta Data/{Agrupador.Prefijo}{author}/, aunque sea vacía, se acomodan solas en la próxima traducción rápida.";
 
         public static string BatchModFailed(string folderName, string message)
             => $"{folderName}: falló la actualización y se siguió con el resto. {message}";
@@ -211,7 +211,7 @@
             => $"Pointer: no se encontró el Identifier original de {targetIdentifier}.";
 
         public static string FileInUse(string fileName)
-            => $"{fileName}: no se pudo guardar el archivo porque ya está en uso. Cerralo y volvé a intentar.";
+            => $"{fileName}: no se pudo guardar el archivo porque ya está en uso. Ciérralo y vuelve a intentar.";
 
         #endregion
 
@@ -250,10 +250,10 @@
         public const string DialogTitleDone = "Listo";
         public const string DialogTitleDoneQuestion = "¿Listo?";
         public const string BtnDone = "Listo";
-        public const string SelectRimworldExe = "Elegí RimWorldWin64.exe";
+        public const string SelectRimworldExe = "Elige RimWorldWin64.exe";
         public const string FilterRimworldExe = "Ejecutable de RimWorld|RimWorldWin64.exe";
         public const string SelectWorkshopPath =
-            @"Elegí la carpeta del workshop de RimWorld => Steam\steamapps\workshop\content\294100";
+            @"Elige la carpeta del workshop de RimWorld => Steam\steamapps\workshop\content\294100";
         public const string FilterRefModsList = "Archivo de lista de mods de referencia|*.refMods";
         public const string LoadRefModsFromFile = "Carga la lista de mods de referencia desde el archivo elegido.";
 
@@ -264,7 +264,7 @@
         public const string FormMainTitle = "Rimworld Extractor (extractor de traducciones)";
 
         public const string PrefabsDatOutdated =
-            "El archivo Prefabs.dat es de una versión anterior o está dañado. Borralo y volvé a intentar.\n";
+            "El archivo Prefabs.dat es de una versión anterior o está dañado. Bórralo y vuelve a intentar.\n";
 
         public static string ErrorMessagePrefix(string message) => $"Mensaje de error: {message}";
 
@@ -283,7 +283,7 @@
         public const string DoneOpenFolder = "¡Listo! ¿Abro la carpeta con los archivos extraídos?";
 
         public static string RmlPathWithoutData(string path)
-            => $"La carpeta de RML configurada no tiene una carpeta Data:\n{path}\n\nSi moviste el clon de lugar, actualizá la ruta en Opciones, en «Carpeta del mod RML».";
+            => $"La carpeta de RML configurada no tiene una carpeta Data:\n{path}\n\nSi moviste el clon de lugar, actualiza la ruta en Opciones, en «Carpeta del mod RML».";
 
         public const string UpdateAllRmlNoData =
             "La carpeta Data de RML no tiene ninguna traducción con su LoadFolders.Build.yaml, así que no hay nada que actualizar.";
@@ -291,7 +291,7 @@
         public static string ConfirmUpdateAllRml(int count)
             => $"Se van a volver a extraer los {count} mods de RML contra la versión instalada, conservando lo ya traducido. " +
                "Los que no estén instalados quedan como están.\n\n" +
-               "Puede tardar varios minutos. Antes de commitear, revisá el diff como indica el AGENTS.md de RML.\n\n¿Seguimos?";
+               "Puede tardar varios minutos. Antes de commitear, revisa el diff como indica el AGENTS.md de RML.\n\n¿Seguimos?";
 
         public static string BatchProgress(int current, int total, string folderName)
             => $"{current}/{total}: {folderName}";
@@ -315,10 +315,10 @@
             => $"{count} fallaron (el detalle está más arriba): {names}";
 
         public const string BatchDone =
-            "Terminó la actualización de RML. El resumen está en el log.\n\nAntes de commitear, revisá el diff como indica el AGENTS.md de RML.";
+            "Terminó la actualización de RML. El resumen está en el log.\n\nAntes de commitear, revisa el diff como indica el AGENTS.md de RML.";
 
         public const string BatchStillRunning =
-            "Todavía se está actualizando RML. Si la cerrás ahora, el mod que se está escribiendo puede quedar a medias: esperá a que termine.";
+            "Todavía se está actualizando RML. Si la cierras ahora, el mod que se está escribiendo puede quedar a medias: espera a que termine.";
 
         #endregion
 
@@ -335,7 +335,7 @@
         public const string DuplicatePolicySkip = "Omitir";
 
         public const string HelpExtractableTags =
-            "Define la lista de etiquetas de los nodos que hay que extraer. Se separan con '/' y sin espacios. Salvo que tengas un motivo puntual, dejalo como está.";
+            "Define la lista de etiquetas de los nodos que hay que extraer. Se separan con '/' y sin espacios. Salvo que tengas un motivo puntual, déjalo como está.";
 
         public const string HelpTranslationHandle =
             "Translation Handle es un método de extracción que, al extraer nodos de lista llamados 'li', usa el valor de una etiqueta determinada en lugar del número de índice. Ver https://ludeon.com/forums/index.php?topic=41942.0\n" +
@@ -359,7 +359,7 @@
         public const string SaveRefModsList = "Guarda la lista de los mods de referencia elegidos.";
         public const string MenuLoadRefModsList = "(selección) Cargar lista de mods de referencia";
 
-        public const string SelectModToExtract = "Elegí el mod que querés extraer";
+        public const string SelectModToExtract = "Elige el mod que quieres extraer";
 
         public static string ModDependenciesSuffix(string list) => $"\n[mods previos: {list}]";
 
@@ -391,7 +391,7 @@
 
         #region Program
 
-        public const string CompleteFolderSelection = "Completá la selección de carpetas.";
+        public const string CompleteFolderSelection = "Completa la selección de carpetas.";
 
         #endregion
 
@@ -420,7 +420,7 @@
             "¿La reinicio ahora? Se pierde lo que haya en el log.";
 
         public const string ThemeRestartManually =
-            "Cerrá la aplicación y volvé a abrirla para ver el tema nuevo.";
+            "Cierra la aplicación y vuelve a abrirla para ver el tema nuevo.";
         // Corta a proposito: comparte fila con la columna de botones, y el titulo
         // de la ventana ya dice de que se trata.
         public const string LabelMainDescription =
@@ -433,7 +433,7 @@
         public const string LabelWorkshopPath = "Ruta del workshop:";
         public const string LabelVersionPattern = "Expresión regular de la versión:";
         public const string LabelSettingsTip =
-            "Tip: pasá el mouse por encima de cada campo para ver una explicación detallada\r\n";
+            "Tip: pasa el mouse por encima de cada campo para ver una explicación detallada\r\n";
         public const string LabelRimworldVersion = "Versión base de RimWorld:";
         public const string BtnAutoDetect = "Detectar solo";
         public const string LabelOriginalLanguage = "Idioma original:";
@@ -447,7 +447,7 @@
         public const string GroupRimworldSettings = "Ajustes de RimWorld";
         public const string GroupBasicSettings = "Ajustes básicos de extracción y guardado";
         public const string LabelPathRml = "Carpeta del mod RML (donde se escribe la traducción):";
-        public const string SelectRmlPath = "Elegí la carpeta del mod RML, la que contiene Data";
+        public const string SelectRmlPath = "Elige la carpeta del mod RML, la que contiene Data";
 
         public const string LabelBaseRefListPath = "Ruta de la lista de mods de referencia por defecto:";
         public const string GroupAdvancedSettings = "Ajustes avanzados de extracción y guardado";
@@ -459,8 +459,8 @@
         // --- FormSelectMod ---
         public const string LabelSelectModControls =
             "Controles: 'clic izquierdo' = elegir como mod a extraer, 'clic derecho' = abrir el menú, 'A' = abrir en el explorador, 'S' = elegir como mod de referencia\r\n";
-        public const string LabelSelectExtractionMode = "Elegí el mod que querés extraer";
-        public const string LabelSelectFolder = "Elegí la carpeta que querés extraer";
+        public const string LabelSelectExtractionMode = "Elige el mod que quieres extraer";
+        public const string LabelSelectFolder = "Elige la carpeta que quieres extraer";
         public const string CheckBoxExtraerEnCarpeta = "Extraer en carpeta";
 
         /// <summary>
@@ -513,7 +513,7 @@
 
         // --- FormXmlister ---
         public const string LabelSelectLanguagesRoot =
-            "Elegí la carpeta raíz que contiene la carpeta Languages. (se puede elegir más de una)";
+            "Elige la carpeta raíz que contiene la carpeta Languages. (se puede elegir más de una)";
 
         #endregion
 
@@ -524,8 +524,8 @@
         // literal y no queda ninguna referencia que resolver en tiempo de ejecucion.
         public const string TitleStartupError = "No se pudo abrir el extractor";
 
-        public const string TitleInitialPathSelect = "Indicá las rutas de RimWorld, del workshop y del mod RML";
-        public const string TitleSelectMod = "Elegí el mod que querés extraer";
+        public const string TitleInitialPathSelect = "Indica las rutas de RimWorld, del workshop y del mod RML";
+        public const string TitleSelectMod = "Elige el mod que quieres extraer";
         public const string TitleSettings = "Ajustes";
         public const string TitleStopCallback = "Archivo duplicado";
 
@@ -565,7 +565,7 @@
         public const string DialogTitleUpdate = "Actualizar";
 
         public static string UpdateAsk(string current, string latest)
-            => $"Tenés la {current} y la última es la {latest}. ¿Querés actualizar ahora?";
+            => $"Tienes la {current} y la última es la {latest}. ¿Quieres actualizar ahora?";
 
         public const string UpdateAskRestart =
             "La aplicación se va a cerrar y volver a abrir sola. Lo que tengas configurado se conserva.";
