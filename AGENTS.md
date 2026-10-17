@@ -144,6 +144,12 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   `Invalid character in the given encoding` en el primer mod con un archivo en CP949 o
   parecido, que los hay. Lo atrapó `ElCacheNoCambiaLaExtraccion`.
 
+- **La carpeta de version no se elige por igualdad.** RimWorld carga la de la version
+  actual y, si el mod no la trae, la mas cercana hacia atras: un mod con solo `1.6/` se
+  juega en 1.7 con lo de `1.6/`. Es `ModLister.VersionQueCarga`, y todo lo que elige
+  carpetas pasa por `AutoSeleccionables`. Comparar con `== Prefabs.CurrentVersion`, como
+  hacia el original, dejaba sin carpeta de version a casi todos los mods el dia que salio
+  la 1.7. Lo cubren los tests de `VersionQueCargaTests`.
 - **Guiones en comentarios XML.** La secuencia `--` es ilegal dentro de un comentario
   XML. El original resolvía eso reemplazando *todos* los guiones por `ー` (katakana),
   lo que destruía el texto latino (`re-arm` → `reーarm`). Ahora se escapa únicamente la

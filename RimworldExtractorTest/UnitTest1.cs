@@ -1480,6 +1480,10 @@ namespace RimworldExtractorTest
             if (!Directory.Exists(odyssey))
                 Assert.Inconclusive(
                     $"No esta el DLC Odyssey en {odyssey}. Este test necesita RimWorld instalado.");
+            // La 1.7 salio sin las traducciones oficiales de los DLC: solo trae English/.
+            var tar = Path.Combine(odyssey, "Languages", Idioma + ".tar");
+            if (!File.Exists(tar))
+                Assert.Inconclusive($"El juego instalado no trae {tar}.");
 
             Assert.IsTrue(TraduccionOficial.Cubre("ThingDef", "LargeChemfuelTank.label"),
                 "no se leyeron las traducciones oficiales de Odyssey");
@@ -2231,7 +2235,7 @@ namespace RimworldExtractorTest
         /// <summary>Una extraccion completa de ese mod, como la que hace la corrida por lotes.</summary>
         private static List<TranslationEntry> Extraer(ModMetadata mod)
         {
-            var extraibles = ModLister.GetExtractableFolders(mod).Where(x => x.IsAutoSelectable()).ToList();
+            var extraibles = ModLister.GetExtractableFolders(mod).AutoSeleccionables();
             var referencias = ModLister.FindAllReferenceMods(mod)
                 .Concat(ModLister.FindModsNamedInPatches(extraibles))
                 .Distinct()
@@ -2276,6 +2280,73 @@ namespace RimworldExtractorTest
         {
             Assert.AreEqual(0, ModLister.ModsConPackageId(new[] { Ce }, "CerebrexNodeUnleashed.Sentinel").Count);
             Assert.AreEqual(0, ModLister.ModsConPackageId(new[] { Ce }, "CerebrexNodeUnleashed.Sentinel_steam").Count);
+        }
+    }
+
+    /// <summary>
+    /// Cubre que carpeta de version se extrae. RimWorld carga la de la version actual y, si el
+    /// mod no la trae, la mas cercana hacia atras. Al salir la 1.7 casi ningun mod tenia 1.7/:
+    /// pidiendo la version exacta, la extraccion no tomaba ninguna carpeta de version.
+    /// </summary>
+    [TestClass]
+    public class VersionQueCargaTests
+    {
+        private static List<string> AutoSeleccionadas(string version, params string[] carpetas)
+        {
+            var raiz = Path.Combine(Path.GetTempPath(), "mod-" + Guid.NewGuid().ToString("N"));
+            var anterior = Prefabs.CurrentVersion;
+            try
+            {
+                foreach (var carpeta in carpetas)
+                    Directory.CreateDirectory(Path.Combine(raiz, carpeta));
+                Prefabs.Init();
+                Prefabs.CurrentVersion = version;
+
+                var mod = new ModMetadata(raiz, "1", "Mod de prueba", "prueba.mod", false);
+                return ModLister.GetExtractableFolders(mod).AutoSeleccionables()
+                    .Select(x => x.FolderName.Replace('\\', '/'))
+                    .OrderBy(x => x)
+                    .ToList();
+            }
+            finally
+            {
+                Prefabs.CurrentVersion = anterior;
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        [TestMethod]
+        public void SinCarpetaDeLaVersionActualTomaLaAnteriorMasCercana()
+        {
+            var elegidas = AutoSeleccionadas("1.7", "Defs", "1.5/Defs", "1.6/Defs", "1.6/Patches");
+
+            CollectionAssert.AreEqual(new[] { "1.6/Defs", "1.6/Patches", "Defs" }, elegidas);
+        }
+
+        [TestMethod]
+        public void ConCarpetaDeLaVersionActualTomaEsa()
+        {
+            var elegidas = AutoSeleccionadas("1.7", "1.6/Defs", "1.7/Defs");
+
+            CollectionAssert.AreEqual(new[] { "1.7/Defs" }, elegidas);
+        }
+
+        /// <summary>El juego no carga una carpeta de una version que todavia no salio.</summary>
+        [TestMethod]
+        public void NoTomaUnaVersionPosterior()
+        {
+            var elegidas = AutoSeleccionadas("1.7", "Common/Defs", "1.8/Defs");
+
+            CollectionAssert.AreEqual(new[] { "Common/Defs" }, elegidas);
+        }
+
+        /// <summary>1.10 es posterior a 1.9: se comparan como versiones, no como texto.</summary>
+        [TestMethod]
+        public void ComparaComoVersionYNoComoTexto()
+        {
+            var elegidas = AutoSeleccionadas("1.10", "1.9/Defs", "1.10/Defs");
+
+            CollectionAssert.AreEqual(new[] { "1.10/Defs" }, elegidas);
         }
     }
 }

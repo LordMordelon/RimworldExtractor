@@ -82,7 +82,7 @@ namespace RimworldExtractorGUI
             SelectedMod = initSelectedMod;
             listBoxMods.SelectedItem = initSelectedMod;
             listBoxMods.TopIndex = listBoxMods.SelectedIndex;
-            var autoSelected = listBoxExtractableFolders.Items.OfType<ExtractableFolder>().Where(x => x.IsAutoSelectable()).ToList();
+            var autoSelected = listBoxExtractableFolders.Items.OfType<ExtractableFolder>().AutoSeleccionables();
 
             foreach (ExtractableFolder extractableFolder in autoSelected)
             {
@@ -136,7 +136,7 @@ namespace RimworldExtractorGUI
                 {
                     listBoxExtractableFolders.Items.Add(extractableFolder);
                 }
-                var autoSelected = listBoxExtractableFolders.Items.OfType<ExtractableFolder>().Where(x => x.IsAutoSelectable()).ToList();
+                var autoSelected = listBoxExtractableFolders.Items.OfType<ExtractableFolder>().AutoSeleccionables();
 
                 foreach (ExtractableFolder extractableFolder in autoSelected)
                 {

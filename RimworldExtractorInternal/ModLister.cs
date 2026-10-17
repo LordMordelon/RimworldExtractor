@@ -320,10 +320,32 @@ namespace RimworldExtractorInternal
             ModMetadataByPackageIdLookUp.Clear();
         }
 
-        public static bool IsAutoSelectable(this ExtractableFolder extractableFolder)
+        /// <summary>
+        /// Las carpetas que carga el juego: la raiz, Common y las de una sola version.
+        /// </summary>
+        public static List<ExtractableFolder> AutoSeleccionables(this IEnumerable<ExtractableFolder> carpetas)
         {
-            return extractableFolder.VersionInfo is "default" or "Common" ||
-                   extractableFolder.VersionInfo == Prefabs.CurrentVersion;
+            var lista = carpetas.ToList();
+            var version = VersionQueCarga(lista);
+            return lista.Where(x => x.VersionInfo is "default" or "Common" || x.VersionInfo == version).ToList();
+        }
+
+        /// <summary>
+        /// La version cuyas carpetas carga el juego: la actual si el mod la trae, y si no la
+        /// mas cercana hacia atras, como hace RimWorld. Pedir la exacta dejaba sin carpetas de
+        /// version a todo mod que todavia no saco la suya, que al cambiar de version son casi todos.
+        /// </summary>
+        public static string? VersionQueCarga(IEnumerable<ExtractableFolder> carpetas)
+        {
+            if (!Version.TryParse(Prefabs.CurrentVersion, out var actual))
+                return Prefabs.CurrentVersion;
+
+            return carpetas
+                .Select(x => (Texto: x.VersionInfo, Valor: Version.TryParse(x.VersionInfo, out var v) ? v : null))
+                .Where(x => x.Valor != null && x.Valor <= actual)
+                .OrderByDescending(x => x.Valor)
+                .Select(x => x.Texto)
+                .FirstOrDefault();
         }
 
         internal static bool TryGetModMetadataByPackageId(string? packageId, out ModMetadata? modMetadata)

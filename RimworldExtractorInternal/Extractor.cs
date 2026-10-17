@@ -84,17 +84,13 @@ namespace RimworldExtractorInternal
             {
                 foreach (var referenceMod in referenceMods)
                 {
-                    refDefs.AddRange(from extractableFolder in ModLister.GetExtractableFolders(referenceMod)
-                        where (extractableFolder.VersionInfo == "default" ||
-                               extractableFolder.VersionInfo == "Common" ||
-                               extractableFolder.VersionInfo == Prefabs.CurrentVersion)
-                              && Path.GetFileName(extractableFolder.FolderName) == "Defs"
+                    var cargadas = ModLister.GetExtractableFolders(referenceMod).AutoSeleccionables();
+                    refDefs.AddRange(from extractableFolder in cargadas
+                        where Path.GetFileName(extractableFolder.FolderName) == "Defs"
                         select new ReferenceDefsRoot(referenceMod.ModName.Trim(),
                             Path.Combine(referenceMod.RootDir, extractableFolder.FolderName),
                             referenceMod.IsOfficialContent));
-                    prePatches.AddRange(ModLister.GetExtractableFolders(referenceMod).Where(x =>
-                        (x.VersionInfo == "default" || x.VersionInfo == "Common" ||
-                         x.VersionInfo == Prefabs.CurrentVersion) && Path.GetFileName(x.FolderName) == "Patches"));
+                    prePatches.AddRange(cargadas.Where(x => Path.GetFileName(x.FolderName) == "Patches"));
                 }
             }
 
@@ -110,8 +106,9 @@ namespace RimworldExtractorInternal
             // El DistinctBy del final de este metodo se queda con la primera aparicion, asi que
             // alcanza con que las carpetas de la version vayan antes. Se toca el orden y no el
             // criterio de desempate, que seria un cambio mucho mas ancho.
+            var versionQueCarga = ModLister.VersionQueCarga(selectedFolders);
             selectedFolders = selectedFolders
-                .OrderBy(x => x.VersionInfo == Prefabs.CurrentVersion ? 0 : 1)
+                .OrderBy(x => x.VersionInfo == versionQueCarga ? 0 : 1)
                 .ToList();
 
             var defs = selectedFolders.Where(x => Path.GetFileName(x.FolderName) == "Defs").ToList();
