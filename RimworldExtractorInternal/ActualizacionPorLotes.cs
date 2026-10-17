@@ -117,7 +117,7 @@ namespace RimworldExtractorInternal
             if (!porPackageId.TryGetValue(packageId, out var mod))
                 return new Renglon(nombre, Motivo.NoInstalado, packageId, 0, 0, 0, new List<TranslationEntry>());
 
-            var extraibles = ModLister.GetExtractableFolders(mod).Where(x => x.IsAutoSelectable()).ToList();
+            var extraibles = ModLister.GetExtractableFolders(mod).AutoSeleccionables();
             if (extraibles.Count == 0)
                 return new Renglon(nombre, Motivo.NadaQueExtraer, string.Empty, 0, 0, 0, new List<TranslationEntry>());
 

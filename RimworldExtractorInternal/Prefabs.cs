@@ -188,7 +188,7 @@ namespace RimworldExtractorInternal
             PathRimworld = "D:\\SteamLibrary\\steamapps\\common\\RimWorld";
             PathWorkshop = "D:\\SteamLibrary\\steamapps\\workshop\\content\\294100";
             PathBaseRefList = "";
-            CurrentVersion = "1.6";
+            CurrentVersion = "1.7";
             PatternVersion = @"^[1]\.\d+";
             PatternVersionWithV = @"^v[1]\.\d+";
             OriginalLanguage = "English";

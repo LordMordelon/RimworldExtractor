@@ -95,7 +95,7 @@ namespace RimworldExtractorGUI
             if (analyzerEntry.Metadata != null)
             {
                 var autoSelectedExtractableFolders = ModLister.GetExtractableFolders(analyzerEntry.Metadata)
-                    .Where(x => x.IsAutoSelectable()).ToList();
+                    .AutoSeleccionables();
 
                 var autoSelectedReferenceMods = new List<ModMetadata>();
                 foreach (var modMetadata in ModLister.FindAllReferenceMods(analyzerEntry.Metadata))
