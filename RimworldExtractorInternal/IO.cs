@@ -504,7 +504,10 @@ namespace RimworldExtractorInternal
                 // Y las que ni asi aparecieron, parseando el archivo. Ver LeerPatchesLiteral.
                 var vistas = new HashSet<(string, string)>(
                     translations.Select(x => (SinPrefijoDePatches(x.ClassName), x.Node)));
-                foreach (var suelta in LeerPatchesLiteral(patchesDir))
+                // Por el mismo postproceso que la lectura normal: sin NodeReplacement, un xpath
+                // viejo con /Defs/CombatExtended.AmmoDef[...] se releia con esa clase y no
+                // cruzaba con la extraccion nueva, que sale como ThingDef.
+                foreach (var suelta in CompatManager.DoPostProcessing(LeerPatchesLiteral(patchesDir)))
                 {
                     if (vistas.Add((SinPrefijoDePatches(suelta.ClassName), suelta.Node)))
                         translations.Add(suelta);

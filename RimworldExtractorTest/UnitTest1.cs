@@ -984,6 +984,92 @@ namespace RimworldExtractorTest
         }
 
         /// <summary>
+        /// Un def declarado como ThingDef con Class="CombatExtended.AmmoDef" tiene que salir de
+        /// un patch como ThingDef, que es lo que dice NodeReplacement. Con la clase del atributo,
+        /// el xpath que se escribe es /Defs/CombatExtended.AmmoDef[...], que en el juego no
+        /// encuentra nada: la traduccion estaba escrita y no se aplicaba. Le pasaba a la granada
+        /// toxica y a las flechas Black Widow de Combat Extended.
+        /// </summary>
+        [TestMethod]
+        public void UnPatchSobreUnaClaseReemplazadaSaleConLaClaseDelElemento()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>/Defs/ThingDef[defName="GranadaToxica"]/label</xpath>
+                    <value>
+                      <!-- EN: tox grenades -->
+                      <label>granadas tóxicas</label>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+            try
+            {
+                var leidas = ConLaBase("""
+                    <Defs>
+                      <ThingDef Class="CombatExtended.AmmoDef">
+                        <defName>GranadaToxica</defName>
+                        <label>tox grenades</label>
+                      </ThingDef>
+                    </Defs>
+                    """, () => IO.FromLanguageXml(raiz));
+
+                var entrada = leidas.Single(x => x.Node == "GranadaToxica.label");
+                Assert.AreEqual("Patches.ThingDef", entrada.ClassName);
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Un Patches escrito antes del arreglo de arriba trae /Defs/CombatExtended.AmmoDef[...],
+        /// que no encuentra nada y se relee literal. Si la clase quedara como la del xpath, la
+        /// traduccion no cruzaria con la extraccion nueva, que ya sale como ThingDef: iria a
+        /// UNUSED y volveria a TODO. Asi pasaron seis de Combat Extended en la primera prueba.
+        /// </summary>
+        [TestMethod]
+        public void UnPatchViejoConLaClaseReemplazadaSeReleeComoElElemento()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>/Defs/CombatExtended.AmmoDef[defName="GranadaToxica"]/label</xpath>
+                    <value>
+                      <!-- EN: tox grenades -->
+                      <label>granadas tóxicas</label>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+            try
+            {
+                var leidas = ConLaBase("""
+                    <Defs>
+                      <ThingDef Class="CombatExtended.AmmoDef">
+                        <defName>GranadaToxica</defName>
+                        <label>tox grenades</label>
+                      </ThingDef>
+                    </Defs>
+                    """, () => IO.FromLanguageXml(raiz));
+
+                var entrada = leidas.Single(x => x.Node == "GranadaToxica.label");
+                Assert.AreEqual("Patches.ThingDef", entrada.ClassName);
+                Assert.AreEqual("granadas tóxicas", entrada.Translated);
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
         /// Cuando el mismo nodo esta traducido en DefInjected y en Patches, gana el de
         /// DefInjected: es el que el juego aplica ultimo y el que en la practica esta al dia.
         /// Antes ganaba el del Patches y daba vuelta traducciones correctas.
