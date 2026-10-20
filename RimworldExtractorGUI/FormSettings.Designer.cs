@@ -49,13 +49,8 @@
             buttonReset = new Button();
             label9 = new Label();
             label10 = new Label();
-            label11 = new Label();
-            comboBoxFileDuplication = new ComboBox();
             groupBox1 = new GroupBox();
             groupBox2 = new GroupBox();
-            textBoxBaseRefList = new TextBox();
-            buttonBaseRefList = new Button();
-            label14 = new Label();
             groupBox3 = new GroupBox();
             buttonHelp4 = new Button();
             buttonHelp3 = new Button();
@@ -67,7 +62,6 @@
             label12 = new Label();
             textBoxTranslationHandles = new TextBox();
             textBoxExtractableTags = new TextBox();
-            checkBox1 = new CheckBox();
             groupBox1.SuspendLayout();
             groupBox2.SuspendLayout();
             groupBox3.SuspendLayout();
@@ -260,24 +254,6 @@
             label10.Text = "Translation Handle 태그:";
             label10.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // label11
-            // 
-            label11.Location = new Point(249, 71);
-            label11.Name = "label11";
-            label11.Size = new Size(233, 23);
-            label11.TabIndex = 25;
-            label11.Text = "저장 중 파일 중복 발생 시:";
-            label11.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // comboBoxFileDuplication
-            // 
-            comboBoxFileDuplication.DropDownStyle = ComboBoxStyle.DropDownList;
-            comboBoxFileDuplication.FormattingEnabled = true;
-            comboBoxFileDuplication.Location = new Point(245, 97);
-            comboBoxFileDuplication.Name = "comboBoxFileDuplication";
-            comboBoxFileDuplication.Size = new Size(233, 23);
-            comboBoxFileDuplication.TabIndex = 26;
-            // 
             // groupBox1
             // 
             groupBox1.Controls.Add(label1);
@@ -300,14 +276,9 @@
             // 
             // groupBox2
             // 
-            groupBox2.Controls.Add(textBoxBaseRefList);
-            groupBox2.Controls.Add(buttonBaseRefList);
-            groupBox2.Controls.Add(label14);
             groupBox2.Controls.Add(label6);
             groupBox2.Controls.Add(comboBoxOriginalLanguage);
-            groupBox2.Controls.Add(comboBoxFileDuplication);
             groupBox2.Controls.Add(label7);
-            groupBox2.Controls.Add(label11);
             groupBox2.Controls.Add(comboBoxTranslationLanguage);
             groupBox2.Location = new Point(12, 206);
             groupBox2.Name = "groupBox2";
@@ -316,35 +287,8 @@
             groupBox2.TabStop = false;
             groupBox2.Text = "추출/저장 관련 기본 설정";
             // 
-            // textBoxBaseRefList
-            // 
-            textBoxBaseRefList.Location = new Point(6, 147);
-            textBoxBaseRefList.Name = "textBoxBaseRefList";
-            textBoxBaseRefList.Size = new Size(395, 23);
-            textBoxBaseRefList.TabIndex = 12;
-            // 
-            // buttonBaseRefList
-            // 
-            buttonBaseRefList.Location = new Point(407, 147);
-            buttonBaseRefList.Name = "buttonBaseRefList";
-            buttonBaseRefList.Size = new Size(75, 23);
-            buttonBaseRefList.TabIndex = 13;
-            buttonBaseRefList.Text = "...";
-            buttonBaseRefList.UseVisualStyleBackColor = true;
-            buttonBaseRefList.Click += buttonBaseRefList_Click;
-            // 
-            // label14
-            // 
-            label14.Location = new Point(6, 123);
-            label14.Name = "label14";
-            label14.Size = new Size(476, 23);
-            label14.TabIndex = 12;
-            label14.Text = "기본 참조 모드 리스트 경로 지정:";
-            label14.TextAlign = ContentAlignment.MiddleCenter;
-            // 
             // groupBox3
             // 
-            groupBox3.Controls.Add(checkBox1);
             groupBox3.Controls.Add(buttonHelp4);
             groupBox3.Controls.Add(buttonHelp3);
             groupBox3.Controls.Add(buttonHelp2);
@@ -462,16 +406,6 @@
             textBoxExtractableTags.Size = new Size(233, 92);
             textBoxExtractableTags.TabIndex = 25;
             // 
-            // checkBox1
-            // 
-            checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(6, 309);
-            checkBox1.Name = "checkBox1";
-            checkBox1.Size = new Size(143, 19);
-            checkBox1.TabIndex = 35;
-            checkBox1.Text = "(임시) TKey 추출 사용";
-            checkBox1.UseVisualStyleBackColor = true;
-            // 
             // FormSettings
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -520,8 +454,6 @@
         private Button buttonReset;
         private Label label9;
         private Label label10;
-        private Label label11;
-        private ComboBox comboBoxFileDuplication;
         private GroupBox groupBox1;
         private GroupBox groupBox2;
         private GroupBox groupBox3;
@@ -535,9 +467,5 @@
         private Button buttonHelp4;
         private Button buttonHelp3;
         private Button buttonHelp2;
-        private Label label14;
-        private TextBox textBoxBaseRefList;
-        private Button buttonBaseRefList;
-        private CheckBox checkBox1;
     }
 }

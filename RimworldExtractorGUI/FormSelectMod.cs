@@ -49,18 +49,6 @@ namespace RimworldExtractorGUI
             SelectedFolders = new List<ExtractableFolder>();
             ReferenceMods = new List<ModMetadata>();
 
-            if (!string.IsNullOrEmpty(Prefabs.PathBaseRefList))
-            {
-                var lines = File.ReadAllLines(Prefabs.PathBaseRefList);
-                foreach (var mod in _allModsCached)
-                {
-                    if (lines.Any(x => mod.Identifier == x))
-                    {
-                        ReferenceMods.Add(mod);
-                    }
-                }
-            }
-
             ResetListBoxMods();
         }
 

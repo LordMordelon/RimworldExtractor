@@ -13,10 +13,11 @@ namespace RimworldExtractorTest
     public class PrefabsTests
     {
         /// <summary>
-        /// Las dos lineas que quedaron reservadas —CommentOriginal y Method, que se fueron
-        /// con la planilla— se siguen escribiendo y se saltean al leer. Si alguien las
-        /// sacara, todo lo que viene despues se correria una posicion y un Prefabs.dat ya
-        /// escrito devolveria el tema en PathRml y la ruta en ningun lado.
+        /// Las lineas que quedaron reservadas —CommentOriginal y Method, que se fueron con la
+        /// planilla, y EnableTkey, PathBaseRefList y Policy, que se fueron de Opciones— se
+        /// siguen escribiendo y se saltean al leer. Si alguien las sacara, todo lo que viene
+        /// despues se correria una posicion y un Prefabs.dat ya escrito devolveria el tema en
+        /// PathRml y la ruta en ningun lado.
         /// </summary>
         [TestMethod]
         public void LasLineasReservadasMantienenLasPosiciones()
@@ -29,10 +30,18 @@ namespace RimworldExtractorTest
                 Prefabs.Theme = Prefabs.ColorTheme.Dark;
                 Prefabs.Save(archivo);
 
-                // Los valores que escribia la version con planilla, en esas mismas dos
-                // posiciones: un archivo de entonces tiene que seguir leyendose igual.
+                // Se escribe en cada una el valor fijo que una version anterior sabe leer.
                 var lineas = File.ReadAllLines(archivo);
+                Assert.AreEqual("False", lineas[2]);
+                Assert.AreEqual("", lineas[5]);
+                Assert.AreEqual("Overwrite", lineas[16]);
+
+                // Y se leen bien aunque traigan otro valor, como uno escrito por una version
+                // anterior que todavia las usaba.
+                lineas[2] = "True";
+                lineas[5] = @"C:\lista.refMods";
                 lineas[11] = "True";
+                lineas[16] = "Stop";
                 lineas[17] = "Excel";
                 File.WriteAllLines(archivo, lineas);
 
@@ -1410,8 +1419,6 @@ namespace RimworldExtractorTest
             var entrada = new TranslationEntry("Patches.ThingDef", "UnDefDeOdyssey.label",
                 "grav anchor", "ancla gravitacional", null, null);
 
-            var politica = Prefabs.Policy;
-            Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
             Extractor.DuenioPorDefName["UnDefDeOdyssey"] = "Odyssey";
             try
             {
@@ -1421,7 +1428,6 @@ namespace RimworldExtractorTest
             finally
             {
                 Extractor.DuenioPorDefName.Remove("UnDefDeOdyssey");
-                Prefabs.Policy = politica;
             }
 
             return raiz;
@@ -1640,16 +1646,7 @@ namespace RimworldExtractorTest
             var raiz = Path.Combine(Path.GetTempPath(), "mayrequire-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(raiz);
 
-            var politica = Prefabs.Policy;
-            Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
-            try
-            {
-                IO.ToLanguageXml(entradas.ToList(), false, XmlCommentStyle.TranslationTemplate, "UnMod", raiz);
-            }
-            finally
-            {
-                Prefabs.Policy = politica;
-            }
+            IO.ToLanguageXml(entradas.ToList(), false, XmlCommentStyle.TranslationTemplate, "UnMod", raiz);
 
             return raiz;
         }
@@ -1733,17 +1730,8 @@ namespace RimworldExtractorTest
             Directory.CreateDirectory(raiz);
             try
             {
-                var politica = Prefabs.Policy;
-                Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
-                try
-                {
-                    IO.ToLanguageXml(entradas.ToList(), false, XmlCommentStyle.TranslationTemplate,
-                        "UnMod", raiz);
-                }
-                finally
-                {
-                    Prefabs.Policy = politica;
-                }
+                IO.ToLanguageXml(entradas.ToList(), false, XmlCommentStyle.TranslationTemplate,
+                    "UnMod", raiz);
 
                 return string.Join("\n", Directory
                     .GetFiles(raiz, "*.xml", SearchOption.AllDirectories)
@@ -1957,17 +1945,8 @@ namespace RimworldExtractorTest
             Directory.CreateDirectory(raiz);
             try
             {
-                var politica = Prefabs.Policy;
-                Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
-                try
-                {
-                    IO.ToLanguageXml(entradas.ToList(), false, XmlCommentStyle.TranslationTemplate,
-                        "UnMod", raiz);
-                }
-                finally
-                {
-                    Prefabs.Policy = politica;
-                }
+                IO.ToLanguageXml(entradas.ToList(), false, XmlCommentStyle.TranslationTemplate,
+                    "UnMod", raiz);
 
                 return (Juntar(Path.Combine(raiz, "Languages", Utils.CarpetaDelIdiomaDestino(), "DefInjected")),
                         Juntar(Path.Combine(raiz, "Patches")));

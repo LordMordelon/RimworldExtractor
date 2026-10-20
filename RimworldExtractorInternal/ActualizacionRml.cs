@@ -52,20 +52,8 @@ namespace RimworldExtractorInternal
             BorrarArbolAnterior(destino);
             Directory.CreateDirectory(destino);
 
-            // Se fuerza la sobrescritura mientras dura el guardado: con la politica en
-            // "conservar el original" no se escribiria nada y la actualizacion no haria
-            // absolutamente nada, sin que se note.
-            var politica = Prefabs.Policy;
-            Prefabs.Policy = Prefabs.DuplicatesPolicy.Overwrite;
-            try
-            {
-                IO.ToLanguageXml(resultado, false, XmlCommentStyle.TranslationTemplate,
-                    mod.Identifier.StripInvaildChars(), destino);
-            }
-            finally
-            {
-                Prefabs.Policy = politica;
-            }
+            IO.ToLanguageXml(resultado, false, XmlCommentStyle.TranslationTemplate,
+                mod.Identifier.StripInvaildChars(), destino);
 
             IO.WriteUnused(sinUso, destino);
             LoadFoldersBuild.Write(mod, destino);

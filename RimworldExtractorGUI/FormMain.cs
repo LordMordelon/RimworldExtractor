@@ -63,8 +63,6 @@ namespace RimworldExtractorGUI
             };
             _salidaDelLog = new RichTextBoxWriter(richTextBoxLog);
             Log.Out = _salidaDelLog;
-            Prefabs.StopCallbackXml = FormStopCallback.StopCallbackXml;
-            Prefabs.StopCallbackTxt = FormStopCallback.StopCallbackTxt;
             try
             {
                 Prefabs.Load();

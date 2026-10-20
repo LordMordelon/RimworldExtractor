@@ -1,7 +1,6 @@
 ﻿using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
 
 namespace RimworldExtractorInternal
 {
@@ -13,12 +12,8 @@ namespace RimworldExtractorInternal
         /// </summary>
         private static readonly string Version = "10";
 
-        // Funcion provisoria TODO: REMOVE THIS AFTER
-        public static bool EnableTkey = false;
-
         public static string PathRimworld = string.Empty;
         public static string PathWorkshop = string.Empty;
-        public static string PathBaseRefList = "";
         public static string CurrentVersion = string.Empty;
         public static string PatternVersion = string.Empty;
         public static string OriginalLanguage = string.Empty;
@@ -184,21 +179,12 @@ namespace RimworldExtractorInternal
         /// </summary>
         public static List<string> TranslationHandles = new();
 
-        public static DuplicatesPolicy Policy = default;
-
-        public static Action<XmlDocument, string>? StopCallbackXml = null; 
-        public static Action<IEnumerable<string>, string>? StopCallbackTxt = null;
-
-
         public const string ExtensionKeyExtraCommentTranslated = "ExtraCommentTranslated";
 
         public static void Init()
         {
-            // Funcion provisoria TODO: REMOVE THIS AFTER
-            EnableTkey = false;
             PathRimworld = "D:\\SteamLibrary\\steamapps\\common\\RimWorld";
             PathWorkshop = "D:\\SteamLibrary\\steamapps\\workshop\\content\\294100";
-            PathBaseRefList = "";
             CurrentVersion = "1.7";
             PatternVersion = @"^[1]\.\d+";
             OriginalLanguage = "English";
@@ -228,7 +214,6 @@ namespace RimworldExtractorInternal
                 "*verbClass", "*compClass", 
                 // "hediff"
             };
-            Policy = DuplicatesPolicy.Overwrite;
             Theme = ColorTheme.System;
             PathRml = string.Empty;
         }
@@ -253,10 +238,18 @@ namespace RimworldExtractorInternal
             {
                 "DO NOT EDIT THIS MANUALLY",
                 Version,
-                EnableTkey.ToString(), // TODO: REMOVE THIS AFTER
+
+                // Reservada: aca iba EnableTkey, que nombraba las claves de un nodo con TKey
+                // como "def.TKey.slateRef". Estaba apagada y prenderla cambiaba el nombre de
+                // claves ya traducidas en RML, asi que se fue apagada. Se escribe el valor que
+                // tenia, por lo mismo que CommentOriginal.
+                "False",
                 PathRimworld,
                 PathWorkshop,
-                PathBaseRefList,
+
+                // Reservada: aca iba PathBaseRefList, la lista de mods que la seleccion marcaba
+                // como referencia al abrirse. Desde la 1.0 las referencias se agregan solas.
+                "",
                 CurrentVersion,
                 PatternVersion,
                 // Reservada: aca iba PatternVersionWithV, que nunca se uso. Por lo mismo que
@@ -275,7 +268,11 @@ namespace RimworldExtractorInternal
                 string.Join('/', FullListTranslationTags),
                 string.Join('/', NodeReplacement.Select(x => $"{x.Key}|{x.Value}")),
                 string.Join('/', TranslationHandles),
-                Policy.ToString(),
+
+                // Reservada: aca iba Policy, que decidia que hacer con un archivo que ya
+                // existia al extraer en carpeta. Ahora se sobrescribe siempre, que es el valor
+                // que se sigue escribiendo.
+                "Overwrite",
 
                 // Reservada, por lo mismo: aca iba Method, cuando habia cuatro formatos
                 // de extraccion a elegir.
@@ -303,10 +300,10 @@ namespace RimworldExtractorInternal
                 throw new SerializationException($"wrong version of {fileName}");
             }
 
-            EnableTkey = bool.Parse(lines[idx++]); // TODO: REMOVE THIS AFTER
+            idx++; // Reservada: EnableTkey. Ver el comentario de Save().
             PathRimworld = lines[idx++];
             PathWorkshop = lines[idx++];
-            PathBaseRefList = lines[idx++];
+            idx++; // Reservada: PathBaseRefList. Ver el comentario de Save().
             CurrentVersion = lines[idx++];
             PatternVersion = lines[idx++];
             idx++; // Reservada: PatternVersionWithV. Ver el comentario de Save().
@@ -322,7 +319,7 @@ namespace RimworldExtractorInternal
                 return new KeyValuePair<string, string>(splited[0], splited[1]);
             }));
             TranslationHandles = new(lines[idx++].Split('/'));
-            Policy = Enum.Parse<DuplicatesPolicy>(lines[idx++]);
+            idx++; // Reservada: Policy. Ver el comentario de Save().
             idx++; // Reservada: Method. Ver el comentario de Save().
 
             // Un archivo guardado por una version anterior no llega hasta aca: se queda
@@ -352,13 +349,6 @@ namespace RimworldExtractorInternal
             }
 
             return CurrentVersion;
-        }
-
-        public enum DuplicatesPolicy
-        {
-            Stop = 0,
-            Overwrite,
-            KeepOriginal
         }
 
         /// <summary>

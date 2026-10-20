@@ -147,11 +147,6 @@ namespace RimworldExtractorInternal
                         var nodeName = $"{defName}.{curPath}";
                         if (curNormalizedPath != null)
                             nodeName = curPath;
-                        else if (Prefabs.EnableTkey && curNode.Attributes?["TKey"]?.Value != null)
-                        {
-                            var tKey = curNode.Attributes["TKey"]!.Value;
-                            nodeName = $"{defName}.{tKey}.slateRef";
-                        }
                         var translation = new TranslationEntry(className, nodeName, curNode.InnerText, null, requiredMods, fileName);
                         yield return translation;
                     }

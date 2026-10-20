@@ -275,7 +275,7 @@ namespace RimworldExtractorInternal
                 //
                 // No es aleatorio: sale del mod y del dueño, asi que el mismo mod escribe
                 // siempre el mismo archivo y una re-extraccion sobrescribe en vez de duplicar.
-                docPatch.SaveSafely(Path.Combine(outputPath,
+                docPatch.GuardarConDeclaracion(Path.Combine(outputPath,
                     Utils.GenerateFileName(ModName, grupoDePatches.Key) + ".xml"));
             }
 
@@ -326,7 +326,7 @@ namespace RimworldExtractorInternal
                         : Path.Combine(defInjectedDir, className, Utils.GenerateFileName(ModName, key) + ".xml");
 
                     doc.DoFullListTranslation();
-                    doc.SaveSafely(outputPath);
+                    doc.GuardarConDeclaracion(outputPath);
                 }
             }
 
@@ -376,7 +376,7 @@ namespace RimworldExtractorInternal
                         Utils.GenerateFileName(ModName, className, nodeParent) + ".xml");
 
                     doc.DoFullListTranslation();
-                    doc.SaveSafely(outputPath);
+                    doc.GuardarConDeclaracion(outputPath);
                 }
             }
 
@@ -406,7 +406,7 @@ namespace RimworldExtractorInternal
                 foreach (var (key, doc) in xmls)
                 {
                     var outputPath = isOfficial ? Path.Combine(keyedDir, $"{key}.xml"): Path.Combine(keyedDir, Utils.GenerateFileName(ModName, "Keyed") + ".xml");
-                    doc.SaveSafely(outputPath);
+                    doc.GuardarConDeclaracion(outputPath);
                 }
             }
 
@@ -431,7 +431,7 @@ namespace RimworldExtractorInternal
                     var key = className[..className.LastIndexOf('.')].Replace('.', '\\');
                     var outputPath = PathCombineCreateDir(stringDir, key);
                     var fileNameTxt = Path.Combine(outputPath, $"{className.Split('.').Last()}") + ".txt";
-                    lines.SaveSafely(fileNameTxt);
+                    File.WriteAllLines(fileNameTxt, lines);
                 }
             }
         }
@@ -951,59 +951,16 @@ namespace RimworldExtractorInternal
             return apartadas;
         }
 
-        private static void SaveSafely(this XmlDocument doc, string path)
+        /// <summary>
+        /// Un archivo que ya existe se sobrescribe siempre. Hubo una opcion para conservarlo o
+        /// preguntar archivo por archivo, que solo contaba al extraer en una carpeta con
+        /// archivos: escribir sobre RML la forzaba a sobrescribir, porque con "conservar" la
+        /// actualizacion no escribia nada y no se notaba.
+        /// </summary>
+        private static void GuardarConDeclaracion(this XmlDocument doc, string path)
         {
             doc.InsertBefore(doc.CreateXmlDeclaration("1.0", "utf-8", null), doc.DocumentElement);
-            if (!File.Exists(path))
-            {
-                doc.Save(path);
-                return;
-            }
-
-            switch (Prefabs.Policy)
-            {
-                case Prefabs.DuplicatesPolicy.Stop:
-                    var stopCallback = Prefabs.StopCallbackXml;
-                    if (stopCallback != null)
-                        stopCallback(doc, path);
-                    else
-                        throw new ArgumentNullException(nameof(stopCallback));
-                    return;
-                case Prefabs.DuplicatesPolicy.Overwrite:
-                    doc.Save(path);
-                    return;
-                case Prefabs.DuplicatesPolicy.KeepOriginal:
-                    return;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        private static void SaveSafely(this IEnumerable<string> lines, string path)
-        {
-            if (!File.Exists(path))
-            {
-                File.WriteAllLines(path, lines);
-                return;
-            }
-
-            switch (Prefabs.Policy)
-            {
-                case Prefabs.DuplicatesPolicy.Stop:
-                    var stopCallback = Prefabs.StopCallbackTxt;
-                    if (stopCallback != null)
-                        stopCallback(lines, path);
-                    else
-                        throw new ArgumentNullException(nameof(stopCallback));
-                    return;
-                case Prefabs.DuplicatesPolicy.Overwrite:
-                    File.WriteAllLines(path, lines);
-                    return;
-                case Prefabs.DuplicatesPolicy.KeepOriginal:
-                    return;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            doc.Save(path);
         }
         private static string PathCombineCreateDir(params string[] paths)
         {

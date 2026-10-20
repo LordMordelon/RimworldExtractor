@@ -345,10 +345,6 @@
         /// <summary>Prefijo del comentario que conserva el texto original.</summary>
         public const string OriginalCommentPrefix = "EN:";
 
-        public const string DuplicatePolicyAsk = "Frenar y preguntar";
-        public const string DuplicatePolicyOverwrite = "Sobrescribir";
-        public const string DuplicatePolicySkip = "Omitir";
-
         public const string HelpExtractableTags =
             "Define la lista de etiquetas de los nodos que hay que extraer. Se separan con '/' y sin espacios. Salvo que tengas un motivo puntual, déjalo como está.";
 
@@ -458,18 +454,14 @@
         public const string BtnReset = "Restablecer\r\nvalores por defecto";
         public const string LabelExtractableTags = "Etiquetas extraíbles:";
         public const string LabelTranslationHandleTags = "Etiquetas de Translation Handle:";
-        public const string LabelDuplicatePolicy = "Si al guardar hay archivos duplicados:";
         public const string GroupRimworldSettings = "Ajustes de RimWorld";
-        public const string GroupBasicSettings = "Ajustes básicos de extracción y guardado";
+        public const string GroupBasicSettings = "Idiomas";
         public const string LabelPathRml = "Carpeta del mod RML (donde se escribe la traducción):";
         public const string SelectRmlPath = "Elige la carpeta del mod RML, la que contiene Data";
-
-        public const string LabelBaseRefListPath = "Ruta de la lista de mods de referencia por defecto:";
         public const string GroupAdvancedSettings = "Ajustes avanzados de extracción y guardado";
         public const string LabelFullListTags = "Etiquetas de Full-list Translation:";
         // Corta a proposito: comparte columna con un boton de ayuda que ya la explica.
         public const string LabelNodeReplacement = "Reemplazo de nodos:";
-        public const string CheckBoxTkey = "(provisorio) Usar extracción de TKey";
 
         // --- FormSelectMod ---
         public const string LabelSelectModControls =
@@ -521,11 +513,6 @@
         public const string LabelWorkshopPathShort = "Ruta del workshop";
         public const string LabelPathRmlShort = "Carpeta del mod RML";
 
-        // --- FormStopCallback ---
-        public const string LabelDuplicateFileFound = "Se encontró un archivo duplicado al guardar.";
-        public const string BtnOverwrite = "Sobrescribir";
-        public const string BtnSkip = "Omitir";
-
         #endregion
 
         #region Titulos de ventana
@@ -538,7 +525,6 @@
         public const string TitleInitialPathSelect = "Indica las rutas de RimWorld, del workshop y del mod RML";
         public const string TitleSelectMod = "Elige el mod que quieres extraer";
         public const string TitleSettings = "Ajustes";
-        public const string TitleStopCallback = "Archivo duplicado";
 
         #endregion
 

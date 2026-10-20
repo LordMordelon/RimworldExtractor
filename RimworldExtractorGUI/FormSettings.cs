@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using System.Reflection;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using RimworldExtractorInternal;
 
@@ -49,18 +48,11 @@ namespace RimworldExtractorGUI
                 "SpanishLatin (Español(Latinoamérica))", "Swedish (Svenska)", "Turkish (Türkçe)",
                 "Ukrainian (Українська)"
             });
-            comboBoxFileDuplication.Items.AddRange(new object[]
-            {
-                Strings.DuplicatePolicyAsk, Strings.DuplicatePolicyOverwrite, Strings.DuplicatePolicySkip
-            });
-
             FromPrefabs();
         }
 
         public void FromPrefabs()
         {
-            checkBox1.Checked = Prefabs.EnableTkey; // TODO: REMOVE THIS AFTER
-
             textBoxPathRimworld.Text = Prefabs.PathRimworld;
             textBoxPathWorkshop.Text = Prefabs.PathWorkshop;
             textBoxVersionPattern.Text = Prefabs.PatternVersion;
@@ -68,8 +60,6 @@ namespace RimworldExtractorGUI
 
             comboBoxOriginalLanguage.SelectedItem = Prefabs.OriginalLanguage;
             comboBoxTranslationLanguage.SelectedItem = Prefabs.TranslationLanguage;
-            comboBoxFileDuplication.SelectedIndex = (int)Prefabs.Policy;
-            textBoxBaseRefList.Text = Prefabs.PathBaseRefList;
             _textBoxPathRml.Text = Prefabs.PathRml;
 
             textBoxExtractableTags.Text = string.Join('/', Prefabs.ExtractableTags);
@@ -80,8 +70,6 @@ namespace RimworldExtractorGUI
 
         public void ToPrefabs()
         {
-            Prefabs.EnableTkey = checkBox1.Checked; // TODO: REMOVE THIS AFTER
-
             Prefabs.PathRimworld = textBoxPathRimworld.Text;
             Prefabs.PathWorkshop = textBoxPathWorkshop.Text;
             Prefabs.PatternVersion = textBoxVersionPattern.Text;
@@ -91,8 +79,6 @@ namespace RimworldExtractorGUI
             // vacio en Prefabs.dat: se conserva el que ya estaba.
             Prefabs.OriginalLanguage = comboBoxOriginalLanguage.SelectedItem as string ?? Prefabs.OriginalLanguage;
             Prefabs.TranslationLanguage = comboBoxTranslationLanguage.SelectedItem as string ?? Prefabs.TranslationLanguage;
-            Prefabs.Policy = Enum.GetValues<Prefabs.DuplicatesPolicy>()[comboBoxFileDuplication.SelectedIndex];
-            Prefabs.PathBaseRefList = textBoxBaseRefList.Text;
             Prefabs.PathRml = _textBoxPathRml.Text;
 
             Prefabs.ExtractableTags = new HashSet<string>(RemoveSep(textBoxExtractableTags.Text).Split('/'));
@@ -177,20 +163,6 @@ namespace RimworldExtractorGUI
             }
         }
 
-        private void buttonBaseRefList_Click(object sender, EventArgs e)
-        {
-            var openFileDialog = new OpenFileDialog();
-            openFileDialog.Title = Strings.LoadRefModsFromFile;
-            openFileDialog.InitialDirectory = Assembly.GetExecutingAssembly().Location;
-            openFileDialog.Filter = Strings.FilterRefModsList;
-            openFileDialog.DefaultExt = "refMods";
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                textBoxBaseRefList.Text = openFileDialog.FileName;
-            }
-        }
-
-
         private static string RemoveSep(string s) => s.Replace(" ", "").Replace("\r", "").Replace("\n", "");
     
         /// <summary>
@@ -214,8 +186,7 @@ namespace RimworldExtractorGUI
                     new Rejilla.Celda(label10, textBoxTranslationHandles, buttonHelp2)),
                 new Rejilla.Fila(
                     new Rejilla.Celda(label12, textBoxNodeReplacement, buttonHelp3),
-                    new Rejilla.Celda(label13, textBoxFullListTranslation, buttonHelp4),
-                    checkBox1));
+                    new Rejilla.Celda(label13, textBoxFullListTranslation, buttonHelp4)));
 
             // La carpeta de RML va con las otras dos rutas: es una ruta mas, y desde que
             // escribir en RML es el modo normal de extraccion dejo de ser el ajuste de un
@@ -253,35 +224,39 @@ namespace RimworldExtractorGUI
             buttonReset.Text = Strings.BtnReset;
             label9.Text = Strings.LabelExtractableTags;
             label10.Text = Strings.LabelTranslationHandleTags;
-            label11.Text = Strings.LabelDuplicatePolicy;
             label12.Text = Strings.LabelNodeReplacement;
             label13.Text = Strings.LabelFullListTags;
-            label14.Text = Strings.LabelBaseRefListPath;
             groupBox1.Text = Strings.GroupRimworldSettings;
             groupBox2.Text = Strings.GroupBasicSettings;
             groupBox3.Text = Strings.GroupAdvancedSettings;
-            checkBox1.Text = Strings.CheckBoxTkey;
 
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
-            AutoAjuste.Ajustar(label1, label2, label3, label5, label6, label7, label9, label10, label11, label12, label13, label14,
-                buttonAutoDetect, buttonSaveAndClose, buttonCancel, buttonReset, checkBox1);
+            AutoAjuste.Ajustar(label1, label2, label3, label5, label6, label7, label9, label10, label12, label13,
+                buttonAutoDetect, buttonSaveAndClose, buttonCancel, buttonReset);
 
             // Los tres botones del pie estan uno al lado del otro: al ensancharse
             // para que entre su texto se pisaban entre si.
             Rejilla.FilaPegadaALaDerecha(this, buttonSaveAndClose, buttonReset, buttonCancel);
 
-            // La columna izquierda se parte en dos secciones que se reparten el alto.
-            Rejilla.EnDosFilas(this, groupBox1, groupBox2);
+            // La columna izquierda lleva cada seccion con el alto de lo que tiene: las rutas
+            // arriba, con la fila de RML que no entraba en su alto original, y los idiomas
+            // abajo, que quedaron solos. Antes se repartian el alto en dos mitades, pero los
+            // idiomas ocupaban la suya con dos opciones que ya no estan y quedaba un hueco.
+            // Los margenes se toman del diseño original, antes de mover nada.
+            var margenInterno = groupBox1.Height - textBoxVersionPattern.Bottom;
+            var separacion = groupBox2.Top - groupBox1.Bottom;
+            var margenInferior = ClientSize.Height - groupBox2.Bottom;
+            var ancho = Math.Max(groupBox1.Width, groupBox2.Width);
+            groupBox1.Size = new Size(ancho, _buttonPathRml.Bottom + margenInterno);
+            groupBox2.SetBounds(groupBox2.Left, groupBox1.Bottom + separacion,
+                ancho, comboBoxTranslationLanguage.Bottom + margenInterno);
 
-            // La fila de RML no entra en el alto original de su seccion —probado sacando
-            // esto: el rotulo queda cortado por el borde del grupo y el campo no se ve—,
-            // asi que la ventana crece. Va despues de repartir y no antes: EnDosFilas se
-            // queda con los margenes que encuentra al llamarla, asi que crecer primero solo
-            // agranda el margen de abajo y la seccion se queda igual. Y va el doble de lo
-            // que hace falta, porque el alto se parte en dos mitades.
-            var altoDeLaFila = _textBoxPathRml.Bottom - textBoxVersionPattern.Bottom + 6;
-            ClientSize = new Size(ClientSize.Width, ClientSize.Height + altoDeLaFila * 2);
+            // La ventana se acomoda a esa columna: la derecha tiene cuadros de texto con
+            // barra de desplazamiento, que se estiran o se encogen con ella. AutoAjuste ya
+            // fijo un minimo, y con el no se podria achicar.
+            MinimumSize = Size.Empty;
+            ClientSize = new Size(ClientSize.Width, groupBox2.Bottom + margenInferior);
             MinimumSize = Size;
 
             // El contenido de cada seccion se estira para cubrir su ancho.
@@ -297,11 +272,7 @@ namespace RimworldExtractorGUI
 
             Rejilla.EstirarAlAncho(groupBox2,
                 Rejilla.Linea(label6, label7),
-                Rejilla.Linea(comboBoxOriginalLanguage, comboBoxTranslationLanguage),
-                Rejilla.Linea(label11),
-                Rejilla.Linea(comboBoxFileDuplication),
-                Rejilla.Linea(label14),
-                Rejilla.Linea(new Rejilla.Campo(textBoxBaseRefList, buttonBaseRefList)));
+                Rejilla.Linea(comboBoxOriginalLanguage, comboBoxTranslationLanguage));
         }
     }
 }
