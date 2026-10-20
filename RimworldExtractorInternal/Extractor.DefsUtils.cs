@@ -35,12 +35,33 @@ namespace RimworldExtractorInternal
 
             foreach (var referenceDefsRoot in referenceDefsRoots)
             {
-                foreach (var filePath in IO.DescendantFiles(referenceDefsRoot.Path)
-                             .Where(x => x.ToLower().EndsWith(".xml")))
+                var rutas = IO.DescendantFiles(referenceDefsRoot.Path)
+                    .Where(x => x.ToLower().EndsWith(".xml"))
+                    .ToList();
+
+                // Leer y parsear es lo unico que se reparte entre hilos. La insercion en
+                // CombinedDefs sigue siendo secuencial y en el mismo orden de siempre, porque
+                // el orden decide quien gana en ParentNodeLookUp y en el DistinctBy final:
+                // repartirla cambiaria el resultado de la extraccion.
+                var documentos = new XmlDocument[rutas.Count];
+                try
                 {
+                    Parallel.For(0, rutas.Count, i => documentos[i] = CacheDeDefs.Leer(rutas[i]));
+                }
+                catch (AggregateException ex) when (ex.InnerException != null)
+                {
+                    // Parallel envuelve lo que salga, y aca arriba se espera la excepcion
+                    // original: con la envoltura, el resumen del lote diria "One or more
+                    // errors occurred" en vez de que archivo fallo.
+                    throw ex.InnerException;
+                }
+
+                for (var indice = 0; indice < rutas.Count; indice++)
+                {
+                    var filePath = rutas[indice];
                     try
                     {
-                        var childDoc = IO.ReadXml(filePath);
+                        var childDoc = documentos[indice];
 
                         foreach (XmlNode node in childDoc.DocumentElement!.ChildNodes)
                         {
@@ -107,8 +128,7 @@ namespace RimworldExtractorInternal
             }
             else
             {
-                q.Enqueue((rootNode, curNormalizedPath + "." + (rootNode.IsListNode()
-                    ? GetIdxOfListNode(rootNode).ToString() : rootNode.Name)));
+                q.Enqueue((rootNode, curNormalizedPath + "." + NombreEnLaRuta(rootNode)));
             }
 
             while (q.Count > 0)
@@ -139,22 +159,24 @@ namespace RimworldExtractorInternal
                 }
 
                 foreach (XmlNode childNode in curNode.ChildNodes)
-                {
-                    string path;
-                    if (childNode.IsListNode())
-                    {
-                        if (MatchTranslationHandle(childNode, out var translationHandleValue))
-                            path = $"{curPath}.{translationHandleValue}";
-                        else
-                            path = $"{curPath}.{GetIdxOfListNode(childNode)}";
-                    }
-                    else
-                        path = $"{curPath}.{childNode.Name}";
-
-
-                    q.Enqueue((childNode, path));
-                }
+                    q.Enqueue((childNode, $"{curPath}.{NombreEnLaRuta(childNode)}"));
             }
+        }
+
+        /// <summary>
+        /// Como se nombra un nodo dentro de la ruta de una traduccion: un elemento de lista por
+        /// su TranslationHandle si lo tiene, y si no por su indice; lo demas, por su etiqueta.
+        ///
+        /// Tiene que ser igual bajando desde el def (FindExtractableNodes) que subiendo desde el
+        /// objetivo de un xpath (GetRootDefNode). Subiendo se usaba siempre el indice, asi que
+        /// un patch que entra a un elemento de lista se releia como verbs.0.label y se extraia
+        /// como verbs.Verb_ShootCE.label: no cruzaban y quedaba una copia en UNUSED.
+        /// </summary>
+        private static string NombreEnLaRuta(XmlNode node)
+        {
+            if (!node.IsListNode())
+                return node.Name;
+            return MatchTranslationHandle(node, out var handle) ? handle : GetIdxOfListNode(node).ToString();
         }
 
         private static IEnumerable<TranslationEntry> FindExtractableNodesXmlExtensionSettings(string defName, string className,
@@ -460,7 +482,7 @@ namespace RimworldExtractorInternal
             }
 
             var parentNode = node;
-            nodeName = node.IsListNode() ? GetIdxOfListNode(node).ToString() : node.Name;
+            nodeName = NombreEnLaRuta(node);
             do
             {
                 parentNode = parentNode.ParentNode;
@@ -471,7 +493,7 @@ namespace RimworldExtractorInternal
                     nodeName = $"{parentNode["defName"]!.InnerText}.{nodeName}";
                     break;
                 }
-                nodeName = $"{(parentNode.IsListNode() ? GetIdxOfListNode(parentNode).ToString() : parentNode.Name)}.{nodeName}";
+                nodeName = $"{NombreEnLaRuta(parentNode)}.{nodeName}";
             } while (true);
             return parentNode;
         }

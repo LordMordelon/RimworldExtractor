@@ -25,6 +25,13 @@ namespace RimworldExtractorGUI
         private bool _actualizandoRml;
 
         /// <summary>
+        /// El destino del log, guardado para poder vaciarlo antes de mostrar un resumen: la
+        /// ventana pinta de a tandas, asi que al terminar una corrida larga quedan lineas sin
+        /// pintar y el resumen apareceria antes que ellas.
+        /// </summary>
+        private RichTextBoxWriter? _salidaDelLog;
+
+        /// <summary>
         /// La ultima version publicada, o null si todavia no se pudo comprobar. La guarda el
         /// chequeo de arranque para que el clic en el rotulo sepa si hay algo que ofrecer sin
         /// volver a consultar.
@@ -56,8 +63,8 @@ namespace RimworldExtractorGUI
                 e.Cancel = true;
                 Aviso.Mostrar(Strings.BatchStillRunning, Strings.DialogTitleNotice);
             };
-            Log.Out = new RichTextBoxWriter(richTextBoxLog);
-            Prefabs.StopCallbackXlsx = FormStopCallback.StopCallbackXlsx;
+            _salidaDelLog = new RichTextBoxWriter(richTextBoxLog);
+            Log.Out = _salidaDelLog;
             Prefabs.StopCallbackXml = FormStopCallback.StopCallbackXml;
             Prefabs.StopCallbackTxt = FormStopCallback.StopCallbackTxt;
             try
@@ -85,9 +92,11 @@ namespace RimworldExtractorGUI
                     {
                         linkLabelLatestVersion.Text = string.IsNullOrEmpty(current)
                             ? Strings.VersionDevBuild(latest)
-                            : latest == current
-                                ? Strings.VersionUpToDate(current)
-                                : Strings.VersionUpdateAvailable(current, latest);
+                            : EsBeta(current)
+                                ? Strings.VersionBeta(current, latest)
+                                : latest == current
+                                    ? Strings.VersionUpToDate(current)
+                                    : Strings.VersionUpdateAvailable(current, latest);
                     }
 
                     if (linkLabelLatestVersion.InvokeRequired)
@@ -121,8 +130,7 @@ namespace RimworldExtractorGUI
                 SelectedMod = formSelectMod.SelectedMod!;
                 ReferenceMods = formSelectMod.ReferenceMods.Except(Enumerable.Repeat(SelectedMod, 1)).ToList();
                 SelectedFolders = formSelectMod.SelectedFolders;
-                _quickUpdate = formSelectMod.QuickUpdate;
-                buttonExtract.Enabled = true;
+                _quickUpdate = !formSelectMod.ExtraerEnCarpeta;
 
                 labelSelectedMods.Text = Strings.SelectedMod(SelectedMod.ModName);
                 if (ReferenceMods?.Count > 0)
@@ -133,10 +141,21 @@ namespace RimworldExtractorGUI
                         stripedText += "...";
                     labelSelectedMods.Text += Strings.SelectedReferenceMods(stripedText);
                 }
+
+                // El boton del dialogo ya dice «extraer», asi que se extrae al volver de el.
+                // Va despues del rotulo y no antes: la extraccion corre en este mismo hilo y
+                // puede tardar minutos, y mientras tanto se ve que mod se esta extrayendo.
+                labelSelectedMods.Refresh();
+                Extraer();
             }
         }
 
-        private void buttonExtract_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Extrae el mod elegido. Antes era el boton «2. Extraer los datos de traduccion» de
+        /// esta ventana; ahora lo dispara el boton del dialogo de seleccion, que es donde ya
+        /// estaba toda la decision.
+        /// </summary>
+        private void Extraer()
         {
             if (ReferenceMods is null || SelectedFolders is null || SelectedMod is null)
             {
@@ -173,26 +192,12 @@ namespace RimworldExtractorGUI
                 return;
             }
 
-            switch (Prefabs.Method)
-            {
-                case Prefabs.ExtractionMethod.Excel:
-                    IO.ToExcel(extraction, Path.Combine(outPath, outPath));
-                    break;
-                case Prefabs.ExtractionMethod.Languages:
-                    IO.ToLanguageXml(extraction, false, XmlCommentStyle.None, outPath, outPath);
-                    LoadFoldersBuild.Write(SelectedMod, outPath);
-                    break;
-                case Prefabs.ExtractionMethod.LanguagesWithComments:
-                    IO.ToLanguageXml(extraction, false, XmlCommentStyle.Original, outPath, outPath);
-                    LoadFoldersBuild.Write(SelectedMod, outPath);
-                    break;
-                case Prefabs.ExtractionMethod.LanguagesToTranslate:
-                    IO.ToLanguageXml(extraction, false, XmlCommentStyle.TranslationTemplate, outPath, outPath);
-                    LoadFoldersBuild.Write(SelectedMod, outPath);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            // Sin traduccion rapida el mod sale a una carpeta propia, en el mismo formato
+            // que se escribe sobre RML: el original en un comentario y un TODO por valor.
+            // Antes habia cuatro formatos a elegir en Opciones, y los otros tres —la
+            // planilla y los dos XML sin marcador— no los usaba nadie.
+            IO.ToLanguageXml(extraction, false, XmlCommentStyle.TranslationTemplate, outPath, outPath);
+            LoadFoldersBuild.Write(SelectedMod, outPath);
 
             TerminarExtraccion(extraction, outPath);
         }
@@ -250,42 +255,6 @@ namespace RimworldExtractorGUI
             return destino;
         }
 
-
-
-        private void buttonConvertXml_Click(object sender, EventArgs e)
-        {
-            var openfileDialog = new OpenFileDialog();
-            openfileDialog.Title = Strings.SelectExtractorXlsx;
-            openfileDialog.FileName = "";
-            openfileDialog.Filter = Strings.FilterTranslationData;
-
-            if (openfileDialog.ShowDialog() == DialogResult.OK)
-            {
-                try
-                {
-                    var path = openfileDialog.FileName;
-                    var translations = IO.FromExcel(path);
-                    var carpeta = Path.GetDirectoryName(path) ?? "";
-                    IO.ToLanguageXml(translations, true,
-                        Prefabs.CommentOriginal ? XmlCommentStyle.Original : XmlCommentStyle.None,
-                        Path.GetFileName(path), carpeta);
-
-                    // De que mod es se deduce del nombre del archivo, que es para lo que la
-                    // planilla tiene que volver con el nombre con el que salio.
-                    LoadFoldersBuild.Write(TranslationAnalyzerTool.GetModMetadataFromFilePath(path), carpeta);
-                    if (Aviso.Preguntar(Strings.DoneOpenConvertedFolder, Strings.DialogTitleDone) == DialogResult.Yes)
-                    {
-                        Process.Start("explorer.exe", Path.GetDirectoryName(path) ?? "");
-                    }
-                }
-                catch (Exception exception)
-                {
-                    Console.WriteLine(exception);
-                    throw;
-                }
-            }
-        }
-
         private void button2_Click(object sender, EventArgs e)
         {
             var form = new FormSettings();
@@ -321,6 +290,16 @@ namespace RimworldExtractorGUI
                 return;
             }
 
+            // Y una beta tampoco se actualiza sola: GetLatest consulta releases/latest, de
+            // donde GitHub excluye las prereleases, asi que "la ultima" es siempre la
+            // estable anterior y actualizar reemplazaria la beta por algo mas viejo.
+            if (EsBeta(actual))
+            {
+                Aviso.Mostrar(Strings.UpdateSkippedBeta, Strings.DialogTitleUpdate);
+                Process.Start("explorer.exe", GithubVersionCheker.ReleasesUrl);
+                return;
+            }
+
             var mensaje = Strings.UpdateAsk(actual, ultima)
                           + Environment.NewLine + Environment.NewLine + Strings.UpdateAskRestart;
             if (_notasDeLaUltima != null)
@@ -334,6 +313,12 @@ namespace RimworldExtractorGUI
 
             Actualizar(ultima);
         }
+
+        /// <summary>
+        /// Si la version que corre es una prerelease. El sufijo con guion lo pone la CI
+        /// fuera de master: "1.0.0-beta.1".
+        /// </summary>
+        private static bool EsBeta(string version) => version.Contains('-');
 
         /// <summary>
         /// Baja el paquete que corresponde, lo pone en su lugar y reinicia.
@@ -421,25 +406,6 @@ namespace RimworldExtractorGUI
             }
         }
 
-        private void buttonConvertXlsx_Click(object sender, EventArgs e)
-        {
-            var form = new FormXmlister();
-            form.StartPosition = FormStartPosition.CenterParent;
-            if (form.ShowDialog(this) == DialogResult.OK)
-            {
-                var roots = form.FileNames;
-                for (var i = 0; i < roots.Length; i++)
-                {
-                    var root = roots[i];
-                    var translations = IO.FromLanguageXml(root);
-                    IO.ToExcel(translations, Path.Combine(root, Path.GetFileNameWithoutExtension(root)));
-                    Log.Msg(Strings.ProgressFixed(i + 1, roots.Length, root));
-                }
-
-                Aviso.Mostrar(Strings.ConversionDone);
-            }
-        }
-
         /// <summary>
         /// Vuelve a extraer de una vez todos los mods que RML ya tiene traducidos, que es lo
         /// que hace falta despues de una actualizacion del juego o de una tanda de mods.
@@ -491,6 +457,7 @@ namespace RimworldExtractorGUI
                 });
 
                 InformarLote(renglones);
+                _salidaDelLog?.Vaciar();
                 Aviso.Mostrar(Strings.BatchDone, Strings.DialogTitleDone);
             }
             catch (Exception ex)
@@ -538,9 +505,6 @@ namespace RimworldExtractorGUI
         {
             foreach (var boton in Controls.OfType<Button>())
                 boton.Enabled = habilitar;
-
-            // Extraer sigue dependiendo de que haya un mod elegido, como al abrir la ventana.
-            buttonExtract.Enabled = habilitar && SelectedMod is not null;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -548,58 +512,6 @@ namespace RimworldExtractorGUI
             Process.Start("explorer.exe", GithubVersionCheker.IssueUrl);
         }
 
-        private void buttonOpenTranslationAnalyzer_Click(object sender, EventArgs e)
-        {
-            var form = new FormTranslationAnalyzerPathSelect();
-            form.StartPosition = FormStartPosition.CenterParent;
-            if (form.ShowDialog(this) == DialogResult.OK)
-            {
-                var paths = form.Paths;
-                var analyzer = new FormTranslationAnalyzer(paths);
-                analyzer.StartPosition = FormStartPosition.CenterParent;
-                if (analyzer.ShowDialog(this) == DialogResult.OK)
-                {
-                    var analyzerEntries = analyzer.Entries.ToList();
-                    for (var i = 0; i < analyzerEntries.Count; i++)
-                    {
-                        var analyzerEntry = analyzerEntries[i];
-                        // Path.GetDirectoryName devuelve null para una ruta sin carpeta; el
-                        // archivo siempre viene de una, asi que la cadena vacia alcanza.
-                        var carpeta = Path.GetDirectoryName(analyzerEntry.FilePath) ?? string.Empty;
-                        var nombre = Path.GetFileNameWithoutExtension(analyzerEntry.FilePath);
-                        var newPath = Path.Combine(carpeta, nombre + Strings.EditedFileSuffix);
-                        switch (analyzerEntry.SaveMethod)
-                        {
-                            case TranslationAnalyzerEntry.SaveMethodEnum.Append:
-                                IO.ModifyExcel(analyzerEntry.Changes.ToList(), analyzerEntry.FilePath);
-                                break;
-                            case TranslationAnalyzerEntry.SaveMethodEnum.Overwrite:
-                                analyzerEntry.MergeTranslation();
-                                IO.ToExcel(analyzerEntry.NewTranslations!, Path.Combine(carpeta, nombre));
-                                break;
-                            case TranslationAnalyzerEntry.SaveMethodEnum.RewriteNewFile:
-                                analyzerEntry.MergeTranslation();
-                                IO.ToExcel(analyzerEntry.NewTranslations!, newPath, true);
-                                Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, newPath));
-                                continue;
-                            case TranslationAnalyzerEntry.SaveMethodEnum.New:
-                                IO.ToExcel(
-                                    analyzerEntry.Changes
-                                        .Where(x => x.Reason == TranslationAnalyzerEntry.ChangeReason.AddedNewly)
-                                        .Select(x => x.New).OfType<TranslationEntry>().ToList(), newPath);
-                                Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, newPath));
-                                continue;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-                        Log.Msg(Strings.ProgressFixed(i + 1, analyzerEntries.Count, analyzerEntry.FilePath));
-                    }
-
-                    Aviso.Mostrar(Strings.FilesFixed(analyzerEntries.Count));
-                }
-            }
-        }
-    
         /// <summary>
         /// Pone los textos y acomoda la ventana. Todavia maqueta en tiempo de ejecucion,
         /// con Rejilla y AutoAjuste, hasta que pase a TableLayoutPanel como
@@ -619,11 +531,9 @@ namespace RimworldExtractorGUI
 
             Text = Strings.FormMainTitle;
             buttonSelectMod.Text = Strings.BtnSelectMod;
-            buttonExtract.Text = Strings.BtnExtract;
             button2.Text = Strings.BtnOptions;
             label1.Text = Strings.LabelMainDescription;
             buttonUpdateAllRml.Text = Strings.BtnUpdateAllRml;
-            buttonOpenTranslationAnalyzer.Text = Strings.BtnOpenTranslationAnalyzer;
             labelSelectedMods.Text = Strings.LabelNoModSelected;
 
             // El Designer lo deja negro fijo; que acompanie al tema.
@@ -648,16 +558,13 @@ namespace RimworldExtractorGUI
             // que despues corre las etiquetas de la derecha para que no queden tapadas.
             Rejilla.Columna(buttonSelectMod.Left,
                 Rejilla.Linea(buttonSelectMod),
-                Rejilla.Linea(buttonExtract),
-                Rejilla.Linea(buttonConvertXlsx, buttonConvertXml),
-                Rejilla.Linea(buttonOpenTranslationAnalyzer, buttonUpdateAllRml),
+                Rejilla.Linea(buttonUpdateAllRml),
                 Rejilla.Linea(button2, _buttonTema));
 
             // Los textos en espanol son mas largos que los originales y los
             // formularios tienen medidas fijas: se ensancha lo que no entra.
-            AutoAjuste.Ajustar(buttonSelectMod, buttonExtract, button2, _buttonTema, buttonUpdateAllRml,
-                buttonOpenTranslationAnalyzer, buttonConvertXlsx, buttonConvertXml, button1,
-                labelSelectedMods, label1);
+            AutoAjuste.Ajustar(buttonSelectMod, button2, _buttonTema, buttonUpdateAllRml,
+                button1, labelSelectedMods, label1);
 
             // La franja del log la comparten tres cosas: el rotulo, el enlace de version
             // y el boton de reportar problemas. En el diseño original las tres arrancaban

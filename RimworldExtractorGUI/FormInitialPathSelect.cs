@@ -22,6 +22,7 @@ namespace RimworldExtractorGUI
             Prefabs.Init();
             textBoxPathRimworld.Text = Prefabs.PathRimworld;
             textBoxPathWorkshop.Text = Prefabs.PathWorkshop;
+            textBoxPathRml.Text = Prefabs.PathRml;
 
             // La tabla ya sabe cuanto necesita; se fija como minimo para que la ventana no se
             // pueda encoger hasta romper lo que acaba de acomodar. Va aca y no en el diseñador
@@ -57,11 +58,32 @@ namespace RimworldExtractorGUI
             }
         }
 
+        /// <summary>
+        /// La carpeta del clon de RML, que es donde escribe el modo normal de extraccion.
+        /// Se pide aca y no solo en Opciones porque dejo de ser un ajuste de un modo
+        /// alterno: sin ella, extraer avisa y no hace nada.
+        /// </summary>
+        private void buttonSelectPathRml_Click(object sender, EventArgs e)
+        {
+            var dialog = new CommonOpenFileDialog();
+            dialog.IsFolderPicker = true;
+            dialog.Title = Strings.SelectRmlPath;
+
+            if (dialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                textBoxPathRml.Text = dialog.FileName;
+            }
+        }
+
         private void buttonDone_Click(object sender, EventArgs e)
         {
             DialogResult = DialogResult.OK;
             Prefabs.PathRimworld = textBoxPathRimworld.Text;
             Prefabs.PathWorkshop = textBoxPathWorkshop.Text;
+
+            // Vacia es una respuesta valida: quien solo quiera extraer a una carpeta no
+            // tiene por que tener un clon de RML. Las otras dos rutas tampoco se validan.
+            Prefabs.PathRml = textBoxPathRml.Text;
             Prefabs.Save();
             Close();
         }
@@ -75,6 +97,7 @@ namespace RimworldExtractorGUI
             Text = Strings.TitleInitialPathSelect;
             label1.Text = Strings.LabelRimworldPathShort;
             label2.Text = Strings.LabelWorkshopPathShort;
+            label3.Text = Strings.LabelPathRmlShort;
             buttonDone.Text = Strings.BtnDone;
         }
     }

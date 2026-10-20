@@ -36,7 +36,6 @@
             label1 = new Label();
             labelSelectedMod = new Label();
             label3 = new Label();
-            checkBoxFilterSelected = new CheckBox();
             toolTip1 = new ToolTip(components);
             panel1 = new Panel();
             panel1.SuspendLayout();
@@ -118,17 +117,6 @@
             label3.TabIndex = 8;
             label3.Text = "추출할 폴더를 선택하세요";
             // 
-            // checkBoxFilterSelected
-            // 
-            checkBoxFilterSelected.AutoSize = true;
-            checkBoxFilterSelected.Location = new Point(12, 9);
-            checkBoxFilterSelected.Name = "checkBoxFilterSelected";
-            checkBoxFilterSelected.Size = new Size(130, 19);
-            checkBoxFilterSelected.TabIndex = 9;
-            checkBoxFilterSelected.Text = "선택한 모드만 보기";
-            checkBoxFilterSelected.UseVisualStyleBackColor = true;
-            checkBoxFilterSelected.CheckedChanged += checkBoxFilterSelected_CheckedChanged;
-            // 
             // panel1
             // 
             panel1.AutoScroll = true;
@@ -144,7 +132,6 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 478);
             Controls.Add(panel1);
-            Controls.Add(checkBoxFilterSelected);
             Controls.Add(label3);
             Controls.Add(label1);
             Controls.Add(buttonDone);
@@ -169,7 +156,6 @@
         private Label label1;
         private Label labelSelectedMod;
         private Label label3;
-        private CheckBox checkBoxFilterSelected;
         private ToolTip toolTip1;
         private Panel panel1;
     }

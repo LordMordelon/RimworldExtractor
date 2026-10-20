@@ -1,11 +1,9 @@
-﻿using ClosedXML.Excel;
-using System.Security;
+﻿using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using RimworldExtractorInternal.Compats;
 using RimworldExtractorInternal.DataTypes;
-using RimworldExtractorInternal.Exceptions;
 
 namespace RimworldExtractorInternal
 {
@@ -27,15 +25,6 @@ namespace RimworldExtractorInternal
 
     public static class IO
     {
-        private static readonly string HeaderClassNode = "Class+Node [(Identifier (Key)]";
-        private static readonly string HeaderClass = "Class [Not chosen]";
-        private static readonly string HeaderNode = "Node [Not chosen]";
-        private static readonly string HeaderRequiredMods = "Required Mods [Not chosen]";
-        private const string HeaderSuffixOriginal = "[Source string]";
-        private const string HeaderSuffixTranslated = "[Translation]";
-        private static string HeaderOriginal => $"{Prefabs.OriginalLanguage} [Source string]";
-        private static string HeaderTranslated => $"{Prefabs.TranslationLanguage} [Translation]";
-
         /// <summary>
         /// Comentario que conserva el texto original. Un comentario XML no puede contener
         /// la secuencia "--", de eso se encarga EscapeXmlCommentDashes.
@@ -77,336 +66,6 @@ namespace RimworldExtractorInternal
             => !string.IsNullOrWhiteSpace(entrada.Original)
                || !string.IsNullOrWhiteSpace(entrada.Translated);
 
-        public static void ToExcel(List<TranslationEntry> translations, string outPath = "result",
-            bool markNoTranslation = false)
-        {
-            translations = translations.Where(HayAlgoQueEscribir).ToList();
-
-            var xlsx = new XLWorkbook();
-            var sheet = xlsx.AddWorksheet();
-            sheet.Cell(1, 1).Value = HeaderClassNode;
-            sheet.Cell(1, 2).Value = HeaderClass;
-            sheet.Cell(1, 3).Value = HeaderNode;
-            sheet.Cell(1, 4).Value = HeaderRequiredMods;
-            sheet.Cell(1, 5).Value = HeaderOriginal;
-            sheet.Cell(1, 6).Value = HeaderTranslated;
-            for (int i = 0; i < translations.Count; i++)
-            {
-                var entry = translations[i];
-                sheet.Cell(2 + i, 1).Value = $"{entry.ClassName}+{entry.Node}";
-                sheet.Cell(2 + i, 2).Value = entry.ClassName;
-                sheet.Cell(2 + i, 3).Value = entry.Node;
-                if (entry.RequiredMods != null)
-                {
-                    var combinedRequiredMods = entry.RequiredMods.ToString();
-                    var cellRequiredMods = sheet.Cell(2 + i, 4);
-                    cellRequiredMods.Value = combinedRequiredMods;
-                    if (SinNombreEnNomatch(entry.RequiredMods) && entry.ClassName.StartsWith("Patches."))
-                    {
-                        Log.WrnOnce(Strings.InvalidRequiredModsValue(combinedRequiredMods),
-                            $"RequiredMods-warn-{combinedRequiredMods}".GetHashCode());
-                        var comment = cellRequiredMods.GetComment();
-                        comment.AddText(
-                            Strings.PackageIdInsteadOfModName(RequiredMods.PACKAGE_ID_PREFIX));
-                        comment.Visible = true;
-                    }
-                }
-                sheet.Cell(2 + i, 5).Value = entry.Original;
-                if (entry.Translated != null)
-                {
-                    sheet.Cell(2 + i, 6).Value = entry.Translated;
-                }
-                else if (markNoTranslation)
-                {
-                    sheet.Cell(2 + i, 6).Style.Fill.SetBackgroundColor(XLColor.SkyBlue);
-                }
-
-                if (entry.TryGetExtension(Prefabs.ExtensionKeyExtraCommentTranslated, out object? extension) &&
-                    extension is string extensionStr)
-                {
-                    var comment = sheet.Cell(2 + i, 6).CreateComment();
-                    comment.AddText(extensionStr);
-                    comment.Visible = true;
-                }
-            }
-
-            sheet.Style.Font.FontName = Strings.ExcelFontName;
-            xlsx.SaveSafely(outPath + ".xlsx");
-        }
-        public static void ModifyExcel(List<TranslationAnalyzerEntry.ChangeRecord> changes, string targetPath)
-        {
-            var xlsx = new XLWorkbook(targetPath);
-            var mainSheet = xlsx.Worksheets.Worksheet(1);
-            var rows = mainSheet.RowsUsed().ToList();
-            var offset = rows.Count;
-            var headers = rows.First().Cells();
-
-            var colClassNode =
-                headers.FirstOrDefault(x => x.StrVal() == HeaderClassNode)?.WorksheetColumn().ColumnNumber() ??
-                throw new XlsxHeaderReadingException(HeaderClass);
-            var colClass = headers.FirstOrDefault(x => x.StrVal() == HeaderClass)
-                               ?.WorksheetColumn().ColumnNumber() ??
-                           throw new XlsxHeaderReadingException(HeaderClass);
-            var colNode = headers.FirstOrDefault(x => x.StrVal() == HeaderNode)
-                              ?.WorksheetColumn().ColumnNumber() ??
-                          throw new XlsxHeaderReadingException(HeaderNode);
-            var colRequiredMods = headers
-                .FirstOrDefault(x => x.StrVal() == HeaderRequiredMods)
-                ?.WorksheetColumn().ColumnNumber() ?? -1;
-            var colOriginal = headers.FirstOrDefault(x => x.StrVal() == HeaderOriginal)
-                                  ?.WorksheetColumn().ColumnNumber() ??
-                              headers.FirstOrDefault(x => x.StrVal().EndsWith(HeaderSuffixOriginal, StringComparison.Ordinal))
-                                  ?.WorksheetColumn().ColumnNumber() ??
-                              throw new XlsxHeaderReadingException(HeaderOriginal);
-            var colTranslated = headers.FirstOrDefault(x => x.StrVal() == HeaderTranslated)
-                                    ?.WorksheetColumn().ColumnNumber() ??
-                                headers.FirstOrDefault(x => x.StrVal().EndsWith(HeaderSuffixTranslated, StringComparison.Ordinal))
-                                    ?.WorksheetColumn().ColumnNumber() ??
-                                throw new XlsxHeaderReadingException(HeaderTranslated);
-            
-            var changedOriginals = new List<TranslationAnalyzerEntry.ChangeRecord>();
-            var fillOriginals = new List<TranslationAnalyzerEntry.ChangeRecord>();
-            var removeNodes = new List<TranslationAnalyzerEntry.ChangeRecord>();
-            var addedNewlys = new List<TranslationAnalyzerEntry.ChangeRecord>();
-            var dateString = DateTime.Today.ToString("yyyy-MM-dd");
-
-            foreach (var changeRecord in changes)
-            {
-                switch (changeRecord.Reason)
-                {
-                    case TranslationAnalyzerEntry.ChangeReason.ChangedOriginal:
-                        changedOriginals.Add(changeRecord);
-                        break;
-                    case TranslationAnalyzerEntry.ChangeReason.FillOriginal:
-                        fillOriginals.Add(changeRecord);
-                        break;
-                    case TranslationAnalyzerEntry.ChangeReason.RemoveNode:
-                        removeNodes.Add(changeRecord);
-                        break;
-                    case TranslationAnalyzerEntry.ChangeReason.AddedNewly:
-                        addedNewlys.Add(changeRecord);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-
-            if (removeNodes.Count > 0)
-            {
-                for (int i = 0; i < rows.Count; i++)
-                {
-                    var curRow = rows[i];
-                    var curClassNode = curRow.Cell(colClassNode).StrVal();
-                    var pairEntry =
-                        removeNodes.FirstOrDefault(x => $"{x.Orig!.ClassName}+{x.Orig!.Node}" == curClassNode);
-                    if (pairEntry != null)
-                    {
-                        var origCell = curRow.Cell(colOriginal);
-                        origCell.GetComment().AddText(Strings.CommentDeleted(dateString, curRow.Cell(colTranslated).StrVal()));
-                        origCell.GetComment().Visible = true;
-                        origCell.Style.Fill.SetBackgroundColor(XLColor.Red);
-                        curRow.Cell(colTranslated).Clear();
-                    }
-                }
-                //var subSheet = xlsx.AddWorksheet($"{dateString}_nodos eliminados");
-                //subSheet.Cell(1, 1).Value = HeaderClassNode;
-                //subSheet.Cell(1, 2).Value = HeaderClass;
-                //subSheet.Cell(1, 3).Value = HeaderNode;
-                //subSheet.Cell(1, 4).Value = HeaderRequiredMods;
-                //subSheet.Cell(1, 5).Value = HeaderOriginal;
-                //subSheet.Cell(1, 6).Value = HeaderTranslated;
-                //var nxtRow = subSheet.Row(2);
-                //for (int i = rows.Count - 1; i >= 0; i--)
-                //{
-                //    var curRow = rows[i];
-                //    var curClassNode = curRow.Cell(colClassNode).StrVal();
-                //    if (removeNodes.Any(x => $"{x.Orig!.ClassName}+{x.Orig!.Node}" == curClassNode))
-                //    {
-                //        curRow.Cell(colClassNode).CopyTo(nxtRow.Cell(1));
-                //        curRow.Cell(colClass).CopyTo(nxtRow.Cell(2));
-                //        curRow.Cell(colNode).CopyTo(nxtRow.Cell(3));
-                //        if (colRequiredMods != -1)
-                //            curRow.Cell(colRequiredMods).CopyTo(nxtRow.Cell(4));
-                //        curRow.Cell(colOriginal).CopyTo(nxtRow.Cell(5));
-                //        curRow.Cell(colTranslated).CopyTo(nxtRow.Cell(6));
-                //        for (int j = 0; j < mainSheet.ColumnsUsed().Count() - colTranslated + 1; j++)
-                //        {
-                //            curRow.Cell(j + colTranslated + 1).CopyTo(nxtRow.Cell(j + 6 + 1));
-                //        }
-                //        curRow.Cells(colTranslated + 1, mainSheet.ColumnsUsed().Count());
-
-                //        nxtRow = nxtRow.RowBelow();
-                //        curRow.Delete();
-                //    }
-                //}
-
-                //rows = mainSheet.RowsUsed().ToList();
-            }
-
-            if (changedOriginals.Count > 0)
-            {
-                for (int i = 0; i < rows.Count; i++)
-                {
-                    var curRow = rows[i];
-                    var curClassNode = curRow.Cell(colClassNode).StrVal();
-                    var pairEntry =
-                        changedOriginals.FirstOrDefault(x => $"{x.Orig!.ClassName}+{x.Orig!.Node}" == curClassNode);
-                    if (pairEntry != null)
-                    {
-                        var origCell = curRow.Cell(colOriginal);
-                        origCell.GetComment().AddText(Strings.CommentPreviousOriginal(dateString, curRow.Cell(colOriginal).StrVal()));
-                        origCell.Value = pairEntry.New!.Original;
-                        origCell.GetComment().Visible = true;
-                        origCell.Style.Fill.SetBackgroundColor(XLColor.Orange);
-                    }
-                }
-            }
-
-            if (fillOriginals.Count > 0)
-            {
-                for (int i = 0; i < rows.Count; i++)
-                {
-                    var curRow = rows[i];
-                    var curClassNode = curRow.Cell(colClassNode).StrVal();
-                    var pairEntry =
-                        fillOriginals.FirstOrDefault(x => $"{x.Orig!.ClassName}+{x.Orig!.Node}" == curClassNode);
-                    if (pairEntry != null)
-                    {
-                        var origCell = curRow.Cell(colOriginal);
-                        origCell.GetComment()
-                            .AddText(Strings.CommentOriginalRestored(dateString));
-                        origCell.Value = pairEntry.New!.Original;
-                        origCell.GetComment().Visible = true;
-                        origCell.Style.Fill.SetBackgroundColor(XLColor.Orange);
-                    }
-                }
-            }
-
-            if (addedNewlys.Count > 0)
-            {
-                for (int i = 0; i < addedNewlys.Count; i++)
-                {
-                    var entry = addedNewlys[i].New!;
-                    mainSheet.Cell(2 + i + rows.Count, colClassNode).Value = $"{entry.ClassName}+{entry.Node}";
-                    mainSheet.Cell(2 + i + rows.Count, colClass).Value = entry.ClassName;
-                    mainSheet.Cell(2 + i + rows.Count, colNode).Value = entry.Node;
-                    if (colRequiredMods != -1 && entry.RequiredMods != null)
-                    {
-                        var combinedRequiredMods = entry.RequiredMods.ToString();
-                        mainSheet.Cell(2 + i + rows.Count, colRequiredMods).Value = combinedRequiredMods;
-                        if (SinNombreEnNomatch(entry.RequiredMods) && entry.ClassName.StartsWith("Patches."))
-                        {
-                            Log.WrnOnce(Strings.InvalidRequiredModsValue(combinedRequiredMods),
-                                $"RequiredMods-warn-{combinedRequiredMods}".GetHashCode());
-                        }
-                    }
-                    mainSheet.Cell(2 + i + rows.Count, colOriginal).Value = entry.Original;
-                    if (entry.Translated != null)
-                    {
-                        mainSheet.Cell(2 + i + rows.Count, colTranslated).Value = entry.Translated;
-                    }
-
-                    if (entry.TryGetExtension(Prefabs.ExtensionKeyExtraCommentTranslated, out object? extension) &&
-                        extension is string extensionStr)
-                    {
-                        var comment = mainSheet.Cell(2 + i + rows.Count, 6).GetComment();
-                        comment.AddText(extensionStr);
-                        comment.Visible = true;
-                    }
-                    mainSheet.Row(2 + i + rows.Count).Select();
-
-                    if (i == 0)
-                    {
-                        mainSheet.Cell(2 + i + rows.Count, colOriginal).Style.Fill.SetBackgroundColor(XLColor.SkyBlue);
-                        var comment = mainSheet.Cell(2 + i + rows.Count, colOriginal).GetComment();
-                        comment.AddText(Strings.CommentNewlyAdded(dateString, addedNewlys.Count));
-                        comment.Visible = true;
-                    }
-                }
-            }
-
-            mainSheet.Style.Font.FontName = Strings.ExcelFontName;
-            foreach (var cell in mainSheet.CellsUsed().Where(x => x.HasComment))
-            {
-                var comment = cell.GetComment();
-                comment.Position.ColumnOffset = 5d;
-                comment.Position.RowOffset = 5d;
-                comment.Position.Row = cell.Address.RowNumber + 1;
-                comment.Position.Column = cell.Address.ColumnNumber + 1;
-                comment.Style.Alignment.SetAutomaticSize();
-            }
-            xlsx.SaveSafely(targetPath);
-        }
-
-        public static List<TranslationEntry> FromExcel(string inputPath)
-        {
-            using var libFixer = new LibreExcelFixer(inputPath);
-            inputPath = libFixer.DoFix();
-
-            var xlsx = new XLWorkbook(inputPath);
-            var sheet = xlsx.Worksheets.Worksheet(1);
-            var translations = new List<TranslationEntry>();
-            var rows = sheet.RowsUsed().ToList();
-            var headers = rows.First().Cells();
-
-            var colClass = headers.FirstOrDefault(x => x.StrVal() == HeaderClass)
-                               ?.WorksheetColumn().ColumnNumber() ??
-                           throw new XlsxHeaderReadingException(HeaderClass);
-            var colNode = headers.FirstOrDefault(x => x.StrVal() == HeaderNode)
-                ?.WorksheetColumn().ColumnNumber() ??
-                          throw new XlsxHeaderReadingException(HeaderNode);
-            var colRequiredMods = headers
-                .FirstOrDefault(x => x.StrVal() == HeaderRequiredMods)
-                ?.WorksheetColumn().ColumnNumber() ?? -1;
-            var colOriginal = headers.FirstOrDefault(x => x.StrVal() == HeaderOriginal)
-                                  ?.WorksheetColumn().ColumnNumber() ??
-                              headers.FirstOrDefault(x => x.StrVal().EndsWith(HeaderSuffixOriginal, StringComparison.Ordinal))
-                                  ?.WorksheetColumn().ColumnNumber() ??
-                              throw new XlsxHeaderReadingException(HeaderOriginal);
-            var colTranslated = headers.FirstOrDefault(x => x.StrVal() == HeaderTranslated)
-                                    ?.WorksheetColumn().ColumnNumber() ??
-                                headers.FirstOrDefault(x => x.StrVal().EndsWith(HeaderSuffixTranslated, StringComparison.Ordinal))
-                                    ?.WorksheetColumn().ColumnNumber() ??
-                                throw new XlsxHeaderReadingException(HeaderTranslated);
-
-
-
-            for (int i = 1; i < rows.Count; i++)
-            {
-                var row = rows[i];
-                var className = row.Cell(colClass).StrVal();
-                var node = row.Cell(colNode).StrVal();
-                if (className.Length == 0 || node.Length == 0)
-                    continue;
-                RequiredMods? requiredMods = null;
-                if (colRequiredMods != -1 && row.Cell(colRequiredMods).Value is { IsText: true } cellRequiredMods)
-                {
-                    var textRequiredMods = cellRequiredMods.GetText();
-                    // Compatibilidad hacia atras
-                    if (textRequiredMods != null && textRequiredMods.Contains('\n'))
-                    {
-                        requiredMods = new RequiredMods();
-                        foreach (var s in textRequiredMods.Split('\n'))
-                        {
-                            requiredMods.AddAllowedByModName(s);
-                        }
-                    }
-                    else if (textRequiredMods != null)
-                    {
-                        requiredMods = RequiredMods.FromStringByModNames(textRequiredMods);
-                    }
-                }
-                var original = row.Cell(colOriginal).Value.IsBlank ? "" : row.Cell(colOriginal).StrVal();
-                var cellTranslated = row.Cell(colTranslated).Value;
-                var translated = cellTranslated.IsText ? (cellTranslated.GetText() == "" ? null : cellTranslated.GetText()) : null;
-
-                var translation = new TranslationEntry(className, node, original,
-                    translated, requiredMods, null);
-                translations.Add(translation);
-            }
-            return translations;
-        }
-        
         public static void ToLanguageXml(List<TranslationEntry> translations, bool skipNoTranslation, XmlCommentStyle commentStyle, string ModName, string rootDirPath)
         {
             translations = translations.Where(HayAlgoQueEscribir).ToList();
@@ -837,15 +496,28 @@ namespace RimworldExtractorInternal
                 // el documento reducido de sus propios patches. Contra ese, no encuentran nada
                 // y la traduccion que ya estaba hecha se pierde sin avisar.
                 var patches = new ExtractableFolder(ModMetadata.Emptry, patchesDir, null);
-                translations.AddRange(Extractor.ConLaBaseCompleta(
-                    () => Extractor.ExtractPatches(patches)
+                // ConLaBaseCompleta vacia la lista de xpath sin objetivo al terminar, asi que se
+                // copian adentro: son los unicos que la lectura literal tiene que rescatar.
+                var sinObjetivo = new HashSet<string>();
+                translations.AddRange(Extractor.ConLaBaseCompleta(() =>
+                {
+                    var antes = PatchOperations.XpathsSinObjetivo.Count;
+                    var evaluadas = Extractor.ExtractPatches(patches)
                         .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" })
-                        .ToList()));
+                        .ToList();
+                    sinObjetivo.UnionWith(PatchOperations.XpathsSinObjetivo.Skip(antes).Select(x => x.Trim()));
+                    return evaluadas;
+                }));
 
                 // Y las que ni asi aparecieron, parseando el archivo. Ver LeerPatchesLiteral.
                 var vistas = new HashSet<(string, string)>(
                     translations.Select(x => (SinPrefijoDePatches(x.ClassName), x.Node)));
-                foreach (var suelta in LeerPatchesLiteral(patchesDir))
+                var evaluadas = new HashSet<(string, string, string?)>(
+                    translations.Select(x => (x.DefName, UltimoTramo(x.Node), x.Translated)));
+                // Por el mismo postproceso que la lectura normal: sin NodeReplacement, un xpath
+                // viejo con /Defs/CombatExtended.AmmoDef[...] se releia con esa clase y no
+                // cruzaba con la extraccion nueva, que sale como ThingDef.
+                foreach (var suelta in CompatManager.DoPostProcessing(LeerPatchesLiteral(patchesDir, sinObjetivo, evaluadas)))
                 {
                     if (vistas.Add((SinPrefijoDePatches(suelta.ClassName), suelta.Node)))
                         translations.Add(suelta);
@@ -943,6 +615,9 @@ namespace RimworldExtractorInternal
         /// </summary>
         private static bool SinNombreEnNomatch(RequiredMods requiredMods)
             => requiredMods.DisallowedMods.Any(x => x.Contains(RequiredMods.PACKAGE_ID_PREFIX, StringComparison.Ordinal));
+
+        /// <summary>El campo de una clave: lo que va despues del ultimo punto.</summary>
+        private static string UltimoTramo(string node) => node[(node.LastIndexOf('.') + 1)..];
 
         /// <summary>El prefijo con el que el extractor marca lo que sale por un patch.</summary>
         private static string SinPrefijoDePatches(string className) =>
@@ -1062,8 +737,15 @@ namespace RimworldExtractorInternal
         /// Parsear no reemplaza a evaluar, porque el xpath es el que resuelve de verdad a que
         /// nodo apunta cada operacion. Por eso lo de aca se agrega despues y solo para las claves
         /// que no vinieron por el camino normal.
+        ///
+        /// Y se saltea lo que la lectura evaluada ya trajo con otro nombre: un xpath que
+        /// encontro su objetivo y cuyo def, campo y traduccion ya estan en <paramref name="evaluadas"/>.
+        /// Es el caso de una ruta vieja por indice (verbs/li[1]/label), que la evaluada nombra por
+        /// el verbo: sumarla tambien con el indice dejaria una copia para siempre en UNUSED. Con
+        /// cualquier otra diferencia se lee igual, porque una copia de mas se ve y una perdida no.
         /// </summary>
-        private static List<TranslationEntry> LeerPatchesLiteral(string patchesDir)
+        private static List<TranslationEntry> LeerPatchesLiteral(string patchesDir,
+            ISet<string> xpathsSinObjetivo, ISet<(string DefName, string Campo, string? Traduccion)> evaluadas)
         {
             var sueltas = new List<TranslationEntry>();
 
@@ -1099,8 +781,13 @@ namespace RimworldExtractorInternal
                     if (clave == null)
                         continue;
 
-                    sueltas.Add(new TranslationEntry($"Patches.{clave.Value.Clase}", clave.Value.Nodo,
-                        "", TranslatedFromXml(hijos[0].InnerText), null, null));
+                    var suelta = new TranslationEntry($"Patches.{clave.Value.Clase}", clave.Value.Nodo,
+                        "", TranslatedFromXml(hijos[0].InnerText), null, null);
+                    if (!xpathsSinObjetivo.Contains(xpath)
+                        && evaluadas.Contains((suelta.DefName, UltimoTramo(suelta.Node), suelta.Translated)))
+                        continue;
+
+                    sueltas.Add(suelta);
                 }
             }
 
@@ -1280,40 +967,6 @@ namespace RimworldExtractorInternal
             return apartadas;
         }
 
-        private static void SaveSafely(this XLWorkbook xlsx, string path)
-        {
-            if (!File.Exists(path))
-            {
-                xlsx.SaveAs(path);
-                return;
-            }
-
-            switch (Prefabs.Policy)
-            {
-                case Prefabs.DuplicatesPolicy.Stop:
-                    var stopCallback = Prefabs.StopCallbackXlsx;
-                    if (stopCallback != null)
-                        stopCallback(xlsx, path);
-                    else
-                        throw new ArgumentNullException(nameof(stopCallback));
-                    return;
-                case Prefabs.DuplicatesPolicy.Overwrite:
-                    try
-                    {
-                        xlsx.SaveAs(path);
-                    }
-                    catch (IOException)
-                    {
-                        Log.Err(Strings.FileInUse(Path.GetFileName(path)));
-                    }
-                    return;
-                case Prefabs.DuplicatesPolicy.KeepOriginal:
-                    return;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
         private static void SaveSafely(this XmlDocument doc, string path)
         {
             doc.InsertBefore(doc.CreateXmlDeclaration("1.0", "utf-8", null), doc.DocumentElement);
@@ -1440,14 +1093,19 @@ namespace RimworldExtractorInternal
 
         internal static XmlDocument ReadXml(string filePath)
         {
-            var contents = File.ReadAllText(filePath);
             var readerSettings = new XmlReaderSettings
             {
                 IgnoreComments = true,
                 IgnoreWhitespace = true,
                 CheckCharacters = false
             };
-            using var stringReader = new StringReader(contents);
+            // El File.ReadAllText no sobra, aunque parezca una copia de mas por archivo.
+            // Decodifica con reemplazo: un byte que no es UTF-8 valido se convierte en el
+            // caracter de reemplazo y el XML se parsea igual. XmlReader.Create sobre la ruta
+            // respeta la declaracion de encoding del archivo y tira "Invalid character in the
+            // given encoding". Hay mods con archivos en CP949 y en otras codificaciones raras
+            // —ver AGENTS.md—, y con la lectura directa la extraccion se corta en el primero.
+            using var stringReader = new StringReader(File.ReadAllText(filePath));
             using var xmlReader = XmlReader.Create(stringReader, readerSettings);
             var childDoc = new XmlDocument();
             childDoc.Load(xmlReader);

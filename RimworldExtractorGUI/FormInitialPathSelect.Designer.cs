@@ -1,4 +1,4 @@
-namespace RimworldExtractorGUI
+﻿namespace RimworldExtractorGUI
 {
     partial class FormInitialPathSelect
     {
@@ -37,6 +37,9 @@ namespace RimworldExtractorGUI
             buttonSelectPathWorkshop = new Button();
             label1 = new Label();
             label2 = new Label();
+            label3 = new Label();
+            textBoxPathRml = new TextBox();
+            buttonSelectPathRml = new Button();
             buttonDone = new Button();
             tabla.SuspendLayout();
             SuspendLayout();
@@ -47,7 +50,8 @@ namespace RimworldExtractorGUI
             tabla.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tabla.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            tabla.RowCount = 3;
+            tabla.RowCount = 4;
+            tabla.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             tabla.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             tabla.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             tabla.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -62,7 +66,10 @@ namespace RimworldExtractorGUI
             tabla.Controls.Add(label2, 0, 1);
             tabla.Controls.Add(textBoxPathWorkshop, 1, 1);
             tabla.Controls.Add(buttonSelectPathWorkshop, 2, 1);
-            tabla.Controls.Add(buttonDone, 0, 2);
+            tabla.Controls.Add(label3, 0, 2);
+            tabla.Controls.Add(textBoxPathRml, 1, 2);
+            tabla.Controls.Add(buttonSelectPathRml, 2, 2);
+            tabla.Controls.Add(buttonDone, 0, 3);
             tabla.SetColumnSpan(buttonDone, 3);
             //
             // label1
@@ -117,6 +124,32 @@ namespace RimworldExtractorGUI
             buttonSelectPathWorkshop.UseVisualStyleBackColor = true;
             buttonSelectPathWorkshop.Click += buttonSelectPathWorkshop_Click;
             //
+            // label3
+            //
+            label3.AutoSize = true;
+            label3.Anchor = AnchorStyles.Left;
+            label3.Margin = new Padding(3, 3, 9, 3);
+            label3.Name = "label3";
+            label3.TabIndex = 7;
+            //
+            // textBoxPathRml
+            //
+            textBoxPathRml.Dock = DockStyle.Fill;
+            textBoxPathRml.Margin = new Padding(3, 6, 3, 6);
+            textBoxPathRml.Name = "textBoxPathRml";
+            textBoxPathRml.TabIndex = 4;
+            //
+            // buttonSelectPathRml
+            //
+            buttonSelectPathRml.Anchor = AnchorStyles.Left;
+            buttonSelectPathRml.Size = new Size(75, 25);
+            buttonSelectPathRml.Margin = new Padding(6, 3, 3, 3);
+            buttonSelectPathRml.Name = "buttonSelectPathRml";
+            buttonSelectPathRml.TabIndex = 5;
+            buttonSelectPathRml.Text = "...";
+            buttonSelectPathRml.UseVisualStyleBackColor = true;
+            buttonSelectPathRml.Click += buttonSelectPathRml_Click;
+            //
             // buttonDone
             //
             buttonDone.SetBounds(0, 0, 0, 30);
@@ -151,6 +184,9 @@ namespace RimworldExtractorGUI
         private Button buttonSelectPathWorkshop;
         private Label label1;
         private Label label2;
+        private Label label3;
+        private TextBox textBoxPathRml;
+        private Button buttonSelectPathRml;
         private Button buttonDone;
     }
 }

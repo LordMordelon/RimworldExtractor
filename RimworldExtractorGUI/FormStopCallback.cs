@@ -1,5 +1,4 @@
-﻿using ClosedXML.Excel;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -34,27 +33,6 @@ namespace RimworldExtractorGUI
         {
             DialogResult = DialogResult.No;
             Close();
-        }
-
-        public static void StopCallbackXlsx(XLWorkbook xlsx, string path)
-        {
-            var form = new FormStopCallback(path);
-            form.StartPosition = FormStartPosition.CenterScreen;
-            if (form.ShowDialog() == DialogResult.Yes)
-            {
-                try
-                {
-                    xlsx.SaveAs(path);
-                }
-                catch (IOException io)
-                {
-                    Log.Err(Strings.CouldNotSaveFileInUse(io.Message));
-                }
-            }
-            else
-            {
-                return;
-            }
         }
 
         public static void StopCallbackXml(XmlDocument doc, string path)

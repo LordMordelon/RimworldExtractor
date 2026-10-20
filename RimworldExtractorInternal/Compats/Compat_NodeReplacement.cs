@@ -26,7 +26,9 @@ namespace RimworldExtractorInternal.Compats
         private TranslationEntry DoNodeReplacement(TranslationEntry entry)
         {
             var isPatches = entry.ClassName.StartsWith("Patches.");
-            var defType = isPatches ? entry.ClassName[("Patches.".Length + 1)..] : entry.ClassName;
+            // Sin el +1 que tenia: cortaba tambien la primera letra de la clase
+            // ("ombatExtended.AmmoDef") y ningun reemplazo se aplicaba a un patch.
+            var defType = isPatches ? entry.ClassName["Patches.".Length..] : entry.ClassName;
             var defName = entry.Node.Split('.')[0];
             var nodeAfterDefName = entry.Node[(entry.Node.IndexOf('.') + 1)..];
 

@@ -6,84 +6,47 @@ using RimworldExtractorInternal.DataTypes;
 namespace RimworldExtractorTest
 {
     /// <summary>
-    /// Cubre el reconocimiento del mod a partir del nombre del archivo.
-    ///
-    /// Importa mas de lo que parece: TRADUCIR.md le pide al traductor que devuelva
-    /// la planilla con el nombre exacto que recibio, y el motivo es justamente que
-    /// de ahi se deduce a que mod pertenece.
-    /// </summary>
-    [TestClass]
-    public class ModMetadataFromFilePathTests
-    {
-        /// <summary>
-        /// Un mod cualquiera del workshop del equipo donde corren los tests. Se elige
-        /// en tiempo de ejecucion en vez de fijarlo: antes estaba cableado uno que no
-        /// existia en esta maquina, asi que el test fallaba siempre.
-        /// </summary>
-        private static ModMetadata? _mod;
-
-        /// <summary>Elige un mod real del workshop antes de correr los tests.</summary>
-        [ClassInitialize]
-        public static void Setup(TestContext _)
-        {
-            Prefabs.Init();
-            ModLister.ResetCache();
-            _mod = ModLister.WorkshopMods.FirstOrDefault(x =>
-                !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.ModName));
-        }
-
-        /// <summary>Las cuatro formas de nombre deben resolver al mismo mod.</summary>
-        [TestMethod]
-        public void ReconoceElModPorLasCuatroFormasDeNombre()
-        {
-            if (_mod is null)
-                Assert.Inconclusive(
-                    $"No hay mods del workshop en {Prefabs.PathWorkshop}. " +
-                    "Este test necesita RimWorld instalado con al menos un mod suscrito.");
-
-            var nombre = _mod.ModName.StripInvaildChars();
-            var id = _mod.Id;
-
-            // Las cuatro formas que acepta GetModMetadataFromFilePath: por nombre de
-            // archivo y por nombre de la carpeta que lo contiene.
-            var rutas = new[]
-            {
-                $@"Data\{id}\a.xlsx",
-                $@"Data\cualquiera\{id}.xlsx",
-                $@"Data\{nombre} - {id}\a.xlsx",
-                $@"Data\cualquiera\{nombre} - {id}.xlsx"
-            };
-
-            foreach (var ruta in rutas)
-            {
-                var encontrado = TranslationAnalyzerTool.GetModMetadataFromFilePath(ruta);
-                Assert.IsNotNull(encontrado, $"No se reconocio el mod desde la ruta: {ruta}");
-                Assert.AreEqual(id, encontrado.Id, $"Se reconocio otro mod desde la ruta: {ruta}");
-            }
-        }
-
-        /// <summary>Un nombre que no corresponde a ningun mod no debe resolver a uno cualquiera.</summary>
-        [TestMethod]
-        public void DevuelveNullCuandoElNombreNoCorrespondeANingunMod()
-        {
-            var encontrado = TranslationAnalyzerTool.GetModMetadataFromFilePath(
-                @"Data\esto-no-es-un-mod-000000\a.xlsx");
-            Assert.IsNull(encontrado);
-        }
-    }
-
-    /// <summary>
     /// Cubre la configuracion persistida, que se lee por posicion y sin nombres de campo.
     /// </summary>
+
     [TestClass]
     public class PrefabsTests
     {
-        /// <summary>El formato que alimenta la traduccion rapida es el de arranque.</summary>
+        /// <summary>
+        /// Las dos lineas que quedaron reservadas —CommentOriginal y Method, que se fueron
+        /// con la planilla— se siguen escribiendo y se saltean al leer. Si alguien las
+        /// sacara, todo lo que viene despues se correria una posicion y un Prefabs.dat ya
+        /// escrito devolveria el tema en PathRml y la ruta en ningun lado.
+        /// </summary>
         [TestMethod]
-        public void ElFormatoPorDefectoEsElXmlParaTraducir()
+        public void LasLineasReservadasMantienenLasPosiciones()
         {
-            Prefabs.Init();
-            Assert.AreEqual(Prefabs.ExtractionMethod.LanguagesToTranslate, Prefabs.Method);
+            var archivo = Path.Combine(Path.GetTempPath(), "prefabs-" + Guid.NewGuid().ToString("N") + ".dat");
+            try
+            {
+                Prefabs.Init();
+                Prefabs.PathRml = "una/ruta/cualquiera/RML";
+                Prefabs.Theme = Prefabs.ColorTheme.Dark;
+                Prefabs.Save(archivo);
+
+                // Los valores que escribia la version con planilla, en esas mismas dos
+                // posiciones: un archivo de entonces tiene que seguir leyendose igual.
+                var lineas = File.ReadAllLines(archivo);
+                lineas[11] = "True";
+                lineas[17] = "Excel";
+                File.WriteAllLines(archivo, lineas);
+
+                Prefabs.PathRml = "otra cosa";
+                Prefabs.Theme = Prefabs.ColorTheme.Light;
+                Prefabs.Load(archivo);
+
+                Assert.AreEqual("una/ruta/cualquiera/RML", Prefabs.PathRml);
+                Assert.AreEqual(Prefabs.ColorTheme.Dark, Prefabs.Theme);
+            }
+            finally
+            {
+                if (File.Exists(archivo)) File.Delete(archivo);
+            }
         }
 
         /// <summary>
@@ -718,6 +681,105 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre un mod que se vuelve a publicar en el Workshop con otro numero y el mismo
+    /// packageId. Paso con The Dead Man's Switch: el 3121742525 paso a ser el 3819799478, y como
+    /// la carpeta se buscaba por «nombre - numero», la actualizacion escribia una carpeta nueva al
+    /// lado, toda en TODO, y las 299 traducciones de la vieja quedaban sin usar.
+    /// </summary>
+    [TestClass]
+    public class CambioDeNumeroTests
+    {
+        private static ModMetadata Mod(string id) =>
+            new("", id, "The Dead Man's Switch", "Aoba.DeadManSwitch.Core", false) { Author = "AobaKuma" };
+
+        /// <summary>Una carpeta de RML con una traduccion, escrita para el numero viejo.</summary>
+        private static string Montar(out string vieja)
+        {
+            Prefabs.Init();
+
+            var rml = Path.Combine(Path.GetTempPath(), "rml-numero-" + Guid.NewGuid().ToString("N"));
+            vieja = Path.Combine(rml, "Data", "!AobaKuma", LoadFoldersBuild.FolderNameFor(Mod("3121742525")));
+
+            var defInjected = Path.Combine(vieja, "Languages", Utils.CarpetaDelIdiomaDestino(), "DefInjected", "ThingDef");
+            Directory.CreateDirectory(defInjected);
+            File.WriteAllText(Path.Combine(defInjected, "cosas.xml"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <LanguageData>
+                  <!-- EN: switch -->
+                  <Interruptor.label>interruptor</Interruptor.label>
+                </LanguageData>
+                """);
+            LoadFoldersBuild.Write(Mod("3121742525"), vieja);
+            return rml;
+        }
+
+        /// <summary>Si no hay ninguna carpeta con el nombre nuevo, se encuentra la del packageId.</summary>
+        [TestMethod]
+        public void LaCarpetaSeEncuentraPorElPackageId()
+        {
+            var rml = Montar(out var vieja);
+            try
+            {
+                Assert.AreEqual(vieja, LoadFoldersBuild.CarpetaDe(Mod("3819799478"), rml));
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
+        /// Otro mod no se queda con la carpeta: el packageId tiene que ser el mismo. Si no, un
+        /// mod nuevo de ese autor pisaria una traduccion ajena.
+        /// </summary>
+        [TestMethod]
+        public void OtroPackageIdNoSeQuedaConLaCarpeta()
+        {
+            var rml = Montar(out var vieja);
+            try
+            {
+                var otro = new ModMetadata("", "3819799478", "The Dead Man's Switch", "Otro.Autor.Mod", false);
+                Assert.AreNotEqual(vieja, LoadFoldersBuild.CarpetaDe(otro, rml));
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
+        /// Al escribir, la carpeta toma el numero nuevo en el mismo lugar —dentro de la del
+        /// autor— y conserva lo traducido. No queda la vieja al lado.
+        /// </summary>
+        [TestMethod]
+        public void AlEscribirLaCarpetaTomaElNumeroNuevoYConservaLoTraducido()
+        {
+            var rml = Montar(out var vieja);
+            try
+            {
+                var mod = Mod("3819799478");
+                var extraccion = new List<TranslationEntry>
+                {
+                    new("ThingDef", "Interruptor.label", "switch", null, null, null)
+                };
+
+                var r = ActualizacionRml.Escribir(mod, extraccion, rml);
+
+                var nueva = Path.Combine(Path.GetDirectoryName(vieja)!, LoadFoldersBuild.FolderNameFor(mod));
+                Assert.AreEqual(nueva, r.Destino);
+                Assert.IsFalse(Directory.Exists(vieja), "la carpeta vieja quedo al lado de la nueva");
+                Assert.AreEqual(1, r.Conservadas, "se perdio la traduccion de la carpeta vieja");
+                StringAssert.Contains(File.ReadAllText(Path.Combine(nueva, LoadFoldersBuild.FileName)),
+                    "WorkshopID: \"3819799478\"");
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+    }
+
+    /// <summary>
     /// Cubre que los motes no entren a la traduccion.
     ///
     /// Un mote es el icono que flota sobre el colono: su etiqueta no se le muestra nunca al
@@ -809,6 +871,134 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre los nombres de la municion generica de Combat Extended, que viven en las
+    /// modExtensions de cada municion y no en sus campos de siempre.
+    /// </summary>
+    [TestClass]
+    public class MunicionGenericaTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        /// <summary>Los tres campos salen con la ruta que DefInjected entiende.</summary>
+        [TestMethod]
+        public void ExtraeLosTresCamposDeLaMunicionGenerica()
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml("""
+                <Defs>
+                  <ThingDef>
+                    <defName>Shell_HE</defName>
+                    <label>81mm mortar shell (HE)</label>
+                    <modExtensions>
+                      <li>
+                        <genericLabel>mortar shell (HE)</genericLabel>
+                      </li>
+                    </modExtensions>
+                  </ThingDef>
+                  <RecipeDef>
+                    <defName>MakeShell_HE</defName>
+                    <label>make 81mm mortar shells (HE) x5</label>
+                    <modExtensions>
+                      <li>
+                        <genericLabel>make mortar shells (HE) x5</genericLabel>
+                        <genericDescription>Craft 5 mortar shells (HE).</genericDescription>
+                      </li>
+                    </modExtensions>
+                  </RecipeDef>
+                  <ThingDef>
+                    <defName>Bullet_45ACP_FMJ</defName>
+                    <label>.45 ACP bullet</label>
+                    <projectile>
+                      <genericLabelOverride>pistol</genericLabelOverride>
+                    </projectile>
+                  </ThingDef>
+                </Defs>
+                """);
+
+            List<TranslationEntry> entradas;
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                entradas = Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+
+            CollectionAssert.IsSubsetOf(new[]
+            {
+                "Shell_HE.modExtensions.0.genericLabel",
+                "MakeShell_HE.modExtensions.0.genericLabel",
+                "MakeShell_HE.modExtensions.0.genericDescription",
+                "Bullet_45ACP_FMJ.projectile.genericLabelOverride",
+            }, entradas.Select(x => x.Node).ToList());
+        }
+
+        /// <summary>
+        /// Un Prefabs.dat guardado antes de que existieran los tres campos trae la lista de
+        /// etiquetas sin ellos, y la lista se lee del archivo, no del valor por defecto. Sin
+        /// sumarlos al leer, solo los veria quien borrara su configuracion.
+        /// </summary>
+        [TestMethod]
+        public void UnPrefabsViejoTambienLosExtrae()
+        {
+            var archivo = Path.Combine(Path.GetTempPath(), "prefabs-" + Guid.NewGuid().ToString("N") + ".dat");
+            try
+            {
+                Prefabs.Init();
+                Prefabs.ExtractableTags = new(Prefabs.ExtractableTags.Where(x => !x.StartsWith("generic")));
+                Prefabs.Save(archivo);
+
+                Prefabs.Load(archivo);
+
+                foreach (var tag in new[] { "genericLabel", "genericDescription", "genericLabelOverride" })
+                    Assert.IsTrue(Prefabs.CanExtract(tag, "CualquierDef"), tag);
+            }
+            finally
+            {
+                File.Delete(archivo);
+                Prefabs.Init();
+            }
+        }
+
+        /// <summary>
+        /// Sobre el Combat Extended instalado: los 38 textos de su Defs/ tienen que salir.
+        /// Son 29 genericLabel, 8 genericDescription y un genericLabelOverride, que esta en
+        /// una base abstracta y lo heredan las tres balas de .45 ACP: salen tres entradas.
+        /// </summary>
+        [TestMethod]
+        public void CombatExtendedDevuelveSuMunicionGenerica()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            if (!Directory.Exists(Path.Combine(Prefabs.PathRimworld, "Data", "Core")))
+                Assert.Inconclusive("Este test necesita RimWorld instalado.");
+
+            var ce = ModLister.AllMods.FirstOrDefault(x => x.PackageId == "CETeam.CombatExtended");
+            if (ce == null)
+                Assert.Inconclusive("Este test necesita Combat Extended instalado.");
+
+            var extraibles = ModLister.GetExtractableFolders(ce).AutoSeleccionables()
+                .Where(x => Path.GetFileName(x.FolderName) == "Defs" && !x.FolderName.Contains("ModPatches"))
+                .ToList();
+            var referencias = ModLister.FindAllReferenceMods(ce).ToList();
+
+            var genericos = Extractor.ExtractTranslationData(ce, extraibles, referencias)
+                .Where(x => x.Node.Split('.')[^1].StartsWith("generic"))
+                .ToList();
+
+            Assert.AreEqual(29, genericos.Count(x => x.Node.EndsWith(".genericLabel")), "genericLabel");
+            Assert.AreEqual(8, genericos.Count(x => x.Node.EndsWith(".genericDescription")), "genericDescription");
+            Assert.AreEqual(3, genericos.Count(x => x.Node.EndsWith(".genericLabelOverride")), "genericLabelOverride");
+        }
+    }
+
+    /// <summary>
     /// Cubre las dos formas en que la relectura de los Patches de RML danaba traducciones.
     ///
     /// Son el mismo tipo de defecto que PatchesRoundTripTests: algo que se escribio bien, se
@@ -885,6 +1075,204 @@ namespace RimworldExtractorTest
                     "li[2] es el indice 1");
                 Assert.IsFalse(leidas.Any(x => x.Node == "Cuchillo.tools.2.label"),
                     "el indice quedo corrido un lugar");
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>Un def con un elemento de lista que tiene TranslationHandle (su verbClass).</summary>
+        private const string MochilaConVerbo = """
+            <Defs>
+              <ThingDef>
+                <defName>Mochila</defName>
+                <verbs>
+                  <li Class="CombatExtended.VerbPropertiesCE">
+                    <verbClass>CombatExtended.Verb_ShootCE</verbClass>
+                    <label>deploy turret</label>
+                  </li>
+                </verbs>
+              </ThingDef>
+            </Defs>
+            """;
+
+        /// <summary>Un Patches de RML con una sola traduccion del label del verbo de la mochila.</summary>
+        private static string PatchDelVerbo(string rutaDelVerbo) => $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <Patch>
+              <Operation Class="PatchOperationReplace">
+                <success>Always</success>
+                <xpath>/Defs/ThingDef[defName="Mochila"]/verbs/{rutaDelVerbo}/label</xpath>
+                <value>
+                  <!-- EN: deploy turret -->
+                  <label>desplegar torreta</label>
+                </value>
+              </Operation>
+            </Patch>
+            """;
+
+        /// <summary>
+        /// Un xpath que entra a un elemento de lista se relee con el mismo nombre con que se
+        /// extrae: por su TranslationHandle, el verbo. Se releia por el indice (verbs.0.label),
+        /// no cruzaba con la extraccion y quedaba una copia en UNUSED. Asi quedaron ocho en
+        /// Combat Extended: las mochilas, las armaduras, la driade y las torretas de hombro.
+        /// </summary>
+        [TestMethod]
+        public void UnVerboSeReleeConElNombreConQueSeExtrae()
+        {
+            var raiz = Montar(PatchDelVerbo("*[.//*[contains(text(), 'Verb_ShootCE')]]"));
+            try
+            {
+                var leidas = ConLaBase(MochilaConVerbo, () => IO.FromLanguageXml(raiz));
+
+                CollectionAssert.AreEqual(new[] { "Mochila.verbs.Verb_ShootCE.label" },
+                    leidas.Where(x => x.Translated == "desplegar torreta").Select(x => x.Node).ToList());
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// El paso intermedio: RML ya tiene rutas por indice (verbs/li[1]) para elementos que
+        /// ahora se nombran por su verbo. La relectura evaluada las encuentra y las nombra por el
+        /// verbo; la literal no tiene que sumar ademas la del indice, que no cruzaria con nada y
+        /// quedaria para siempre en UNUSED.
+        /// </summary>
+        [TestMethod]
+        public void UnaRutaViejaPorIndiceNoDejaUnaCopia()
+        {
+            var raiz = Montar(PatchDelVerbo("li[1]"));
+            try
+            {
+                var leidas = ConLaBase(MochilaConVerbo, () => IO.FromLanguageXml(raiz));
+
+                CollectionAssert.AreEqual(new[] { "Mochila.verbs.Verb_ShootCE.label" },
+                    leidas.Where(x => x.Translated == "desplegar torreta").Select(x => x.Node).ToList());
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Del lado de la extraccion: un patch del mod que agrega un verbo a la lista lo nombra
+        /// por su verbo, igual que la extraccion de los defs. Por el indice, el nombre cambiaba
+        /// si otro patch agregaba un verbo antes.
+        /// </summary>
+        [TestMethod]
+        public void UnVerboAgregadoPorUnPatchSeNombraPorSuClase()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationAdd">
+                    <xpath>/Defs/ThingDef[defName="Mochila"]/verbs</xpath>
+                    <value>
+                      <li Class="CombatExtended.VerbPropertiesCE">
+                        <verbClass>CombatExtended.Verb_ShootCEOneUse</verbClass>
+                        <label>throw grenade</label>
+                      </li>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+            try
+            {
+                var patches = new ExtractableFolder(ModMetadata.Emptry, Path.Combine(raiz, "Patches"), null);
+                var extraidas = ConLaBase(MochilaConVerbo, () => Extractor.ExtractPatches(patches).ToList());
+
+                CollectionAssert.AreEqual(new[] { "Mochila.verbs.Verb_ShootCEOneUse.label" },
+                    extraidas.Select(x => x.Node).ToList());
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Un def declarado como ThingDef con Class="CombatExtended.AmmoDef" tiene que salir de
+        /// un patch como ThingDef, que es lo que dice NodeReplacement. Con la clase del atributo,
+        /// el xpath que se escribe es /Defs/CombatExtended.AmmoDef[...], que en el juego no
+        /// encuentra nada: la traduccion estaba escrita y no se aplicaba. Le pasaba a la granada
+        /// toxica y a las flechas Black Widow de Combat Extended.
+        /// </summary>
+        [TestMethod]
+        public void UnPatchSobreUnaClaseReemplazadaSaleConLaClaseDelElemento()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>/Defs/ThingDef[defName="GranadaToxica"]/label</xpath>
+                    <value>
+                      <!-- EN: tox grenades -->
+                      <label>granadas tóxicas</label>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+            try
+            {
+                var leidas = ConLaBase("""
+                    <Defs>
+                      <ThingDef Class="CombatExtended.AmmoDef">
+                        <defName>GranadaToxica</defName>
+                        <label>tox grenades</label>
+                      </ThingDef>
+                    </Defs>
+                    """, () => IO.FromLanguageXml(raiz));
+
+                var entrada = leidas.Single(x => x.Node == "GranadaToxica.label");
+                Assert.AreEqual("Patches.ThingDef", entrada.ClassName);
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Un Patches escrito antes del arreglo de arriba trae /Defs/CombatExtended.AmmoDef[...],
+        /// que no encuentra nada y se relee literal. Si la clase quedara como la del xpath, la
+        /// traduccion no cruzaria con la extraccion nueva, que ya sale como ThingDef: iria a
+        /// UNUSED y volveria a TODO. Asi pasaron seis de Combat Extended en la primera prueba.
+        /// </summary>
+        [TestMethod]
+        public void UnPatchViejoConLaClaseReemplazadaSeReleeComoElElemento()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>/Defs/CombatExtended.AmmoDef[defName="GranadaToxica"]/label</xpath>
+                    <value>
+                      <!-- EN: tox grenades -->
+                      <label>granadas tóxicas</label>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+            try
+            {
+                var leidas = ConLaBase("""
+                    <Defs>
+                      <ThingDef Class="CombatExtended.AmmoDef">
+                        <defName>GranadaToxica</defName>
+                        <label>tox grenades</label>
+                      </ThingDef>
+                    </Defs>
+                    """, () => IO.FromLanguageXml(raiz));
+
+                var entrada = leidas.Single(x => x.Node == "GranadaToxica.label");
+                Assert.AreEqual("Patches.ThingDef", entrada.ClassName);
+                Assert.AreEqual("granadas tóxicas", entrada.Translated);
             }
             finally
             {
@@ -1027,7 +1415,11 @@ namespace RimworldExtractorTest
         /// </summary>
         private static T ConBaseVacia<T>(Func<T> hacer) => ConLaBase("<Defs />", hacer);
 
-        /// <summary>Corre algo con la base de defs que se le pase.</summary>
+        /// <summary>
+        /// Corre algo con la base de defs que se le pase. Tambien como base completa: si no, la
+        /// relectura usa la que haya dejado registrada otro test que extrajo de verdad, y los
+        /// xpath no encuentran los defs de este.
+        /// </summary>
         private static T ConLaBase<T>(string defs, Func<T> hacer)
         {
             var previo = Extractor.CombinedDefs;
@@ -1036,11 +1428,13 @@ namespace RimworldExtractorTest
             try
             {
                 Extractor.CombinedDefs = doc;
+                Extractor.RegistrarBaseCompleta(doc);
                 return hacer();
             }
             finally
             {
                 Extractor.CombinedDefs = previo;
+                Extractor.RegistrarBaseCompleta(null);
             }
         }
 
@@ -2203,6 +2597,85 @@ namespace RimworldExtractorTest
     /// nombre, el PatchOperationFindMod no coincide nunca y la traduccion no se aplica ni con el
     /// mod puesto. Pasaba con siete mods de AobaKuma que piden CETeam.CombatExtended_steam.
     /// </summary>
+    /// <summary>
+    /// El cache de defs de referencia y la lectura en paralelo no pueden cambiar la extraccion.
+    ///
+    /// Las dos cosas se pusieron para que «Actualizar todo RML» no reparsee los 1558 archivos
+    /// del juego base una vez por mod, que eran 408.196 parseos donde alcanzaban 1558. Pero
+    /// tocan justo el armado de la base de defs: si el arbol combinado sale distinto, las
+    /// traducciones salen distintas y nada falla.
+    /// </summary>
+    [TestClass]
+    public class CacheDeDefsTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        /// <summary>
+        /// La misma extraccion, con el cache apagado y con el cache ya lleno, tiene que dar
+        /// exactamente las mismas entradas y en el mismo orden.
+        /// </summary>
+        [TestMethod]
+        public void ElCacheNoCambiaLaExtraccion()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            if (!Directory.Exists(Path.Combine(Prefabs.PathRimworld, "Data", "Core")))
+                Assert.Inconclusive("Este test necesita RimWorld instalado.");
+
+            // Un mod con Defs propios y con dependencias, que es lo que hace pasar por
+            // LoadReferenceDefs, que es lo que el cache toca.
+            var mod = ModLister.AllMods.FirstOrDefault(x =>
+                !x.IsOfficialContent &&
+                ModLister.GetExtractableFolders(x).Any(f => Path.GetFileName(f.FolderName) == "Defs"));
+
+            if (mod == null)
+                Assert.Inconclusive("No hay ningun mod con Defs instalado.");
+
+            var sinCache = Extraer(mod);
+
+            CacheDeDefs.Abrir();
+            try
+            {
+                // Dos veces: la primera llena el cache y la segunda lo usa, que es la
+                // situacion real a partir del segundo mod de la corrida.
+                Extraer(mod);
+                var conCache = Extraer(mod);
+
+                Assert.AreEqual(sinCache.Count, conCache.Count,
+                    "el cache cambio cuantas entradas salen de la extraccion");
+
+                for (var i = 0; i < sinCache.Count; i++)
+                {
+                    Assert.AreEqual(sinCache[i].ClassName, conCache[i].ClassName, $"entrada {i}");
+                    Assert.AreEqual(sinCache[i].Node, conCache[i].Node, $"entrada {i}");
+                    Assert.AreEqual(sinCache[i].Original, conCache[i].Original,
+                        $"entrada {i}: {sinCache[i].Node}");
+                    Assert.AreEqual(sinCache[i].Translated, conCache[i].Translated,
+                        $"entrada {i}: {sinCache[i].Node}");
+                }
+            }
+            finally
+            {
+                CacheDeDefs.Cerrar();
+            }
+
+            Assert.IsFalse(CacheDeDefs.Encendido, "el cache quedo encendido despues de cerrarlo");
+        }
+
+        /// <summary>Una extraccion completa de ese mod, como la que hace la corrida por lotes.</summary>
+        private static List<TranslationEntry> Extraer(ModMetadata mod)
+        {
+            var extraibles = ModLister.GetExtractableFolders(mod).AutoSeleccionables();
+            var referencias = ModLister.FindAllReferenceMods(mod)
+                .Concat(ModLister.FindModsNamedInPatches(extraibles))
+                .Distinct()
+                .ToList();
+
+            return Extractor.ExtractTranslationData(mod, extraibles, referencias);
+        }
+    }
+
     [TestClass]
     public class ModsConPackageIdTests
     {

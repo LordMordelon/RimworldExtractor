@@ -20,6 +20,7 @@ con licencias distintas: esta herramienta es MIT, RML deriva de código GPL-3.0.
 |---|---|
 | `RimworldExtractorInternal` | Toda la lógica: extracción, lectura y escritura de XML/XLSX, listado de mods, configuración. No depende de WinForms. |
 | `RimworldExtractorGUI` | Los ocho formularios, más los ayudantes de `Utils/`. |
+| `RimworldExtractorLotes` | «Actualizar todo RML» por consola, sin abrir la ventana, para todas las carpetas o solo algunas. No se publica. Ver «Compilar y probar». |
 | `RimworldExtractorTest` | MSTest. Los tests usan **la instalación real de RimWorld de la máquina**, así que se declaran `Inconclusive` si no la encuentran en vez de fallar. |
 
 Archivos que conviene conocer antes de tocar nada:
@@ -44,6 +45,17 @@ a `net10.0`, porque no dependen de WinForms.
 dotnet build RimworldExtractor.sln -c Debug
 dotnet test  RimworldExtractor.sln
 ```
+
+Para reextraer mods de RML sin la ventana, desde esta carpeta y con RML como carpeta hermana:
+
+```
+dotnet run --project RimworldExtractorLotes -c Release -- "The Dead Man's Switch - 3819"   # una carpeta, por su comienzo
+dotnet run --project RimworldExtractorLotes -c Release -- --indice                         # todas, y regenera el indice
+```
+
+Hace lo mismo que el botón, con `ActualizacionPorLotes.Correr`. Sin `--indice` no agrupa ni
+regenera el índice: eso queda para después, con el builder de RML. Toma RimWorld de
+`D:\SteamLibrary`, los valores por defecto de `Prefabs`. Después, mirar el diff en RML.
 
 Dos cosas que muerden:
 
@@ -137,6 +149,13 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   válido, así que un `grep` de texto coreano no los encuentra: parecen ya traducidos y
   no lo están. `PatchOperations.cs` estuvo así. Hoy los 62 `.cs` están en UTF-8 y la CI ya
   no convierte nada, así que lo que se traiga a mano de upstream hay que revisarlo antes.
+- **`IO.ReadXml` pasa por `File.ReadAllText` a proposito.** Parece una copia de mas por
+  archivo —y son miles por corrida— pero decodifica con reemplazo: un byte que no es UTF-8
+  válido se convierte en el carácter de reemplazo y el XML se parsea igual. Pasarle la ruta
+  directamente a `XmlReader.Create` respeta la declaración de encoding del archivo y tira
+  `Invalid character in the given encoding` en el primer mod con un archivo en CP949 o
+  parecido, que los hay. Lo atrapó `ElCacheNoCambiaLaExtraccion`.
+
 - **La carpeta de version no se elige por igualdad.** RimWorld carga la de la version
   actual y, si el mod no la trae, la mas cercana hacia atras: un mod con solo `1.6/` se
   juega en 1.7 con lo de `1.6/`. Es `ModLister.VersionQueCarga`, y todo lo que elige
@@ -169,6 +188,12 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   **al final** y se lee sólo si está (`idx < lines.Length`): así un archivo viejo sigue
   sirviendo. Meterlo en el medio obliga a subir `Version`, y eso descarta el archivo
   entero y le borra la configuración a todo el mundo.
+- **Una etiqueta nueva en la lista por defecto no le llega a nadie.** La lista de etiquetas
+  extraíbles se guarda en `Prefabs.dat` y se lee de ahí, así que un `Prefabs.dat` ya escrito
+  se queda con la vieja. Las etiquetas que se suman van en `Prefabs.EtiquetasAgregadas`, que
+  `Load` agrega si faltan. Así entraron las tres de la munición genérica de Combat Extended
+  (`genericLabel`, `genericDescription` y `genericLabelOverride`); lo cubre
+  `UnPrefabsViejoTambienLosExtrae`.
 - **El tamaño de lo publicado.** Una vez el `.zip` pasó de 2,8 MB a 17,8 MB porque un
   paquete de test arrastró instrumentación de Linux, macOS y ARM. La CI quedó en verde
   igual: el único síntoma fue el tamaño del artefacto. Referencia actual: el Standard pesa
@@ -195,6 +220,16 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   ambigüedad. Reconstruir mal una clave es peor que no reconstruirla: pone la traducción en
   el campo de al lado, y un `TODO` se ve mientras que una traducción mal puesta no.
   Cuidado con el índice de lista: es 1-based en el xpath (`li[2]`) y 0-based en el nodo.
+
+- **Un elemento de lista se nombra igual bajando que subiendo.** Por su TranslationHandle
+  (`verbClass`, `compClass`) si lo tiene, y si no por su índice: es `NombreEnLaRuta`, que usan
+  `FindExtractableNodes` y `GetRootDefNode`. Subiendo desde el objetivo de un xpath se usaba
+  siempre el índice, así que `verbs/*[...Verb_ShootCE...]/label` se releía como `verbs.0.label`
+  y se extraía como `verbs.Verb_ShootCE.label`: no cruzaban y quedaba una copia en `UNUSED`
+  (ocho en Combat Extended). Por lo mismo, `LeerPatchesLiteral` saltea un xpath que encontró
+  su objetivo cuando la lectura evaluada ya trajo ese campo de ese def con la misma traducción:
+  una ruta vieja por índice se relee ahí por el verbo, y sumarla también por el índice dejaría
+  la copia para siempre.
 
 - **El orden de lectura decide quién gana.** `TranslationMerge.Clave` unifica
   `Patches.ThingDef` con `ThingDef` a propósito, así que un mismo nodo traducido de las dos
@@ -249,10 +284,38 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   mismo mod escribe siempre el mismo archivo y una re-extracción sobrescribe en vez de duplicar.
   `LoadFoldersBuilder -rutas` comprueba las dos cosas del lado de RML.
 
+- **Un mod que cambia de número en el Workshop conserva su carpeta.** `LoadFoldersBuild.CarpetaDe`
+  busca primero por «nombre - número» y, si no encuentra nada, por el packageId de los yaml; después
+  `Escribir` renombra la carpeta con el número nuevo, en el mismo lugar. Sin eso escribía una carpeta
+  nueva al lado, toda en `TODO`, y la vieja quedaba sin usar: pasó con The Dead Man's Switch
+  (3121742525 → 3819799478). Lo cubren los tests de `CambioDeNumeroTests`.
+
 «Actualizar todo RML» (`ActualizacionPorLotes.Correr`) hace lo mismo con cada mod de RML,
 uno detrás de otro, en segundo plano. Mientras corre, la ventana no se deja cerrar: hacerlo
 mataría el hilo a mitad de un `Escribir`, con el árbol del mod ya borrado y sin reescribir.
 Al terminar agrupa y regenera el índice una sola vez.
+
+**Dos cosas sostienen que esa corrida no se quede pegada, y conviene no deshacerlas:**
+
+- **`CacheDeDefs`**, encendido solo mientras dura la corrida. Cada mod rearma su base de defs
+  desde cero y `FindAllReferenceMods` siempre devuelve todo el contenido oficial, así que los
+  1558 archivos de Core y los DLC se parseaban una vez por mod: 408.196 parseos donde
+  alcanzaban 1558. El caché entrega el mismo `XmlDocument` a todos los mods de la corrida,
+  y por eso **nadie lo puede modificar**: los dos que lo usan copian con `ImportNode` y le
+  ponen los atributos a la copia. Lo cubre `ElCacheNoCambiaLaExtraccion`, que compara la
+  extracción con el caché apagado y encendido, entrada por entrada. La lectura y el parseo
+  van en paralelo; la inserción en `CombinedDefs` **no**, porque el orden decide quién gana
+  en `ParentNodeLookUp` y en el `DistinctBy` final.
+
+- **El log no espera a la ventana.** `RichTextBoxWriter` encola las líneas y las pinta de a
+  tandas con `BeginInvoke`. Antes cada línea hacía un `Invoke` **síncrono** más un `Flush()`
+  al disco, leía `Text.Length` —hasta 327.670 caracteres— y llamaba a `ScrollToCaret()`: el
+  hilo que extrae avanzaba al ritmo del repintado, y eso era el pegado. Volver a escribir
+  directo en el control lo reinstala.
+
+Medido sobre seis mods reales, el caché solo bajó de 43,9 s a 32,4 s: lo que queda es
+`ImportNode` copiando nodo por nodo al árbol combinado y `DoXmlInheritance` copiándolo entero
+otra vez, que es secuencial por naturaleza. Ahí está la próxima optimización, si hace falta.
 
 Los tests de `PatchesRoundTripTests`, `UnusedSobreviveTests` y `PatchesDeRmlTests` cubren
 estos cuatro casos. Todos se verificaron fallando sin su arreglo: un test de regresión que
@@ -274,12 +337,43 @@ salieron de contar cuántas entradas afectaba y de comprobar que no se llevaran 
 
 ## Publicación
 
-**El número de versión sale de los mensajes de commit.** `mathieudutour/github-tag-action`
-sube el último número por defecto; un commit que empiece con `feat:` sube el del medio
-(`0.0.35` → `0.1.0`). Es la única convención de este tipo en el repositorio, y se usa sólo
+**El número de versión sale de los mensajes de commit.** Lo calcula el propio
+`publish.yml` en bash, que reemplazó a `mathieudutour/github-tag-action` cuando esa acción
+se quedó sin versión para Node 24. Por defecto sube el último número; un commit que
+empiece con `feat:` sube el del medio (`0.0.35` → `0.1.0`); y uno con `!` antes de los dos
+puntos (`feat!:`, `fix!:`) o con `BREAKING CHANGE` en el cuerpo sube el primero y pone los
+otros dos en cero. Es la única convención de este tipo en el repositorio, y se usa sólo
 cuando se quiere marcar una versión: el resto de los mensajes van en prosa.
 
-`.github/workflows/publish.yml` corre en cada push a `master`: etiqueta la versión,
-compila las dos variantes (estándar y portable) y crea la release. `tools.py` es la
-herramienta auxiliar que usa para escribir la versión, armar el texto de la release y
-acomodar los dos paquetes.
+**Ramas.** `master` es la 1.0: la beta se unió el 20-oct-2026 y la rama `1.0-beta` se borró.
+`legacy` guarda la 0.1.x —la del Excel y el analizador— y no publica nada. El mecanismo de
+betas sigue en el workflow para la próxima: se agrega la rama a `on.push.branches` y se pone su
+versión en `Version_Beta`.
+
+**Fuera de `master` la versión sale como beta**, `1.0.0-beta.N`, y la release se marca
+`prerelease`. Eso la deja fuera de `releases/latest`, que es lo que consulta la aplicación,
+así que a nadie le aparece como actualización.
+
+**La versión de una beta no se deduce: la declara la rama**, en el `Version_Beta` del
+workflow. Toda beta de esta rama es `1.0.0-beta.N` —`.4`, `.5`, `.6`…— y todas pertenecen a
+la 1.0.0. Antes se deducía de que hubiera un commit `feat!:` en el rango desde la última
+etiqueta estable, y eso se caía solo: el día que `master` publique una estable que ya incluya
+ese commit, la rama deja de verlo y la beta siguiente saldría `0.x`.
+
+Tres cosas que hay que mantener juntas:
+
+- `N` sale del **máximo** de los `1.0.0-beta.*` que ya existen, con `cut -d. -f4 | sort -n`,
+  y no de contarlos. Contar reutiliza un número si alguna etiqueta se borra, y entonces la
+  release choca con una que todavía está. El `sort -n` tampoco sobra: alfabéticamente
+  `beta.9` es mayor que `beta.12`.
+- La etiqueta base se busca con `--match '[0-9]*' --exclude '*-*'`. El `--exclude` no
+  sobra: el `*` de un glob se come el guión, así que `[0-9]*.[0-9]*.[0-9]*` también casa
+  con `1.0.0-beta.1`. Sigue haciendo falta para el rango del changelog.
+- `FormMain.EsBeta` corta la oferta de actualizar cuando la versión que corre lleva guión.
+  Sin eso, una beta ve como «última» a la estable anterior —la comparación es igualdad de
+  cadenas— y el enlace ofrece actualizar hacia atrás.
+
+`.github/workflows/publish.yml` corre en cada push a `master` (y a la rama de beta, si hay una):
+etiqueta la versión, compila las dos variantes (estándar y portable) y crea la release.
+`tools.py` es la herramienta auxiliar que usa para escribir la versión, armar el texto de
+la release y acomodar los dos paquetes.

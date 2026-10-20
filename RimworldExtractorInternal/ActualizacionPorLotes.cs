@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using RimworldExtractorInternal.DataTypes;
@@ -53,6 +54,16 @@ namespace RimworldExtractorInternal
             if (carpetas.Count == 0)
                 return renglones;
 
+            var reloj = Stopwatch.StartNew();
+
+            // Todos los mods se extraen contra las mismas referencias —el contenido oficial
+            // entero, mas los frameworks—, asi que se parsean una vez para toda la corrida en
+            // vez de una vez por mod. Se apaga al terminar: fuera de la corrida cada
+            // extraccion tiene que volver a leer del disco.
+            CacheDeDefs.Abrir();
+            try
+            {
+
             // El indice de packageId se arma una sola vez: resolverlo por carpeta significaria
             // releer cientos de About.xml doscientas veces.
             var porPackageId = new Dictionary<string, ModMetadata>(StringComparer.OrdinalIgnoreCase);
@@ -62,24 +73,33 @@ namespace RimworldExtractorInternal
                     porPackageId.TryAdd(mod.PackageId.Trim(), mod);
             }
 
-            for (var i = 0; i < carpetas.Count; i++)
-            {
-                var carpeta = carpetas[i];
-                var nombre = Path.GetFileName(carpeta);
-                avisar?.Invoke(i + 1, carpetas.Count, nombre);
+                for (var i = 0; i < carpetas.Count; i++)
+                {
+                    var carpeta = carpetas[i];
+                    var nombre = Path.GetFileName(carpeta);
+                    avisar?.Invoke(i + 1, carpetas.Count, nombre);
 
-                try
-                {
-                    renglones.Add(Actualizar(carpeta, nombre, rmlPath, porPackageId));
-                }
-                catch (Exception e)
-                {
-                    // Un mod roto no puede llevarse por delante las otras doscientas.
-                    renglones.Add(new Renglon(nombre, Motivo.Fallo, e.Message, 0, 0, 0, new List<TranslationEntry>()));
-                    Log.Wrn(Strings.BatchModFailed(nombre, e.Message));
+                    try
+                    {
+                        renglones.Add(Actualizar(carpeta, nombre, rmlPath, porPackageId));
+                    }
+                    catch (Exception e)
+                    {
+                        // Un mod roto no puede llevarse por delante las otras doscientas.
+                        renglones.Add(new Renglon(nombre, Motivo.Fallo, e.Message, 0, 0, 0, new List<TranslationEntry>()));
+                        Log.Wrn(Strings.BatchModFailed(nombre, e.Message));
+                    }
                 }
             }
+            finally
+            {
+                // Son cientos de MB de arboles XML: no tienen por que sobrevivir a la corrida.
+                CacheDeDefs.Cerrar();
+            }
 
+            // Se dice cuanto tardo: sin esto no hay con que comparar si alguna vez se toca el
+            // rendimiento, y habria que volver a medir a mano.
+            Log.Msg(Strings.BatchTiempo(carpetas.Count, reloj.Elapsed));
             return renglones;
         }
 

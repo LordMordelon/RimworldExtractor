@@ -110,6 +110,11 @@ namespace RimworldExtractorInternal
         /// ese autor ya tiene una, y si no, directo bajo Data. Que un mod nuevo caiga solo en
         /// Data/!Autor/ es lo que mantiene la agrupacion al dia sin que nadie mueva nada
         /// despues: antes caia siempre plano y la agrupacion se desactualizaba en silencio.
+        ///
+        /// Si no hay ninguna con ese nombre se busca por el packageId de los yaml: un mod que
+        /// se vuelve a publicar con otro numero del Workshop cambia de nombre de carpeta pero no
+        /// de packageId. La carpeta que devuelve entonces tiene el nombre viejo, y la renombra
+        /// <see cref="ActualizacionRml.Escribir"/>.
         /// </summary>
         public static string CarpetaDe(ModMetadata mod, string rmlPath)
         {
@@ -126,6 +131,10 @@ namespace RimworldExtractorInternal
                     .FirstOrDefault();
                 if (existente != null)
                     return existente;
+
+                var porPackageId = CarpetaPorPackageId(mod, data);
+                if (porPackageId != null)
+                    return porPackageId;
             }
             catch
             {
@@ -135,6 +144,18 @@ namespace RimworldExtractorInternal
 
             var deAutor = Agrupador.CarpetaDeAutor(mod.Author, rmlPath);
             return deAutor is null ? plana : Path.Combine(deAutor, nombre);
+        }
+
+        /// <summary>La carpeta de Data/ cuyo yaml lleva el packageId de este mod, si hay una.</summary>
+        private static string? CarpetaPorPackageId(ModMetadata mod, string data)
+        {
+            if (mod.IsOfficialContent || string.IsNullOrWhiteSpace(mod.PackageId))
+                return null;
+
+            return Directory.EnumerateFiles(data, FileName, SearchOption.AllDirectories)
+                .Where(x => string.Equals(PackageIdDe(x), mod.PackageId.Trim(), StringComparison.OrdinalIgnoreCase))
+                .Select(x => Path.GetDirectoryName(x)!)
+                .FirstOrDefault();
         }
 
         /// <summary>Ruta del proyecto del builder dentro de un clon de RML.</summary>

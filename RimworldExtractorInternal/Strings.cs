@@ -28,22 +28,6 @@
 
         #endregion
 
-        #region Utils / Excel
-
-        public static string ErrorReadingCell(string address, string message)
-            => $"Error al leer el texto de una celda del archivo Excel: {address}-{message}";
-
-        /// <summary>
-        /// Fuente de las planillas generadas. Upstream usaba "맑은 고딕" (Malgun Gothic),
-        /// que no existe en un Windows en español.
-        /// </summary>
-        public const string ExcelFontName = "Calibri";
-
-        public const string XlsxHeaderReadingErrorFormat =
-            "Ocurrió un error al leer los encabezados del archivo Excel: {0}";
-
-        #endregion
-
         #region ModLister
 
         public static string CouldNotReadAboutXml(string pathAbout, string message)
@@ -128,22 +112,10 @@
         #region IO
 
         public static string InvalidRequiredModsValue(string token)
-            => $"No se conoce el nombre del mod de \"{token}\" y esa condición no se puede escribir con su packageId, así que ese patch no se va a aplicar. Instala el mod y vuelve a extraer, o reemplaza ese texto por el nombre del mod en la columna Required Mods del Excel.";
+            => $"No se conoce el nombre del mod de \"{token}\" y esa condición no se puede escribir con su packageId, así que ese patch no se va a aplicar. Instala el mod y vuelve a extraer.";
 
         public static string PackageIdInsteadOfModName(string prefix)
             => $"Hay un nombre de paquete ({prefix}) en lugar del nombre del mod. Corrígelo al nombre del mod.";
-
-        public static string CommentDeleted(string dateString, string previousTranslation)
-            => $"Eliminado el {dateString}. Traducción anterior: '{previousTranslation}'\n";
-
-        public static string CommentPreviousOriginal(string dateString, string previousOriginal)
-            => $"Texto original anterior al {dateString}: '{previousOriginal}'\n";
-
-        public static string CommentOriginalRestored(string dateString)
-            => $"Se restauró el {dateString} un texto original que se había perdido.\n";
-
-        public static string CommentNewlyAdded(string dateString, int count)
-            => $"Nodos agregados el {dateString} ({count})";
 
         public const string OfficialContentKeepsFileNames =
             "A diferencia de los mods, el contenido oficial se extrae conservando los nombres de archivo.";
@@ -188,7 +160,9 @@
             => $"La traducción actualizada quedó en {path}";
 
         public const string QuickUpdateNoRmlPath =
-            "La traducción rápida necesita saber dónde está el mod RML. Configúralo en Opciones, en «Carpeta del mod RML».";
+            "Extraer necesita saber dónde está el mod RML, porque el resultado se escribe ahí. "
+            + "Configúralo en Opciones, en «Carpeta del mod RML», o marca «Extraer en carpeta» "
+            + "al elegir el mod para que quede en una carpeta suelta.";
 
         public static string LoadFoldersYamlWritten(string folderName)
             => $"Se generó el {LoadFoldersBuild.FileName} del mod. Para sumarlo a RML, copia esta carpeta a Data/{folderName}";
@@ -227,6 +201,24 @@
         public static string AutorSinAgrupar(string author, int count)
             => $"{author} ya tiene {count} traducciones sueltas en Data/. Si le armas una carpeta Data/{Agrupador.Prefijo}{author}/, aunque sea vacía, se acomodan solas en la próxima traducción rápida.";
 
+        public static string CarpetaRenombrada(string vieja, string nueva)
+            => $"{vieja}: el mod cambió de número en el Workshop y su carpeta pasa a llamarse {nueva}.";
+
+        public const string LotesUso =
+            "Uso: RimworldExtractorLotes [--rml <ruta>] [--indice] [carpeta...]\n" +
+            "Cada carpeta es el nombre de una carpeta de Data/ o su comienzo; sin ninguna se actualizan todas.\n" +
+            "--indice agrupa por autor y regenera el índice al terminar.";
+
+        public static string LotesSinRml(string path)
+            => $"No hay una carpeta Data/ en {path}. Indica la carpeta de RML con --rml.";
+
+        public const string LotesNingunaCarpeta =
+            "Ninguna carpeta de Data/ con LoadFolders.Build.yaml coincide con lo pedido.";
+
+        public static string LotesRenglon(string carpeta, string motivo, string detalle,
+            int conservadas, int pendientes, int sinUso, int rescatadas)
+            => $"{carpeta}: {motivo} {detalle} conservadas={conservadas} pendientes={pendientes} sinUso={sinUso} rescatadas={rescatadas}";
+
         public static string BatchModFailed(string folderName, string message)
             => $"{folderName}: falló la actualización y se siguió con el resto. {message}";
 
@@ -245,12 +237,6 @@
 
         public static string ModDependencySuffix(string requiredPackageId)
             => $"\n[dependencia del mod={requiredPackageId}]";
-
-        public static string NotAValidTranslationXlsx(string path, string message)
-            => $"El archivo Excel no tiene el formato de traducción esperado: {path}, {message}";
-
-        public static string XlsxIsOpen(string path)
-            => $"No se pudo leer el archivo Excel porque está abierto. Ciérralo y vuelve a intentar: {path}";
 
         #endregion
 
@@ -313,18 +299,6 @@
             "Terminó, pero hubo errores durante la extracción. ¿Abro igual la carpeta con los archivos extraídos?";
 
         public const string DoneOpenFolder = "¡Listo! ¿Abro la carpeta con los archivos extraídos?";
-        public const string DoneOpenConvertedFolder = "¡Listo! ¿Abro la carpeta con los archivos convertidos?";
-
-        public const string SelectExtractorXlsx = "Elige un archivo Excel generado por el extractor.";
-        public const string FilterTranslationData = "Archivo de datos de traducción|*.xlsx";
-
-        public static string ProgressFixed(int current, int total, string path)
-            => $"{current}/{total}::Corregido: {path}";
-
-        public const string ConversionDone = "¡La conversión terminó!";
-        public const string EditedFileSuffix = "- editado";
-
-        public static string FilesFixed(int count) => $"Se corrigieron {count} archivos.";
 
         public static string RmlPathWithoutData(string path)
             => $"La carpeta de RML configurada no tiene una carpeta Data:\n{path}\n\nSi moviste el clon de lugar, actualiza la ruta en Opciones, en «Carpeta del mod RML».";
@@ -342,6 +316,9 @@
 
         public static string BatchSummary(int updated, int total, int kept, int pending, int unused, int rescued)
             => $"Actualización de RML: {updated} de {total} mods actualizados. {kept} traducciones conservadas, {pending} sin traducir, {unused} sin uso y {rescued} rescatadas por su texto original.";
+
+        public static string BatchTiempo(int mods, System.TimeSpan tardanza)
+            => $"Tardó {(int)tardanza.TotalMinutes} min {tardanza.Seconds} s en recorrer {mods} carpetas.";
 
         public static string BatchNotInstalled(int count, string names)
             => $"{count} no están instalados y quedaron como estaban: {names}";
@@ -364,11 +341,6 @@
         #endregion
 
         #region FormSettings
-
-        public const string ExtractionMethodExcel = "Archivo Excel (.xlsx) para trabajar la traducción";
-        public const string ExtractionMethodXml = "Archivo XML distribuible";
-        public const string ExtractionMethodXmlComments = "Archivo XML distribuible (con comentarios)";
-        public const string ExtractionMethodXmlToTranslate = "Archivo XML para traducir a mano";
 
         /// <summary>Valor que se escribe cuando la entrada todavia no esta traducida.</summary>
         public const string UntranslatedPlaceholder = "TODO";
@@ -435,40 +407,7 @@
 
         #endregion
 
-        #region FormTranslationAnalyzer
-
-        public static string AnalyzingProgress(int current, int total)
-            => $"Analizando los datos de traducción... {current}/{total}";
-
-        public const string AnalysisDone = "¡Análisis terminado!";
-        public const string SomeFilesFailedToAnalyze =
-            "Algunos archivos Excel no se pudieron analizar. Revisa el panel de log y vuelve a intentar.";
-
-        public const string NeedsAssignment = "Hay que asignarlo";
-        public const string Automatic = "Automático";
-        public const string Append = "Agregar al final";
-        public const string Manual = "Manual";
-
-        public const string SelectModToFix = "Elige el mod que quieres corregir.";
-        public const string OriginalModNotFound = "No se encontró el mod original. Asignalo a mano.";
-        public const string CannotReextractUnknownMod =
-            "No se puede volver a extraer porque no se conoce el mod original de este archivo.";
-
-        public const string MenuOpenXlsxInExplorer = "Abrir el archivo Excel en el explorador";
-        public const string MenuOpenModRootInExplorer = "Abrir la carpeta raíz del mod en el explorador";
-
-        public const string SelectXlsxFile = "Elige el archivo Excel (.xlsx).";
-        public const string FilterTranslationXlsx = "Archivo Excel de traducción";
-        public const string SelectXlsxRootFolder = "Elige la carpeta raíz donde están los archivos Excel.";
-
-        #endregion
-
-        #region FormXmlister / FormStopCallback / Program
-
-        public const string SelectLanguagesRootFolder = "Elige la carpeta raíz que contiene la carpeta Languages.";
-
-        public static string CouldNotSaveFileInUse(string message)
-            => $"No se pudo guardar el archivo porque ya está en uso. {message}";
+        #region Program
 
         public const string CompleteFolderSelection = "Completa la selección de carpetas.";
 
@@ -481,8 +420,8 @@
         // formulario los aplica desde su ApplyStrings().
 
         // --- FormMain ---
-        public const string BtnSelectMod = "1. Elegir el mod a extraer";
-        public const string BtnExtract = "2. Extraer los datos de traducción";
+        public const string BtnSelectMod = "Elegir un mod y extraer";
+        public const string BtnExtract = "Extraer los datos de traducción";
         public const string BtnOptions = "Opciones";
 
         // El boton del tema muestra el que esta puesto y al pulsarlo pasa al siguiente,
@@ -505,7 +444,6 @@
         public const string LabelMainDescription =
             "Extrae los datos de traducción de RimWorld y de sus mods.";
         public const string BtnUpdateAllRml = "Actualizar todo RML";
-        public const string BtnOpenTranslationAnalyzer = "Abrir el analizador\r\nde traducciones (WIP)";
         public const string LabelNoModSelected = "No hay ningún mod elegido.";
 
         // --- FormSettings ---
@@ -518,7 +456,6 @@
         public const string BtnAutoDetect = "Detectar solo";
         public const string LabelOriginalLanguage = "Idioma original:";
         public const string LabelTranslationLanguage = "Idioma de traducción:";
-        public const string LabelExtractionFormat = "Formato de extracción:";
         public const string BtnSaveAndClose = "Guardar y cerrar";
         public const string BtnCancel = "Cancelar";
         public const string BtnReset = "Restablecer\r\nvalores por defecto";
@@ -527,7 +464,7 @@
         public const string LabelDuplicatePolicy = "Si al guardar hay archivos duplicados:";
         public const string GroupRimworldSettings = "Ajustes de RimWorld";
         public const string GroupBasicSettings = "Ajustes básicos de extracción y guardado";
-        public const string LabelPathRml = "Carpeta del mod RML (para la traducción rápida):";
+        public const string LabelPathRml = "Carpeta del mod RML (donde se escribe la traducción):";
         public const string SelectRmlPath = "Elige la carpeta del mod RML, la que contiene Data";
 
         public const string LabelBaseRefListPath = "Ruta de la lista de mods de referencia por defecto:";
@@ -538,86 +475,54 @@
         public const string CheckBoxTkey = "(provisorio) Usar extracción de TKey";
 
         // --- FormSelectMod ---
-        public const string BtnSelectionDone = "Listo";
         public const string LabelSelectModControls =
-            "Controles: 'clic izquierdo' = elegir como mod a extraer, 'clic derecho' = abrir el menú, 'A' = abrir en el explorador, 'S' = elegir como mod de referencia, 'D' = ver solo los elegidos\r\n";
+            "Controles: 'clic izquierdo' = elegir como mod a extraer, 'clic derecho' = abrir el menú, 'A' = abrir en el explorador, 'S' = elegir como mod de referencia\r\n";
         public const string LabelSelectExtractionMode = "Elige el mod que quieres extraer";
         public const string LabelSelectFolder = "Elige la carpeta que quieres extraer";
-        public const string CheckBoxQuickUpdate = "Traducción rápida";
-
-        public const string CheckBoxFullExtraction = "Extracción completa";
-
-        public const string TooltipFullExtraction =
-            """
-            Carga el contenido oficial (Core y los DLC) como referencia antes de extraer.
-
-            Hace falta para los mods que modifican cosas del juego base: un patch que le cambia
-            el nombre a un objeto de Core solo se puede extraer si Core está cargado. Sin esto,
-            esas líneas no aparecen y el log te avisa cuántas fueron.
-
-            A cambio, la extracción tarda bastante más.
-            """;
+        public const string CheckBoxExtraerEnCarpeta = "Extraer en carpeta";
 
         /// <summary>
-        /// La ayuda emergente de la casilla. Es larga a proposito: describe todo lo que
-        /// hace el modo, que es donde el usuario va a buscar antes de marcarlo.
+        /// La ayuda emergente de la unica casilla que queda. Describe el modo normal —el de
+        /// la casilla sin marcar— y despues la excepcion, porque lo que hay que entender
+        /// antes de marcarla es que se pierde.
         /// </summary>
-        public const string TooltipQuickUpdate =
+        public const string TooltipExtraerEnCarpeta =
             """
-            Actualiza la traducción que ya está en RML, en vez de dejar una carpeta suelta.
+            Sin marcar, la extracción se escribe directamente en RML, en Data/<Mod> - <ID>:
 
             • Lo que ya estaba traducido se conserva, aunque el texto original en inglés
               haya cambiado; el comentario EN se actualiza, así que el cambio se ve en el diff.
             • Queda TODO solamente en lo que es nuevo.
             • Lo que ya no existe en el mod sale del árbol y se guarda en UNUSED.xml, en la
               raíz de la carpeta del mod.
-            • El resultado se escribe directamente en RML, en Data/<Mod> - <ID>.
 
             Necesita que la carpeta del mod RML esté configurada en Opciones.
+
+            Marcada, deja el resultado en una carpeta suelta al lado del programa, con todo
+            en TODO: no cruza con lo que RML ya tenga traducido.
             """;
 
-        public const string CheckBoxFilterSelected = "Ver solo los mods elegidos";
+        /// <summary>
+        /// Por que la extraccion tarda. Era la ayuda de la casilla «Extraccion completa»,
+        /// que se saco porque siempre iba marcada: el texto sigue valiendo y ahora explica
+        /// una espera que no se puede evitar.
+        /// </summary>
+        public const string TooltipExtraccionCompleta =
+            """
+            Antes de extraer se carga el contenido oficial (Core y los DLC) como referencia.
 
-        // --- FormTranslationAnalyzer ---
-        // Titulos de columna: cortos a proposito. Son siete columnas en una sola tabla y
-        // los titulos largos no entraban, con lo cual se cortaban o dejaban al usuario con
-        // una barra de desplazamiento horizontal. Los del original tambien eran cortos.
-        public const string ColumnSelect = "Elegir";
+            Hace falta para los mods que modifican cosas del juego base: un patch que le cambia
+            el nombre a un objeto de Core solo se puede extraer si Core está cargado. Sin esto,
+            esas líneas no aparecen y el log te avisa cuántas fueron.
 
-        public const string ColumnModInfo = "Mod";
-        public const string ColumnFileName = "Archivo";
-        public const string ColumnOriginalCount = "Originales";
-        public const string ColumnChanges = "Cambios";
-        public const string ColumnReextractMethod = "Re-extracción";
-        public const string ColumnSaveMethod = "Guardado";
-        public const string BtnSelectModManually = "Elegir a mano el mod a re-extraer";
-        public const string BtnFixSelectedFiles = "Corregir los archivos elegidos";
-        public const string BtnDeselectAll = "Deseleccionar todo";
-        public const string BtnSelectAllPossible = "Elegir todos los posibles";
-        public const string LabelSaveMethod = "Método de guardado:";
+            Por eso la extracción tarda.
+            """;
 
-        public const string SaveMethodAppend = "Agregar al final";
-        public const string SaveMethodRebuildOverwrite = "Reconstruir (sobrescribir)";
-        public const string SaveMethodRebuildNew = "Reconstruir (crear nuevo)";
-        public const string SaveMethodOnlyNewNodes = "Crear nuevo solo con los nodos agregados";
-
-        // --- FormTranslationAnalyzerPathSelect ---
-        // El titulo de la ventana ya dice que son archivos Excel, asi que los botones no
-        // lo repiten: con el texto completo uno media mas del doble que el otro y la fila
-        // quedaba desbalanceada.
-        public const string BtnSelectSingleXlsx = "Elegir archivo";
-
-        public const string BtnSelectXlsxDir = "Elegir carpeta";
-        public const string LabelAnalyzerFaq =
-            "P. ¿Qué es el analizador de traducciones?\r\n" +
-            "R. Lee y analiza los archivos Excel que extrajiste antes,\r\n" +
-            "y te avisa si el texto original cambió por una actualización del mod\r\n" +
-            "o si se agregaron nodos nuevos que hay que traducir.\r\n" +
-            "Si hay algo que corregir, actualiza automáticamente el Excel existente.\r\n";
 
         // --- FormInitialPathSelect ---
         public const string LabelRimworldPathShort = "Ruta de RimWorld";
         public const string LabelWorkshopPathShort = "Ruta del workshop";
+        public const string LabelPathRmlShort = "Carpeta del mod RML";
 
         // --- FormStopCallback ---
         public const string LabelDuplicateFileFound = "Se encontró un archivo duplicado al guardar.";
@@ -637,13 +542,10 @@
         // literal y no queda ninguna referencia que resolver en tiempo de ejecucion.
         public const string TitleStartupError = "No se pudo abrir el extractor";
 
-        public const string TitleInitialPathSelect = "Indica las rutas de RimWorld y del workshop";
+        public const string TitleInitialPathSelect = "Indica las rutas de RimWorld, del workshop y del mod RML";
         public const string TitleSelectMod = "Elige el mod que quieres extraer";
         public const string TitleSettings = "Ajustes";
         public const string TitleStopCallback = "Archivo duplicado";
-        public const string TitleTranslationAnalyzer = "Analizador de traducciones";
-        public const string TitleAnalyzerPathSelect = "Elige la ruta con los archivos Excel (se puede elegir más de una)";
-        public const string TitleXmlister = "Herramienta de extracción XML -> XLSX";
 
         #endregion
 
@@ -661,6 +563,13 @@
         /// </summary>
         public static string VersionDevBuild(string latest)
             => $"compilación local — la última publicada es {latest}";
+
+        /// <summary>
+        /// Una beta no se compara con la ultima estable: releases/latest deja afuera las
+        /// prereleases, asi que "la ultima" siempre va a ser anterior a la beta que corre.
+        /// </summary>
+        public static string VersionBeta(string current, string latest)
+            => $"{current} — beta; la última estable es {latest}";
 
         public static string VersionCheckFailed(string message)
             => $"No se pudo comprobar si hay una versión nueva: {message}";
@@ -695,6 +604,10 @@
         /// </summary>
         public const string UpdateSkippedDevBuild =
             "Esto es una compilación local, así que no se actualiza sola. Se abre la página de descargas.";
+
+        public const string UpdateSkippedBeta =
+            "Esto es una beta, y lo que figura como última versión es la estable anterior: "
+            + "actualizar sería volver atrás. Se abre la página de descargas.";
 
         public static string UpdateDownloadEmpty(string path)
             => $"el archivo descargado quedó vacío ({path})";

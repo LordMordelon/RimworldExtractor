@@ -6,7 +6,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
-using ClosedXML.Excel;
 using RimworldExtractorInternal.DataTypes;
 
 namespace RimworldExtractorInternal
@@ -210,21 +209,6 @@ namespace RimworldExtractorInternal
             nodeName = $"/Defs/{className}[defName=\"{defName}\"]/";
             nodeName += string.Join('/', tokens);
             return nodeName;
-        }
-
-        public static string StrVal(this IXLCell cell)
-        {
-            try
-            {
-                var value = cell.Value;
-                if (value.TryGetText(out string str))
-                    return str;
-            }
-            catch (Exception e)
-            {
-                Log.Msg(Strings.ErrorReadingCell(cell.Address.ToString() ?? "?", e.Message));
-            }
-            return string.Empty;
         }
 
         internal static bool IsListNode(this XmlNode? curNode) => curNode?.Name == "li";

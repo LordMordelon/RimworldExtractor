@@ -48,11 +48,19 @@ namespace RimworldExtractorInternal
             Out = Console.Out;
         }
 
-        /// <summary>Las entradas tal cual, para quien necesite el nivel sin re-parsear.</summary>
-        public static IEnumerable<LogEntry> Entries => _logQueue;
+        /// <summary>
+        /// Las entradas tal cual, para quien necesite el nivel sin re-parsear.
+        ///
+        /// Devuelve una copia: si se entregara la cola en vivo, recorrerla mientras otro hilo
+        /// escribe tira InvalidOperationException.
+        /// </summary>
+        public static IEnumerable<LogEntry> Entries
+        {
+            get { lock (_candado) return _logQueue.ToList(); }
+        }
 
         /// <summary>Se conserva por compatibilidad: devuelve solo el texto de cada entrada.</summary>
-        public static IEnumerable<string> Messages => _logQueue.Select(x => x.Message);
+        public static IEnumerable<string> Messages => Entries.Select(x => x.Message);
 
         public const string Separator = "::";
         public const string PrefixError = Strings.PrefixError;
@@ -63,6 +71,13 @@ namespace RimworldExtractorInternal
         private static readonly HashSet<int> _hashes = new();
         private const int MAX_COUNT = 999;
 
+        /// <summary>
+        /// Protege las dos colecciones de arriba. Desde que la extraccion lee y parsea en
+        /// paralelo, Err y Wrn pueden llegar desde varios hilos a la vez, y una Queue no
+        /// sincronizada se corrompe o revienta al enumerarla mientras otro escribe.
+        /// </summary>
+        private static readonly object _candado = new();
+
         public static void Err(string message) => Write(LogLevel.Error, message);
 
         public static void Wrn(string message) => Write(LogLevel.Warning, message);
@@ -71,15 +86,21 @@ namespace RimworldExtractorInternal
 
         public static void ErrOnce(string message, int hash)
         {
-            if (!_hashes.Add(hash))
-                return;
+            lock (_candado)
+            {
+                if (!_hashes.Add(hash))
+                    return;
+            }
             Err(message);
         }
 
         public static void WrnOnce(string message, int hash)
         {
-            if (!_hashes.Add(hash))
-                return;
+            lock (_candado)
+            {
+                if (!_hashes.Add(hash))
+                    return;
+            }
             Wrn(message);
         }
 
@@ -92,7 +113,7 @@ namespace RimworldExtractorInternal
         /// </summary>
         public static bool HasErrorSince(string marker)
         {
-            var entries = _logQueue.ToList();
+            var entries = Entries.ToList();
             var idx = entries.FindLastIndex(x => x.Message == marker);
             if (idx == -1)
                 return false;
@@ -184,11 +205,14 @@ namespace RimworldExtractorInternal
 
         private static void StoreEntry(LogEntry entry)
         {
-            if (_logQueue.Count > MAX_COUNT)
+            lock (_candado)
             {
-                _logQueue.Dequeue();
+                if (_logQueue.Count > MAX_COUNT)
+                {
+                    _logQueue.Dequeue();
+                }
+                _logQueue.Enqueue(entry);
             }
-            _logQueue.Enqueue(entry);
         }
     }
 }
