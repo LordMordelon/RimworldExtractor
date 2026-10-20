@@ -209,6 +209,16 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   el campo de al lado, y un `TODO` se ve mientras que una traducción mal puesta no.
   Cuidado con el índice de lista: es 1-based en el xpath (`li[2]`) y 0-based en el nodo.
 
+- **Un elemento de lista se nombra igual bajando que subiendo.** Por su TranslationHandle
+  (`verbClass`, `compClass`) si lo tiene, y si no por su índice: es `NombreEnLaRuta`, que usan
+  `FindExtractableNodes` y `GetRootDefNode`. Subiendo desde el objetivo de un xpath se usaba
+  siempre el índice, así que `verbs/*[...Verb_ShootCE...]/label` se releía como `verbs.0.label`
+  y se extraía como `verbs.Verb_ShootCE.label`: no cruzaban y quedaba una copia en `UNUSED`
+  (ocho en Combat Extended). Por lo mismo, `LeerPatchesLiteral` saltea un xpath que encontró
+  su objetivo cuando la lectura evaluada ya trajo ese campo de ese def con la misma traducción:
+  una ruta vieja por índice se relee ahí por el verbo, y sumarla también por el índice dejaría
+  la copia para siempre.
+
 - **El orden de lectura decide quién gana.** `TranslationMerge.Clave` unifica
   `Patches.ThingDef` con `ThingDef` a propósito, así que un mismo nodo traducido de las dos
   formas colisiona y gana el que se lee último. Por eso los `Patches` se leen **primero** y

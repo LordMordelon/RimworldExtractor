@@ -496,18 +496,28 @@ namespace RimworldExtractorInternal
                 // el documento reducido de sus propios patches. Contra ese, no encuentran nada
                 // y la traduccion que ya estaba hecha se pierde sin avisar.
                 var patches = new ExtractableFolder(ModMetadata.Emptry, patchesDir, null);
-                translations.AddRange(Extractor.ConLaBaseCompleta(
-                    () => Extractor.ExtractPatches(patches)
+                // ConLaBaseCompleta vacia la lista de xpath sin objetivo al terminar, asi que se
+                // copian adentro: son los unicos que la lectura literal tiene que rescatar.
+                var sinObjetivo = new HashSet<string>();
+                translations.AddRange(Extractor.ConLaBaseCompleta(() =>
+                {
+                    var antes = PatchOperations.XpathsSinObjetivo.Count;
+                    var evaluadas = Extractor.ExtractPatches(patches)
                         .Select(x => x with { Translated = TranslatedFromXml(x.Original), Original = "" })
-                        .ToList()));
+                        .ToList();
+                    sinObjetivo.UnionWith(PatchOperations.XpathsSinObjetivo.Skip(antes).Select(x => x.Trim()));
+                    return evaluadas;
+                }));
 
                 // Y las que ni asi aparecieron, parseando el archivo. Ver LeerPatchesLiteral.
                 var vistas = new HashSet<(string, string)>(
                     translations.Select(x => (SinPrefijoDePatches(x.ClassName), x.Node)));
+                var evaluadas = new HashSet<(string, string, string?)>(
+                    translations.Select(x => (x.DefName, UltimoTramo(x.Node), x.Translated)));
                 // Por el mismo postproceso que la lectura normal: sin NodeReplacement, un xpath
                 // viejo con /Defs/CombatExtended.AmmoDef[...] se releia con esa clase y no
                 // cruzaba con la extraccion nueva, que sale como ThingDef.
-                foreach (var suelta in CompatManager.DoPostProcessing(LeerPatchesLiteral(patchesDir)))
+                foreach (var suelta in CompatManager.DoPostProcessing(LeerPatchesLiteral(patchesDir, sinObjetivo, evaluadas)))
                 {
                     if (vistas.Add((SinPrefijoDePatches(suelta.ClassName), suelta.Node)))
                         translations.Add(suelta);
@@ -605,6 +615,9 @@ namespace RimworldExtractorInternal
         /// </summary>
         private static bool SinNombreEnNomatch(RequiredMods requiredMods)
             => requiredMods.DisallowedMods.Any(x => x.Contains(RequiredMods.PACKAGE_ID_PREFIX, StringComparison.Ordinal));
+
+        /// <summary>El campo de una clave: lo que va despues del ultimo punto.</summary>
+        private static string UltimoTramo(string node) => node[(node.LastIndexOf('.') + 1)..];
 
         /// <summary>El prefijo con el que el extractor marca lo que sale por un patch.</summary>
         private static string SinPrefijoDePatches(string className) =>
@@ -724,8 +737,15 @@ namespace RimworldExtractorInternal
         /// Parsear no reemplaza a evaluar, porque el xpath es el que resuelve de verdad a que
         /// nodo apunta cada operacion. Por eso lo de aca se agrega despues y solo para las claves
         /// que no vinieron por el camino normal.
+        ///
+        /// Y se saltea lo que la lectura evaluada ya trajo con otro nombre: un xpath que
+        /// encontro su objetivo y cuyo def, campo y traduccion ya estan en <paramref name="evaluadas"/>.
+        /// Es el caso de una ruta vieja por indice (verbs/li[1]/label), que la evaluada nombra por
+        /// el verbo: sumarla tambien con el indice dejaria una copia para siempre en UNUSED. Con
+        /// cualquier otra diferencia se lee igual, porque una copia de mas se ve y una perdida no.
         /// </summary>
-        private static List<TranslationEntry> LeerPatchesLiteral(string patchesDir)
+        private static List<TranslationEntry> LeerPatchesLiteral(string patchesDir,
+            ISet<string> xpathsSinObjetivo, ISet<(string DefName, string Campo, string? Traduccion)> evaluadas)
         {
             var sueltas = new List<TranslationEntry>();
 
@@ -761,8 +781,13 @@ namespace RimworldExtractorInternal
                     if (clave == null)
                         continue;
 
-                    sueltas.Add(new TranslationEntry($"Patches.{clave.Value.Clase}", clave.Value.Nodo,
-                        "", TranslatedFromXml(hijos[0].InnerText), null, null));
+                    var suelta = new TranslationEntry($"Patches.{clave.Value.Clase}", clave.Value.Nodo,
+                        "", TranslatedFromXml(hijos[0].InnerText), null, null);
+                    if (!xpathsSinObjetivo.Contains(xpath)
+                        && evaluadas.Contains((suelta.DefName, UltimoTramo(suelta.Node), suelta.Translated)))
+                        continue;
+
+                    sueltas.Add(suelta);
                 }
             }
 

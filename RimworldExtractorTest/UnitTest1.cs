@@ -983,6 +983,118 @@ namespace RimworldExtractorTest
             }
         }
 
+        /// <summary>Un def con un elemento de lista que tiene TranslationHandle (su verbClass).</summary>
+        private const string MochilaConVerbo = """
+            <Defs>
+              <ThingDef>
+                <defName>Mochila</defName>
+                <verbs>
+                  <li Class="CombatExtended.VerbPropertiesCE">
+                    <verbClass>CombatExtended.Verb_ShootCE</verbClass>
+                    <label>deploy turret</label>
+                  </li>
+                </verbs>
+              </ThingDef>
+            </Defs>
+            """;
+
+        /// <summary>Un Patches de RML con una sola traduccion del label del verbo de la mochila.</summary>
+        private static string PatchDelVerbo(string rutaDelVerbo) => $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <Patch>
+              <Operation Class="PatchOperationReplace">
+                <success>Always</success>
+                <xpath>/Defs/ThingDef[defName="Mochila"]/verbs/{rutaDelVerbo}/label</xpath>
+                <value>
+                  <!-- EN: deploy turret -->
+                  <label>desplegar torreta</label>
+                </value>
+              </Operation>
+            </Patch>
+            """;
+
+        /// <summary>
+        /// Un xpath que entra a un elemento de lista se relee con el mismo nombre con que se
+        /// extrae: por su TranslationHandle, el verbo. Se releia por el indice (verbs.0.label),
+        /// no cruzaba con la extraccion y quedaba una copia en UNUSED. Asi quedaron ocho en
+        /// Combat Extended: las mochilas, las armaduras, la driade y las torretas de hombro.
+        /// </summary>
+        [TestMethod]
+        public void UnVerboSeReleeConElNombreConQueSeExtrae()
+        {
+            var raiz = Montar(PatchDelVerbo("*[.//*[contains(text(), 'Verb_ShootCE')]]"));
+            try
+            {
+                var leidas = ConLaBase(MochilaConVerbo, () => IO.FromLanguageXml(raiz));
+
+                CollectionAssert.AreEqual(new[] { "Mochila.verbs.Verb_ShootCE.label" },
+                    leidas.Where(x => x.Translated == "desplegar torreta").Select(x => x.Node).ToList());
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// El paso intermedio: RML ya tiene rutas por indice (verbs/li[1]) para elementos que
+        /// ahora se nombran por su verbo. La relectura evaluada las encuentra y las nombra por el
+        /// verbo; la literal no tiene que sumar ademas la del indice, que no cruzaria con nada y
+        /// quedaria para siempre en UNUSED.
+        /// </summary>
+        [TestMethod]
+        public void UnaRutaViejaPorIndiceNoDejaUnaCopia()
+        {
+            var raiz = Montar(PatchDelVerbo("li[1]"));
+            try
+            {
+                var leidas = ConLaBase(MochilaConVerbo, () => IO.FromLanguageXml(raiz));
+
+                CollectionAssert.AreEqual(new[] { "Mochila.verbs.Verb_ShootCE.label" },
+                    leidas.Where(x => x.Translated == "desplegar torreta").Select(x => x.Node).ToList());
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Del lado de la extraccion: un patch del mod que agrega un verbo a la lista lo nombra
+        /// por su verbo, igual que la extraccion de los defs. Por el indice, el nombre cambiaba
+        /// si otro patch agregaba un verbo antes.
+        /// </summary>
+        [TestMethod]
+        public void UnVerboAgregadoPorUnPatchSeNombraPorSuClase()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationAdd">
+                    <xpath>/Defs/ThingDef[defName="Mochila"]/verbs</xpath>
+                    <value>
+                      <li Class="CombatExtended.VerbPropertiesCE">
+                        <verbClass>CombatExtended.Verb_ShootCEOneUse</verbClass>
+                        <label>throw grenade</label>
+                      </li>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+            try
+            {
+                var patches = new ExtractableFolder(ModMetadata.Emptry, Path.Combine(raiz, "Patches"), null);
+                var extraidas = ConLaBase(MochilaConVerbo, () => Extractor.ExtractPatches(patches).ToList());
+
+                CollectionAssert.AreEqual(new[] { "Mochila.verbs.Verb_ShootCEOneUse.label" },
+                    extraidas.Select(x => x.Node).ToList());
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
         /// <summary>
         /// Un def declarado como ThingDef con Class="CombatExtended.AmmoDef" tiene que salir de
         /// un patch como ThingDef, que es lo que dice NodeReplacement. Con la clase del atributo,
@@ -1204,7 +1316,11 @@ namespace RimworldExtractorTest
         /// </summary>
         private static T ConBaseVacia<T>(Func<T> hacer) => ConLaBase("<Defs />", hacer);
 
-        /// <summary>Corre algo con la base de defs que se le pase.</summary>
+        /// <summary>
+        /// Corre algo con la base de defs que se le pase. Tambien como base completa: si no, la
+        /// relectura usa la que haya dejado registrada otro test que extrajo de verdad, y los
+        /// xpath no encuentran los defs de este.
+        /// </summary>
         private static T ConLaBase<T>(string defs, Func<T> hacer)
         {
             var previo = Extractor.CombinedDefs;
@@ -1213,11 +1329,13 @@ namespace RimworldExtractorTest
             try
             {
                 Extractor.CombinedDefs = doc;
+                Extractor.RegistrarBaseCompleta(doc);
                 return hacer();
             }
             finally
             {
                 Extractor.CombinedDefs = previo;
+                Extractor.RegistrarBaseCompleta(null);
             }
         }
 

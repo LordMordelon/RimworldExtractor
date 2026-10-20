@@ -128,8 +128,7 @@ namespace RimworldExtractorInternal
             }
             else
             {
-                q.Enqueue((rootNode, curNormalizedPath + "." + (rootNode.IsListNode()
-                    ? GetIdxOfListNode(rootNode).ToString() : rootNode.Name)));
+                q.Enqueue((rootNode, curNormalizedPath + "." + NombreEnLaRuta(rootNode)));
             }
 
             while (q.Count > 0)
@@ -160,22 +159,24 @@ namespace RimworldExtractorInternal
                 }
 
                 foreach (XmlNode childNode in curNode.ChildNodes)
-                {
-                    string path;
-                    if (childNode.IsListNode())
-                    {
-                        if (MatchTranslationHandle(childNode, out var translationHandleValue))
-                            path = $"{curPath}.{translationHandleValue}";
-                        else
-                            path = $"{curPath}.{GetIdxOfListNode(childNode)}";
-                    }
-                    else
-                        path = $"{curPath}.{childNode.Name}";
-
-
-                    q.Enqueue((childNode, path));
-                }
+                    q.Enqueue((childNode, $"{curPath}.{NombreEnLaRuta(childNode)}"));
             }
+        }
+
+        /// <summary>
+        /// Como se nombra un nodo dentro de la ruta de una traduccion: un elemento de lista por
+        /// su TranslationHandle si lo tiene, y si no por su indice; lo demas, por su etiqueta.
+        ///
+        /// Tiene que ser igual bajando desde el def (FindExtractableNodes) que subiendo desde el
+        /// objetivo de un xpath (GetRootDefNode). Subiendo se usaba siempre el indice, asi que
+        /// un patch que entra a un elemento de lista se releia como verbs.0.label y se extraia
+        /// como verbs.Verb_ShootCE.label: no cruzaban y quedaba una copia en UNUSED.
+        /// </summary>
+        private static string NombreEnLaRuta(XmlNode node)
+        {
+            if (!node.IsListNode())
+                return node.Name;
+            return MatchTranslationHandle(node, out var handle) ? handle : GetIdxOfListNode(node).ToString();
         }
 
         private static IEnumerable<TranslationEntry> FindExtractableNodesXmlExtensionSettings(string defName, string className,
@@ -481,7 +482,7 @@ namespace RimworldExtractorInternal
             }
 
             var parentNode = node;
-            nodeName = node.IsListNode() ? GetIdxOfListNode(node).ToString() : node.Name;
+            nodeName = NombreEnLaRuta(node);
             do
             {
                 parentNode = parentNode.ParentNode;
@@ -492,7 +493,7 @@ namespace RimworldExtractorInternal
                     nodeName = $"{parentNode["defName"]!.InnerText}.{nodeName}";
                     break;
                 }
-                nodeName = $"{(parentNode.IsListNode() ? GetIdxOfListNode(parentNode).ToString() : parentNode.Name)}.{nodeName}";
+                nodeName = $"{NombreEnLaRuta(parentNode)}.{nodeName}";
             } while (true);
             return parentNode;
         }
