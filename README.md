@@ -60,7 +60,8 @@ Si vas a traducir y no a programar, empieza por la
   <BuildingsNeatStorage.label>TODO</BuildingsNeatStorage.label>
   ```
 
-- **Traducción rápida**, una casilla al elegir el mod. Cruza la extracción con lo que ya
+- **Traducción rápida**, lo que hace al extraer un mod, salvo que se marque «Extraer en
+  carpeta» al elegirlo. Cruza la extracción con lo que ya
   está traducido en [RML](https://github.com/LordMordelon/RML) y escribe el resultado ahí:
   conserva lo traducido aunque cambie el texto original —el comentario `EN` se actualiza y
   el cambio se ve en el diff—, deja `TODO` solo en lo nuevo, y lo que el mod ya no tiene
