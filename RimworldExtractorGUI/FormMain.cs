@@ -1,7 +1,5 @@
 ﻿using RimworldExtractorInternal;
 using System.Diagnostics;
-using System.Xml;
-using RimworldExtractorInternal.Compats;
 using RimworldExtractorInternal.DataTypes;
 
 namespace RimworldExtractorGUI
@@ -187,7 +185,7 @@ namespace RimworldExtractorGUI
 
             if (_quickUpdate)
             {
-                outPath = ActualizarSobreRml(extraction, outPath);
+                outPath = ActualizarSobreRml(extraction);
                 TerminarExtraccion(extraction, outPath);
                 return;
             }
@@ -229,7 +227,7 @@ namespace RimworldExtractorGUI
         /// completo, y si no, los archivos de una version anterior del mod quedarian ahi
         /// con claves que el juego intentaria cargar.
         /// </summary>
-        private string ActualizarSobreRml(List<TranslationEntry> extraction, string nombreDeArchivos)
+        private string ActualizarSobreRml(List<TranslationEntry> extraction)
         {
             var r = ActualizacionRml.Escribir(SelectedMod!, extraction, Prefabs.PathRml);
 

@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Xml;
 
 namespace RimworldExtractorInternal
@@ -25,7 +21,6 @@ namespace RimworldExtractorInternal
         public static string PathBaseRefList = "";
         public static string CurrentVersion = string.Empty;
         public static string PatternVersion = string.Empty;
-        public static string PatternVersionWithV = string.Empty;
         public static string OriginalLanguage = string.Empty;
         public static string TranslationLanguage = string.Empty;
 
@@ -206,7 +201,6 @@ namespace RimworldExtractorInternal
             PathBaseRefList = "";
             CurrentVersion = "1.7";
             PatternVersion = @"^[1]\.\d+";
-            PatternVersionWithV = @"^v[1]\.\d+";
             OriginalLanguage = "English";
             TranslationLanguage = "SpanishLatin (Español(Latinoamérica))";
             ExtractableTags = new(
@@ -265,7 +259,9 @@ namespace RimworldExtractorInternal
                 PathBaseRefList,
                 CurrentVersion,
                 PatternVersion,
-                PatternVersionWithV,
+                // Reservada: aca iba PatternVersionWithV, que nunca se uso. Por lo mismo que
+                // CommentOriginal, se sigue escribiendo, con el valor que tenia.
+                @"^v[1]\.\d+",
                 OriginalLanguage,
                 TranslationLanguage,
 
@@ -313,7 +309,7 @@ namespace RimworldExtractorInternal
             PathBaseRefList = lines[idx++];
             CurrentVersion = lines[idx++];
             PatternVersion = lines[idx++];
-            PatternVersionWithV = lines[idx++];
+            idx++; // Reservada: PatternVersionWithV. Ver el comentario de Save().
             OriginalLanguage = lines[idx++];
             TranslationLanguage = lines[idx++];
             idx++; // Reservada: CommentOriginal. Ver el comentario de Save().

@@ -114,9 +114,6 @@
         public static string InvalidRequiredModsValue(string token)
             => $"No se conoce el nombre del mod de \"{token}\" y esa condición no se puede escribir con su packageId, así que ese patch no se va a aplicar. Instala el mod y vuelve a extraer.";
 
-        public static string PackageIdInsteadOfModName(string prefix)
-            => $"Hay un nombre de paquete ({prefix}) en lugar del nombre del mod. Corrígelo al nombre del mod.";
-
         public const string OfficialContentKeepsFileNames =
             "A diferencia de los mods, el contenido oficial se extrae conservando los nombres de archivo.";
 
@@ -230,9 +227,6 @@
 
         public static string OriginalIdentifierNotFound(string targetIdentifier)
             => $"Pointer: no se encontró el Identifier original de {targetIdentifier}.";
-
-        public static string FileInUse(string fileName)
-            => $"{fileName}: no se pudo guardar el archivo porque ya está en uso. Ciérralo y vuelve a intentar.";
 
         #endregion
 
@@ -532,10 +526,6 @@
         public const string BtnOverwrite = "Sobrescribir";
         public const string BtnSkip = "Omitir";
 
-        // --- FormXmlister ---
-        public const string LabelSelectLanguagesRoot =
-            "Elige la carpeta raíz que contiene la carpeta Languages. (se puede elegir más de una)";
-
         #endregion
 
         #region Titulos de ventana
@@ -638,9 +628,6 @@
         #endregion
 
         #region PatchOperations
-
-        public static string UnsupportedPatchOperation(string operation)
-            => $"Tipo de PatchOperation no soportado: {operation}";
 
         public const string MissingXpathOrValue =
             "Falta el valor de xpath o de value. Formato XML de RimWorld inválido.";

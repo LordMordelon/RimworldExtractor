@@ -13,9 +13,6 @@ namespace RimworldExtractorInternal
         /// <summary>Solo el valor, sin comentario.</summary>
         None,
 
-        /// <summary>El original como comentario, y el original tambien como valor.</summary>
-        Original,
-
         /// <summary>
         /// El original como comentario y un marcador como valor, para traducir sobre el
         /// propio XML y poder distinguir de un vistazo lo que falta.
@@ -29,13 +26,8 @@ namespace RimworldExtractorInternal
         /// Comentario que conserva el texto original. Un comentario XML no puede contener
         /// la secuencia "--", de eso se encarga EscapeXmlCommentDashes.
         /// </summary>
-        private static string OriginalComment(XmlCommentStyle style, string original)
-        {
-            var texto = SecurityElement.Escape(original).EscapeXmlCommentDashes();
-            return style == XmlCommentStyle.TranslationTemplate
-                ? $" {Strings.OriginalCommentPrefix} {texto} "
-                : $"{Prefabs.OriginalLanguage}={texto}";
-        }
+        private static string OriginalComment(string original)
+            => $" {Strings.OriginalCommentPrefix} {SecurityElement.Escape(original).EscapeXmlCommentDashes()} ";
 
         /// <summary>
         /// Valor de la entrada. En el modo para traducir a mano, lo que no esta traducido
@@ -261,7 +253,7 @@ namespace RimworldExtractorInternal
                             // de todo: es lo que uno mira mientras traduce. Al releer no
                             // molesta porque ReadXml descarta los comentarios.
                             if (commentStyle != XmlCommentStyle.None)
-                                value.AppendComment(OriginalComment(commentStyle, translation.Original));
+                                value.AppendComment(OriginalComment(translation.Original));
 
                             var lastNode = translation.Node.Split('.').Last();
                             if (int.TryParse(lastNode, out _)) lastNode = "li";
@@ -306,7 +298,7 @@ namespace RimworldExtractorInternal
                     doc.DocumentElement!.Append(languageData =>
                     {
                         if (commentStyle != XmlCommentStyle.None)
-                            languageData.AppendComment(OriginalComment(commentStyle, translation.Original));
+                            languageData.AppendComment(OriginalComment(translation.Original));
                         languageData.AppendElement(translation.Node, t =>
                         {
                             t.InnerText = ValueFor(commentStyle, translation);
@@ -358,7 +350,7 @@ namespace RimworldExtractorInternal
                     doc.DocumentElement!.Append(languageData =>
                     {
                         if (commentStyle != XmlCommentStyle.None)
-                            languageData.AppendComment(OriginalComment(commentStyle, translation.Original));
+                            languageData.AppendComment(OriginalComment(translation.Original));
                         languageData.AppendElement(translation.Node, t =>
                         {
                             t.InnerText = ValueFor(commentStyle, translation);
@@ -406,7 +398,7 @@ namespace RimworldExtractorInternal
                     doc.DocumentElement!.Append(languageData =>
                     {
                         if (commentStyle != XmlCommentStyle.None)
-                            languageData.AppendComment(OriginalComment(commentStyle, translation.Original));
+                            languageData.AppendComment(OriginalComment(translation.Original));
                         languageData.AppendElement(translation.Node, ValueFor(commentStyle, translation));
                     });
                 }
@@ -607,14 +599,6 @@ namespace RimworldExtractorInternal
 
             return packageIds.ToArray();
         }
-
-        /// <summary>
-        /// Si hay un packageId sin nombre en la parte que exige que un mod NO este. Es lo unico
-        /// que sigue sin poder escribirse: no hay un MayRequire al reves, y un nomatch de
-        /// FindMod necesita el nombre. Lo demas lo resuelve PackageIdsParaMayRequire.
-        /// </summary>
-        private static bool SinNombreEnNomatch(RequiredMods requiredMods)
-            => requiredMods.DisallowedMods.Any(x => x.Contains(RequiredMods.PACKAGE_ID_PREFIX, StringComparison.Ordinal));
 
         /// <summary>El campo de una clave: lo que va despues del ultimo punto.</summary>
         private static string UltimoTramo(string node) => node[(node.LastIndexOf('.') + 1)..];

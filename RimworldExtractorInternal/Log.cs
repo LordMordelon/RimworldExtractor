@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace RimworldExtractorInternal
 {
@@ -59,10 +54,6 @@ namespace RimworldExtractorInternal
             get { lock (_candado) return _logQueue.ToList(); }
         }
 
-        /// <summary>Se conserva por compatibilidad: devuelve solo el texto de cada entrada.</summary>
-        public static IEnumerable<string> Messages => Entries.Select(x => x.Message);
-
-        public const string Separator = "::";
         public const string PrefixError = Strings.PrefixError;
         public const string PrefixWarning = Strings.PrefixWarning;
         public const string PrefixMessage = Strings.PrefixMessage;
@@ -94,15 +85,6 @@ namespace RimworldExtractorInternal
             Err(message);
         }
 
-        public static void WrnOnce(string message, int hash)
-        {
-            lock (_candado)
-            {
-                if (!_hashes.Add(hash))
-                    return;
-            }
-            Wrn(message);
-        }
 
         /// <summary>
         /// Indica si hubo algun error despues de la ultima aparicion del marcador.

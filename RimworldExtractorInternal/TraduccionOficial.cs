@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Formats.Tar;
-using System.IO;
-using System.Linq;
 using System.Xml;
 using RimworldExtractorInternal.DataTypes;
 

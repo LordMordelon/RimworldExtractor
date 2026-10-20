@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
 using System.Xml;
 using RimworldExtractorInternal.DataTypes;
 
@@ -44,7 +39,6 @@ namespace RimworldExtractorInternal
             }
         }
 
-        public static IEnumerable<string> ModRootsAll => ModRootsOfficial.Concat(ModRootsLocal).Concat(ModRootsWorkshop);
         public static IEnumerable<ModMetadata> OfficialMods => ModRootsOfficial.Select(GetModMetadataByModRoot).OrderBy(x => x.ModName);
 
         public static IEnumerable<ModMetadata> LocalMods

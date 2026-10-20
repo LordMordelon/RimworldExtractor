@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RimworldExtractorInternal.DataTypes
 {
@@ -63,34 +58,12 @@ namespace RimworldExtractorInternal.DataTypes
             allowedMods.Add(RequiredModEntry.FromPackageIds(packageIds));
         }
 
-        public void AddDisallowedByModName(string modName)
-        {
-            disallowedMods.Add(RequiredModEntry.FromModName(modName));
-        }
 
         public void AddDisallowedByModNames(IEnumerable<string> modNames)
         {
             disallowedMods.Add(RequiredModEntry.FromModNames(modNames));
         }
 
-        public void AddDisallowedByPackageId(string packageId)
-        {
-            disallowedMods.Add(RequiredModEntry.FromPackageId(packageId));
-        }
-
-        public void AddDisallowedByPackageIds(IEnumerable<string> packageIds)
-        {
-            disallowedMods.Add(RequiredModEntry.FromPackageIds(packageIds));
-        }
-
-        public bool ContainsAllowed(string modName)
-        {
-            return allowedMods.Any(entry => entry.MatchesByModName(modName));
-        }
-        public bool ContainsDisallowed(string modName)
-        {
-            return disallowedMods.Any(entry => entry.MatchesByModName(modName));
-        }
 
         public bool HasSameElements(RequiredMods other)
         {
@@ -152,11 +125,6 @@ namespace RimworldExtractorInternal.DataTypes
                 modName => RequiredModEntry.FromModNames(modName.Split(OR_IDENTIFIER)));
         }
 
-        public static RequiredMods FromStringByPackageIds(string packageIds)
-        {
-            return FromStringInternal(packageIds,
-                packageId => RequiredModEntry.FromPackageIds(packageIds.Split(OR_IDENTIFIER)));
-        }
         private static RequiredMods FromStringInternal(string str, Func<string, RequiredModEntry> converter)
         {
             var result = new RequiredMods();
@@ -281,34 +249,6 @@ namespace RimworldExtractorInternal.DataTypes
                 }
             }
 
-            public void Reset()
-            {
-                _items.Clear();
-            }
-
-            public void AddByPackageId(string packageId)
-            {
-                _items.Add(PackageIdModNamePair.FromPackageId(packageId));
-            }
-
-            public void AddRangeByPackageIds(IEnumerable<string> packageIds)
-            {
-                foreach (var item in packageIds)
-                {
-                    _items.Add(PackageIdModNamePair.FromPackageId(item));
-                }
-            }
-
-            public bool MatchesByPackageId(string packageId)
-            {
-                return _items.Any(x => x.PackageId == packageId);
-            }
-
-            public bool MatchesByModName(string modName)
-            {
-                return _items.Any(x => x.ModName == modName);
-            }
-
             public object Clone()
             {
                 var result = new RequiredModEntry(this);
@@ -364,29 +304,6 @@ namespace RimworldExtractorInternal.DataTypes
 
         private struct PackageIdModNamePair
         {
-            public string PackageId
-            {
-                get
-                {
-                    if (_packageId != null)
-                        return _packageId;
-                    if (_modName != null)
-                    {
-                        if (_modName.StartsWith(PACKAGE_ID_PREFIX))
-                        {
-                            _packageId = _modName.Substring(PACKAGE_ID_PREFIX.Length, _modName.Length - PACKAGE_ID_PREFIX.Length);
-                            return _packageId;
-                        }
-                        else
-                        {
-                            _packageId = ModLister.GetModMetadataByModName(_modName)?.PackageId;
-                            return _packageId ?? "##modName##" + _modName;
-                        }
-                    }
-
-                    throw new InvalidOperationException("Both PackageId and ModName are null.");
-                }
-            }
 
             public string ModName
             {
@@ -440,11 +357,6 @@ namespace RimworldExtractorInternal.DataTypes
                 return result;
             }
 
-            public static PackageIdModNamePair FromModMetadata(ModMetadata modMetadata)
-            {
-                var result = new PackageIdModNamePair(modMetadata.PackageId, modMetadata.ModName);
-                return result;
-            }
 
             public readonly override int GetHashCode()
             {

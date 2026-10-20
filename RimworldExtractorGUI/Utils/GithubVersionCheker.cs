@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Net;
 
 namespace RimworldExtractorGUI
 {
@@ -21,7 +16,6 @@ namespace RimworldExtractorGUI
 
         internal static readonly string IssueUrl = $"{RepoUrl}/issues/new/choose";
 
-        internal static readonly string DiscussionUrl = $"{RepoUrl}/discussions";
 
         public static string GetLatest()
         {

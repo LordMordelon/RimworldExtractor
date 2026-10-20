@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace RimworldExtractorGUI
+﻿namespace RimworldExtractorGUI
 {
     /// <summary>
     /// Ensancha los controles cuyo texto no entra.

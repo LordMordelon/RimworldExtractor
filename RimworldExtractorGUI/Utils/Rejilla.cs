@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-
-namespace RimworldExtractorGUI
+﻿namespace RimworldExtractorGUI
 {
     /// <summary>
     /// Reparte un contenedor en columnas iguales.
@@ -124,18 +121,6 @@ namespace RimworldExtractorGUI
         internal static void Columna(int izquierda, params FilaAncho[] filas)
             => Colocar(izquierda, AnchoDeColumna(filas), filas);
 
-        /// <summary>
-        /// Lo mismo, pero apoyando la columna contra el borde derecho del contenedor.
-        /// Se usa cuando la columna es la que manda y lo que sobra a su izquierda queda
-        /// para el resto del formulario.
-        /// </summary>
-        internal static int ColumnaALaDerecha(Control contenedor, int margen, params FilaAncho[] filas)
-        {
-            var ancho = AnchoDeColumna(filas);
-            var izquierda = contenedor.ClientSize.Width - margen - ancho;
-            Colocar(izquierda, ancho, filas);
-            return izquierda;
-        }
 
         /// <summary>
         /// Ancho que necesita la columna: sale de la fila mas exigente. Una fila de un

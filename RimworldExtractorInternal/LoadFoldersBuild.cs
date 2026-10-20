@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using RimworldExtractorInternal.DataTypes;
@@ -149,7 +145,7 @@ namespace RimworldExtractorInternal
         ///
         /// Las carpetas de Data se pueden agrupar en subcarpetas —por autor, por familia— y el
         /// builder de RML las encuentra igual, porque busca los yaml en todo el arbol. El
-        /// extractor tiene que hacer lo mismo: si diera por sentado Data/<nombre>, al actualizar
+        /// extractor tiene que hacer lo mismo: si diera por sentado Data/&lt;nombre&gt;, al actualizar
         /// un mod agrupado no encontraria lo ya traducido, lo trataria como nuevo y escribiria
         /// una carpeta duplicada al lado. Sin dar ningun error.
         ///

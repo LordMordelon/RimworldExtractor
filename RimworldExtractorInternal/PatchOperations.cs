@@ -59,15 +59,15 @@ internal static class PatchOperations
                 break;
             // PrePatches
             case "PatchOperationAttributeAdd":
-                foreach (var translationEntry in PatchOperationAttribute(curNode, requiredMods, PatchOperationAttributeMode.Add, prePatchMode))
+                foreach (var translationEntry in PatchOperationAttribute(curNode, PatchOperationAttributeMode.Add, prePatchMode))
                     yield return translationEntry;
                 break;
             case "PatchOperationAttributeRemove":
-                foreach (var translationEntry in PatchOperationAttribute(curNode, requiredMods, PatchOperationAttributeMode.Remove, prePatchMode))
+                foreach (var translationEntry in PatchOperationAttribute(curNode, PatchOperationAttributeMode.Remove, prePatchMode))
                     yield return translationEntry;
                 break;
             case "PatchOperationAttributeSet":
-                foreach (var translationEntry in PatchOperationAttribute(curNode, requiredMods, PatchOperationAttributeMode.Set, prePatchMode))
+                foreach (var translationEntry in PatchOperationAttribute(curNode, PatchOperationAttributeMode.Set, prePatchMode))
                     yield return translationEntry;
                 break;
             // Added by mods
@@ -366,7 +366,7 @@ internal static class PatchOperations
         }
     }
 
-    private static IEnumerable<TranslationEntry> PatchOperationAttribute(XmlNode curNode, RequiredMods? requiredMods, PatchOperationAttributeMode mode, bool prePatchMode = false)
+    private static IEnumerable<TranslationEntry> PatchOperationAttribute(XmlNode curNode, PatchOperationAttributeMode mode, bool prePatchMode = false)
     {
         var xpath = curNode["xpath"]?.InnerText;
         var value = curNode["value"]?.InnerText;

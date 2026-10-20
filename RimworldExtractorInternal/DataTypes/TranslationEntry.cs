@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace RimworldExtractorInternal.DataTypes
+﻿namespace RimworldExtractorInternal.DataTypes
 {
     /// <summary>
     /// Datos de traduccion
@@ -10,6 +8,7 @@ namespace RimworldExtractorInternal.DataTypes
     /// <param name="Original">Texto original</param>
     /// <param name="Translated">Texto traducido</param>
     /// <param name="RequiredMods">Mods requeridos</param>
+    /// <param name="SourceFile">Archivo de origen. Se llena solo para el contenido oficial</param>
     public record TranslationEntry(string ClassName, string Node, string Original, string? Translated,
         RequiredMods? RequiredMods, string? SourceFile)
     {
@@ -33,21 +32,6 @@ namespace RimworldExtractorInternal.DataTypes
         }
 
         private readonly Dictionary<string, object> _extensions = new();
-        public bool TryGetExtension(string key, out object? extension)
-        {
-            extension = null;
-            if (_extensions.TryGetValue(key, out extension) == true)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool HasRequiredMods()
-        {
-            return RequiredMods == null || RequiredMods.CountAllowed > 0 || RequiredMods.CountDisallowed > 0;
-        }
 
         public TranslationEntry AddExtension(string key, object extension)
         {
