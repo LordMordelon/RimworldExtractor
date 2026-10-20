@@ -201,6 +201,9 @@
         public static string AutorSinAgrupar(string author, int count)
             => $"{author} ya tiene {count} traducciones sueltas en Data/. Si le armas una carpeta Data/{Agrupador.Prefijo}{author}/, aunque sea vacía, se acomodan solas en la próxima traducción rápida.";
 
+        public static string CarpetaRenombrada(string vieja, string nueva)
+            => $"{vieja}: el mod cambió de número en el Workshop y su carpeta pasa a llamarse {nueva}.";
+
         public static string BatchModFailed(string folderName, string message)
             => $"{folderName}: falló la actualización y se siguió con el resto. {message}";
 

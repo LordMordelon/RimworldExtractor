@@ -681,6 +681,105 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre un mod que se vuelve a publicar en el Workshop con otro numero y el mismo
+    /// packageId. Paso con The Dead Man's Switch: el 3121742525 paso a ser el 3819799478, y como
+    /// la carpeta se buscaba por «nombre - numero», la actualizacion escribia una carpeta nueva al
+    /// lado, toda en TODO, y las 299 traducciones de la vieja quedaban sin usar.
+    /// </summary>
+    [TestClass]
+    public class CambioDeNumeroTests
+    {
+        private static ModMetadata Mod(string id) =>
+            new("", id, "The Dead Man's Switch", "Aoba.DeadManSwitch.Core", false) { Author = "AobaKuma" };
+
+        /// <summary>Una carpeta de RML con una traduccion, escrita para el numero viejo.</summary>
+        private static string Montar(out string vieja)
+        {
+            Prefabs.Init();
+
+            var rml = Path.Combine(Path.GetTempPath(), "rml-numero-" + Guid.NewGuid().ToString("N"));
+            vieja = Path.Combine(rml, "Data", "!AobaKuma", LoadFoldersBuild.FolderNameFor(Mod("3121742525")));
+
+            var defInjected = Path.Combine(vieja, "Languages", Utils.CarpetaDelIdiomaDestino(), "DefInjected", "ThingDef");
+            Directory.CreateDirectory(defInjected);
+            File.WriteAllText(Path.Combine(defInjected, "cosas.xml"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <LanguageData>
+                  <!-- EN: switch -->
+                  <Interruptor.label>interruptor</Interruptor.label>
+                </LanguageData>
+                """);
+            LoadFoldersBuild.Write(Mod("3121742525"), vieja);
+            return rml;
+        }
+
+        /// <summary>Si no hay ninguna carpeta con el nombre nuevo, se encuentra la del packageId.</summary>
+        [TestMethod]
+        public void LaCarpetaSeEncuentraPorElPackageId()
+        {
+            var rml = Montar(out var vieja);
+            try
+            {
+                Assert.AreEqual(vieja, LoadFoldersBuild.CarpetaDe(Mod("3819799478"), rml));
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
+        /// Otro mod no se queda con la carpeta: el packageId tiene que ser el mismo. Si no, un
+        /// mod nuevo de ese autor pisaria una traduccion ajena.
+        /// </summary>
+        [TestMethod]
+        public void OtroPackageIdNoSeQuedaConLaCarpeta()
+        {
+            var rml = Montar(out var vieja);
+            try
+            {
+                var otro = new ModMetadata("", "3819799478", "The Dead Man's Switch", "Otro.Autor.Mod", false);
+                Assert.AreNotEqual(vieja, LoadFoldersBuild.CarpetaDe(otro, rml));
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
+        /// Al escribir, la carpeta toma el numero nuevo en el mismo lugar —dentro de la del
+        /// autor— y conserva lo traducido. No queda la vieja al lado.
+        /// </summary>
+        [TestMethod]
+        public void AlEscribirLaCarpetaTomaElNumeroNuevoYConservaLoTraducido()
+        {
+            var rml = Montar(out var vieja);
+            try
+            {
+                var mod = Mod("3819799478");
+                var extraccion = new List<TranslationEntry>
+                {
+                    new("ThingDef", "Interruptor.label", "switch", null, null, null)
+                };
+
+                var r = ActualizacionRml.Escribir(mod, extraccion, rml);
+
+                var nueva = Path.Combine(Path.GetDirectoryName(vieja)!, LoadFoldersBuild.FolderNameFor(mod));
+                Assert.AreEqual(nueva, r.Destino);
+                Assert.IsFalse(Directory.Exists(vieja), "la carpeta vieja quedo al lado de la nueva");
+                Assert.AreEqual(1, r.Conservadas, "se perdio la traduccion de la carpeta vieja");
+                StringAssert.Contains(File.ReadAllText(Path.Combine(nueva, LoadFoldersBuild.FileName)),
+                    "WorkshopID: \"3819799478\"");
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+    }
+
+    /// <summary>
     /// Cubre que los motes no entren a la traduccion.
     ///
     /// Un mote es el icono que flota sobre el colono: su etiqueta no se le muestra nunca al

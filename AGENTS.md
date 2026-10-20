@@ -272,6 +272,12 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   mismo mod escribe siempre el mismo archivo y una re-extracción sobrescribe en vez de duplicar.
   `LoadFoldersBuilder -rutas` comprueba las dos cosas del lado de RML.
 
+- **Un mod que cambia de número en el Workshop conserva su carpeta.** `LoadFoldersBuild.CarpetaDe`
+  busca primero por «nombre - número» y, si no encuentra nada, por el packageId de los yaml; después
+  `Escribir` renombra la carpeta con el número nuevo, en el mismo lugar. Sin eso escribía una carpeta
+  nueva al lado, toda en `TODO`, y la vieja quedaba sin usar: pasó con The Dead Man's Switch
+  (3121742525 → 3819799478). Lo cubren los tests de `CambioDeNumeroTests`.
+
 «Actualizar todo RML» (`ActualizacionPorLotes.Correr`) hace lo mismo con cada mod de RML,
 uno detrás de otro, en segundo plano. Mientras corre, la ventana no se deja cerrar: hacerlo
 mataría el hilo a mitad de un `Escribir`, con el árbol del mod ya borrado y sin reescribir.
