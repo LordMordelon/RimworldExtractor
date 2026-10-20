@@ -8,6 +8,10 @@ on:
       # Una rama que se agregue aca publica betas: misma compilacion, pero marcadas
       # prerelease y numeradas con Version_Beta. La de la 1.0 ya se unio a master; la
       # rama legacy (las 0.1.x) no publica nada.
+    # Un push que solo cambia documentacion no publica: saldria una version sin ningun
+    # cambio para el usuario. Si el push trae tambien codigo, publica igual.
+    paths-ignore:
+      - '**.md'
 
 jobs:
   build:
@@ -100,8 +104,9 @@ jobs:
           echo "### [$nueva](https://github.com/$GITHUB_REPOSITORY/compare/$ultima...$nueva) ($(date -u +%F))"
           echo
           # Sin el marcador que evita que un commit dispare la CI: es de aca adentro y no le
-          # dice nada a quien lee la release.
-          git log "$ultima"..HEAD --no-merges --format='- %s' \
+          # dice nada a quien lee la release. Sin los commits que solo tocan documentacion,
+          # por lo mismo que el paths-ignore de arriba: el usuario no recibe nada de ellos.
+          git log "$ultima"..HEAD --no-merges --format='- %s' -- . ':(exclude)*.md' \
             | sed -E 's/ *\[(skip ci|ci skip)\]//g'
         } > .github/changelog.md
         cat .github/changelog.md
