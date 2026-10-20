@@ -284,11 +284,16 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   mismo mod escribe siempre el mismo archivo y una re-extracción sobrescribe en vez de duplicar.
   `LoadFoldersBuilder -rutas` comprueba las dos cosas del lado de RML.
 
-- **Un mod que cambia de número en el Workshop conserva su carpeta.** `LoadFoldersBuild.CarpetaDe`
-  busca primero por «nombre - número» y, si no encuentra nada, por el packageId de los yaml; después
-  `Escribir` renombra la carpeta con el número nuevo, en el mismo lugar. Sin eso escribía una carpeta
-  nueva al lado, toda en `TODO`, y la vieja quedaba sin usar: pasó con The Dead Man's Switch
-  (3121742525 → 3819799478). Lo cubren los tests de `CambioDeNumeroTests`.
+- **Mismo packageId con otro número del Workshop no quiere decir mismo mod.** The Dead Man's Switch
+  (3121742525, hasta la 1.6) y The Dead Man's Switch II (3819799478, solo 1.7) lo comparten, y los dos
+  siguen publicados. El 20-oct-2026 el extractor buscó la carpeta por packageId y la renombró: convirtió
+  la traducción del primero en la del segundo, y en 1.6 se perdieron 416 traducciones. Se deshizo el
+  mismo día. Ahora `CarpetaDe` busca solo por «nombre - número»; `Escribir` avisa en el log si hay otra
+  carpeta con el mismo packageId (`OtraCarpetaConSuPackageId`), y la corrida por lotes se salta la
+  carpeta cuyo número no es el del mod instalado (`Motivo.OtroNumero`). Si de verdad es el mismo mod
+  vuelto a publicar, una persona renombra la carpeta. Si son dos, cada yaml lleva su versión en el
+  bloque `Version`, que `LoadFoldersBuild.Write` conserva al reescribirlo. Lo cubren los tests de
+  `OtroNumeroMismoPackageIdTests`.
 
 «Actualizar todo RML» (`ActualizacionPorLotes.Correr`) hace lo mismo con cada mod de RML,
 uno detrás de otro, en segundo plano. Mientras corre, la ventana no se deja cerrar: hacerlo

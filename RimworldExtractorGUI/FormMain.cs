@@ -491,6 +491,7 @@ namespace RimworldExtractorGUI
             }
 
             Informar(ActualizacionPorLotes.Motivo.NoInstalado, Strings.BatchNotInstalled);
+            Informar(ActualizacionPorLotes.Motivo.OtroNumero, Strings.BatchOtroNumero);
             Informar(ActualizacionPorLotes.Motivo.SinPackageId, Strings.BatchNoPackageId);
             Informar(ActualizacionPorLotes.Motivo.NadaQueExtraer, Strings.BatchNothingToExtract);
             Informar(ActualizacionPorLotes.Motivo.Fallo, Strings.BatchFailed);

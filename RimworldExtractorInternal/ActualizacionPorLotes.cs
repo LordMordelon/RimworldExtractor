@@ -25,7 +25,8 @@ namespace RimworldExtractorInternal
             SinPackageId,
             NoInstalado,
             NadaQueExtraer,
-            Fallo
+            Fallo,
+            OtroNumero
         }
 
         /// <summary>Como le fue a un mod.</summary>
@@ -127,6 +128,20 @@ namespace RimworldExtractorInternal
                 .ToList();
         }
 
+        /// <summary>
+        /// Si la carpeta es de otro numero del Workshop que el mod instalado con su packageId.
+        ///
+        /// Pasa con The Dead Man's Switch (3121742525, hasta la 1.6) y su II (3819799478, solo
+        /// 1.7): comparten packageId y son dos mods. Reextraer la carpeta del primero con el
+        /// segundo la convierte en la traduccion del segundo y aparta lo que ese no trae. Un mod
+        /// local o un yaml sin numero no se pueden comparar, y siguen como siempre.
+        /// </summary>
+        internal static bool EsDeOtroNumero(string yaml, ModMetadata mod)
+        {
+            var numero = LoadFoldersBuild.WorkshopIdDe(yaml);
+            return !string.IsNullOrEmpty(numero) && mod.Id != "???" && numero != mod.Id;
+        }
+
         private static Renglon Actualizar(string carpeta, string nombre, string rmlPath,
             Dictionary<string, ModMetadata> porPackageId)
         {
@@ -136,6 +151,9 @@ namespace RimworldExtractorInternal
 
             if (!porPackageId.TryGetValue(packageId, out var mod))
                 return new Renglon(nombre, Motivo.NoInstalado, packageId, 0, 0, 0, new List<TranslationEntry>());
+
+            if (EsDeOtroNumero(Path.Combine(carpeta, LoadFoldersBuild.FileName), mod))
+                return new Renglon(nombre, Motivo.OtroNumero, mod.Id, 0, 0, 0, new List<TranslationEntry>());
 
             var extraibles = ModLister.GetExtractableFolders(mod).AutoSeleccionables();
             if (extraibles.Count == 0)

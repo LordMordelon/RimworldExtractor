@@ -201,8 +201,11 @@
         public static string AutorSinAgrupar(string author, int count)
             => $"{author} ya tiene {count} traducciones sueltas en Data/. Si le armas una carpeta Data/{Agrupador.Prefijo}{author}/, aunque sea vacía, se acomodan solas en la próxima traducción rápida.";
 
-        public static string CarpetaRenombrada(string vieja, string nueva)
-            => $"{vieja}: el mod cambió de número en el Workshop y su carpeta pasa a llamarse {nueva}.";
+        public static string OtraCarpetaConElPackageId(string nueva, string otra)
+            => $"{nueva} es una carpeta nueva, pero {otra} tiene el mismo packageId. Si es el mismo mod con otro número del Workshop, borra la nueva, renombra {otra} y vuelve a extraer. Si son dos mods distintos, pon la versión del juego en el bloque Version del LoadFolders.Build.yaml de cada una.";
+
+        public static string BatchOtroNumero(int count, string names)
+            => $"{count} tienen el packageId de un mod instalado con otro número del Workshop y quedaron como estaban: {names}. Si es el mismo mod, renombra la carpeta con el número nuevo y vuelve a actualizar.";
 
         public const string LotesUso =
             "Uso: RimworldExtractorLotes [--rml <ruta>] [--indice] [carpeta...]\n" +

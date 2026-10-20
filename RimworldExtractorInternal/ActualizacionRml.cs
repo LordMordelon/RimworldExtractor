@@ -36,7 +36,12 @@ namespace RimworldExtractorInternal
         /// </summary>
         public static Resultado Escribir(ModMetadata mod, List<TranslationEntry> extraccion, string rmlPath)
         {
-            var destino = Renombrar(LoadFoldersBuild.CarpetaDe(mod, rmlPath), mod);
+            var destino = LoadFoldersBuild.CarpetaDe(mod, rmlPath);
+
+            // Una carpeta nueva con el packageId de otra: puede ser el mismo mod con otro numero
+            // o uno distinto, y eso lo decide una persona (ver OtraCarpetaConSuPackageId).
+            if (!Directory.Exists(destino) && LoadFoldersBuild.OtraCarpetaConSuPackageId(mod, rmlPath) is { } otra)
+                Log.Wrn(Strings.OtraCarpetaConElPackageId(Path.GetFileName(destino), Path.GetFileName(otra)));
 
             // Lo apartado en corridas anteriores vuelve a entrar al cruce, y va primero:
             // Merge se queda con la ultima entrada de cada clave, asi que ante un empate tiene
@@ -71,27 +76,6 @@ namespace RimworldExtractorInternal
             var conservadas = resultado.Count(x => !string.IsNullOrEmpty(x.Translated));
             return new Resultado(destino, conservadas, resultado.Count - conservadas,
                 sinUso.Count, rescatadas);
-        }
-
-        /// <summary>
-        /// Le pone a la carpeta el nombre que corresponde al mod, en el mismo lugar. Hace falta
-        /// cuando se encontro por el packageId porque el mod cambio de numero en el Workshop: si
-        /// no, el nombre viejo quedaria para siempre y la proxima extraccion volveria a buscarla.
-        ///
-        /// No puede haber ya una carpeta con el nombre nuevo: CarpetaDe busca primero por nombre
-        /// en todo Data/, y solo si no la encuentra pasa al packageId.
-        /// </summary>
-        private static string Renombrar(string carpeta, ModMetadata mod)
-        {
-            var nombre = LoadFoldersBuild.FolderNameFor(mod);
-            if (!Directory.Exists(carpeta)
-                || string.Equals(Path.GetFileName(carpeta), nombre, StringComparison.OrdinalIgnoreCase))
-                return carpeta;
-
-            var nueva = Path.Combine(Path.GetDirectoryName(carpeta)!, nombre);
-            Directory.Move(carpeta, nueva);
-            Log.Msg(Strings.CarpetaRenombrada(Path.GetFileName(carpeta), nombre));
-            return nueva;
         }
 
         /// <summary>

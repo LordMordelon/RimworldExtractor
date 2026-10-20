@@ -40,8 +40,9 @@ namespace RimworldExtractorInternal
 
             // Se rehace en cada extraccion, asi que siempre refleja los datos actuales del
             // mod. Si se extrae directamente sobre una carpeta de RML, las reglas de orden
-            // o de version que se hayan escrito a mano ahi se pierden.
-            File.WriteAllText(destino, Contents(mod));
+            // que se hayan escrito a mano ahi se pierden. Las de version no: son lo que separa
+            // a dos carpetas con el mismo packageId (ver OtraCarpetaConSuPackageId).
+            File.WriteAllText(destino, Contents(mod, VersionDe(destino)));
             // Si ya se escribió dentro de RML no hay nada que copiar, y decirlo confunde:
             // la línea siguiente del log informa que la traducción quedó justamente ahí.
             Log.Msg(EstaDentroDeRml(rootDirPath)
@@ -57,6 +58,52 @@ namespace RimworldExtractorInternal
         /// </summary>
         private static readonly Regex PackageIdEnYaml =
             new("PackageID:\\s*\\[\\s*\"([^\"]+)\"", RegexOptions.Compiled);
+
+        private static readonly Regex WorkshopIdEnYaml =
+            new("WorkshopID:\\s*\"([^\"]*)\"", RegexOptions.Compiled);
+
+        /// <summary>El numero del Workshop de un LoadFolders.Build.yaml, o null si no se puede leer.</summary>
+        internal static string? WorkshopIdDe(string yamlPath)
+        {
+            try
+            {
+                var match = WorkshopIdEnYaml.Match(File.ReadAllText(yamlPath));
+                return match.Success ? match.Groups[1].Value.Trim() : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Las lineas del bloque Version de un yaml que ya existe, tal como estan.</summary>
+        private static string? VersionDe(string yamlPath)
+        {
+            try
+            {
+                if (!File.Exists(yamlPath))
+                    return null;
+
+                var lineas = File.ReadAllLines(yamlPath);
+                var inicio = Array.FindIndex(lineas, x => x.TrimEnd() == "  Version:");
+                if (inicio < 0)
+                    return null;
+
+                var bloque = lineas.Skip(inicio + 1)
+                    .TakeWhile(x => x.StartsWith("    "))
+                    .Select(x => x.TrimEnd())
+                    .ToList();
+                return bloque.Count == 0 ? null : string.Join("\n", bloque);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>El bloque Version de un yaml nuevo, vacio: el builder de RML usa sus valores por defecto.</summary>
+        private const string VersionVacia =
+            "    Default:\n    LeftBoundary:\n    RightBoundary:\n    Designate:\n    Ban:";
 
         /// <summary>El packageId de un LoadFolders.Build.yaml, o null si no se puede leer.</summary>
         internal static string? PackageIdDe(string yamlPath)
@@ -111,10 +158,8 @@ namespace RimworldExtractorInternal
         /// Data/!Autor/ es lo que mantiene la agrupacion al dia sin que nadie mueva nada
         /// despues: antes caia siempre plano y la agrupacion se desactualizaba en silencio.
         ///
-        /// Si no hay ninguna con ese nombre se busca por el packageId de los yaml: un mod que
-        /// se vuelve a publicar con otro numero del Workshop cambia de nombre de carpeta pero no
-        /// de packageId. La carpeta que devuelve entonces tiene el nombre viejo, y la renombra
-        /// <see cref="ActualizacionRml.Escribir"/>.
+        /// No se busca por packageId: dos mods del Workshop pueden compartirlo y ser distintos,
+        /// como The Dead Man's Switch y su II. Ver <see cref="OtraCarpetaConSuPackageId"/>.
         /// </summary>
         public static string CarpetaDe(ModMetadata mod, string rmlPath)
         {
@@ -131,10 +176,6 @@ namespace RimworldExtractorInternal
                     .FirstOrDefault();
                 if (existente != null)
                     return existente;
-
-                var porPackageId = CarpetaPorPackageId(mod, data);
-                if (porPackageId != null)
-                    return porPackageId;
             }
             catch
             {
@@ -146,16 +187,36 @@ namespace RimworldExtractorInternal
             return deAutor is null ? plana : Path.Combine(deAutor, nombre);
         }
 
-        /// <summary>La carpeta de Data/ cuyo yaml lleva el packageId de este mod, si hay una.</summary>
-        private static string? CarpetaPorPackageId(ModMetadata mod, string data)
+        /// <summary>
+        /// Otra carpeta de Data/, con otro nombre, cuyo yaml lleva el packageId de este mod.
+        ///
+        /// Pasa cuando un mod sale en el Workshop con otro numero y el mismo packageId, y desde
+        /// aca no se sabe si es el mismo mod vuelto a publicar o uno distinto: The Dead Man's
+        /// Switch II comparte el de The Dead Man's Switch, y los dos siguen vivos. Tomarlos por
+        /// el mismo convirtio la traduccion del primero en la del segundo. Por eso solo se avisa:
+        /// si es el mismo mod, una persona renombra la carpeta; si es otro, le pone Version al
+        /// yaml de cada una para que el juego cargue la que corresponde.
+        /// </summary>
+        public static string? OtraCarpetaConSuPackageId(ModMetadata mod, string rmlPath)
         {
-            if (mod.IsOfficialContent || string.IsNullOrWhiteSpace(mod.PackageId))
+            var data = Path.Combine(rmlPath, "Data");
+            if (mod.IsOfficialContent || string.IsNullOrWhiteSpace(mod.PackageId) || !Directory.Exists(data))
                 return null;
 
-            return Directory.EnumerateFiles(data, FileName, SearchOption.AllDirectories)
-                .Where(x => string.Equals(PackageIdDe(x), mod.PackageId.Trim(), StringComparison.OrdinalIgnoreCase))
-                .Select(x => Path.GetDirectoryName(x)!)
-                .FirstOrDefault();
+            var nombre = FolderNameFor(mod);
+            try
+            {
+                return Directory.EnumerateFiles(data, FileName, SearchOption.AllDirectories)
+                    .Select(x => Path.GetDirectoryName(x)!)
+                    .Where(x => !string.Equals(Path.GetFileName(x), nombre, StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault(x => string.Equals(PackageIdDe(Path.Combine(x, FileName)),
+                        mod.PackageId.Trim(), StringComparison.OrdinalIgnoreCase));
+            }
+            catch
+            {
+                // Es solo un aviso: una carpeta ilegible no puede impedir escribir la traduccion.
+                return null;
+            }
         }
 
         /// <summary>Ruta del proyecto del builder dentro de un clon de RML.</summary>
@@ -278,7 +339,7 @@ namespace RimworldExtractorInternal
         }
 
         /// <summary>El texto del archivo. Separado para poder probarlo sin tocar el disco.</summary>
-        public static string Contents(ModMetadata mod)
+        public static string Contents(ModMetadata mod, string? version = null)
         {
             // Un mod local no tiene id del workshop: el campo queda vacio, que es lo mismo
             // que hace un LoadFolders.Build.yaml escrito a mano para un mod asi.
@@ -294,16 +355,12 @@ namespace RimworldExtractorInternal
                         After:
                         Before:
                       Version:
-                        Default:
-                        LeftBoundary:
-                        RightBoundary:
-                        Designate:
-                        Ban:
+                    {version ?? VersionVacia}
                     Metadata:
                       WorkshopID: "{Valor(workshopId)}"
                       ModName: "{Valor(mod.ModName)}"
 
-                    """;
+                    """.ReplaceLineEndings();
         }
 
         /// <summary>

@@ -681,13 +681,16 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
-    /// Cubre un mod que se vuelve a publicar en el Workshop con otro numero y el mismo
-    /// packageId. Paso con The Dead Man's Switch: el 3121742525 paso a ser el 3819799478, y como
-    /// la carpeta se buscaba por «nombre - numero», la actualizacion escribia una carpeta nueva al
-    /// lado, toda en TODO, y las 299 traducciones de la vieja quedaban sin usar.
+    /// Cubre dos mods del Workshop con el mismo packageId y distinto numero. Paso con The Dead
+    /// Man's Switch (3121742525, hasta la 1.6) y The Dead Man's Switch II (3819799478, solo 1.7):
+    /// son dos mods vivos, no uno que se volvio a publicar. Tomarlos por el mismo convirtio la
+    /// traduccion del primero en la del segundo, y en 1.6 se perdieron 416 traducciones.
+    ///
+    /// Desde aca no se puede saber si el numero viejo sigue publicado, asi que lo decide una
+    /// persona: el extractor no renombra ni reextrae la carpeta del otro numero, solo avisa.
     /// </summary>
     [TestClass]
-    public class CambioDeNumeroTests
+    public class OtroNumeroMismoPackageIdTests
     {
         private static ModMetadata Mod(string id) =>
             new("", id, "The Dead Man's Switch", "Aoba.DeadManSwitch.Core", false) { Author = "AobaKuma" };
@@ -713,51 +716,18 @@ namespace RimworldExtractorTest
             return rml;
         }
 
-        /// <summary>Si no hay ninguna carpeta con el nombre nuevo, se encuentra la del packageId.</summary>
-        [TestMethod]
-        public void LaCarpetaSeEncuentraPorElPackageId()
-        {
-            var rml = Montar(out var vieja);
-            try
-            {
-                Assert.AreEqual(vieja, LoadFoldersBuild.CarpetaDe(Mod("3819799478"), rml));
-            }
-            finally
-            {
-                Directory.Delete(rml, true);
-            }
-        }
-
         /// <summary>
-        /// Otro mod no se queda con la carpeta: el packageId tiene que ser el mismo. Si no, un
-        /// mod nuevo de ese autor pisaria una traduccion ajena.
+        /// El otro numero no se queda con la carpeta: el mod instalado escribe la suya, al lado,
+        /// y la del otro numero queda como estaba.
         /// </summary>
         [TestMethod]
-        public void OtroPackageIdNoSeQuedaConLaCarpeta()
-        {
-            var rml = Montar(out var vieja);
-            try
-            {
-                var otro = new ModMetadata("", "3819799478", "The Dead Man's Switch", "Otro.Autor.Mod", false);
-                Assert.AreNotEqual(vieja, LoadFoldersBuild.CarpetaDe(otro, rml));
-            }
-            finally
-            {
-                Directory.Delete(rml, true);
-            }
-        }
-
-        /// <summary>
-        /// Al escribir, la carpeta toma el numero nuevo en el mismo lugar —dentro de la del
-        /// autor— y conserva lo traducido. No queda la vieja al lado.
-        /// </summary>
-        [TestMethod]
-        public void AlEscribirLaCarpetaTomaElNumeroNuevoYConservaLoTraducido()
+        public void ElOtroNumeroEscribeSuPropiaCarpetaYNoTocaLaVieja()
         {
             var rml = Montar(out var vieja);
             try
             {
                 var mod = Mod("3819799478");
+                var antes = File.ReadAllText(Path.Combine(vieja, LoadFoldersBuild.FileName));
                 var extraccion = new List<TranslationEntry>
                 {
                     new("ThingDef", "Interruptor.label", "switch", null, null, null)
@@ -765,12 +735,60 @@ namespace RimworldExtractorTest
 
                 var r = ActualizacionRml.Escribir(mod, extraccion, rml);
 
-                var nueva = Path.Combine(Path.GetDirectoryName(vieja)!, LoadFoldersBuild.FolderNameFor(mod));
-                Assert.AreEqual(nueva, r.Destino);
-                Assert.IsFalse(Directory.Exists(vieja), "la carpeta vieja quedo al lado de la nueva");
-                Assert.AreEqual(1, r.Conservadas, "se perdio la traduccion de la carpeta vieja");
-                StringAssert.Contains(File.ReadAllText(Path.Combine(nueva, LoadFoldersBuild.FileName)),
-                    "WorkshopID: \"3819799478\"");
+                Assert.AreEqual(Path.Combine(Path.GetDirectoryName(vieja)!, LoadFoldersBuild.FolderNameFor(mod)), r.Destino);
+                Assert.IsTrue(Directory.Exists(vieja), "se llevo la carpeta del otro numero");
+                Assert.AreEqual(antes, File.ReadAllText(Path.Combine(vieja, LoadFoldersBuild.FileName)));
+                Assert.AreEqual(1, Directory.GetFiles(vieja, "*.xml", SearchOption.AllDirectories).Length);
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
+        /// «Actualizar todo RML» reconoce la carpeta de otro numero: si no, la reextraeria con
+        /// el mod instalado, que es otro, y apartaria lo que ese no trae.
+        /// </summary>
+        [TestMethod]
+        public void LaCorridaPorLotesReconoceLaCarpetaDeOtroNumero()
+        {
+            var rml = Montar(out var vieja);
+            try
+            {
+                var yaml = Path.Combine(vieja, LoadFoldersBuild.FileName);
+                Assert.IsTrue(ActualizacionPorLotes.EsDeOtroNumero(yaml, Mod("3819799478")));
+                Assert.IsFalse(ActualizacionPorLotes.EsDeOtroNumero(yaml, Mod("3121742525")));
+                // Un mod local no tiene numero, y una carpeta sin numero no se puede comparar.
+                Assert.IsFalse(ActualizacionPorLotes.EsDeOtroNumero(yaml, Mod("???")));
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
+        /// Lo que distingue a las dos carpetas es la version del juego en que cargan, y eso va en
+        /// el bloque Version del yaml, escrito a mano. Reescribir el yaml no lo puede borrar.
+        /// </summary>
+        [TestMethod]
+        public void ReescribirElYamlConservaLaVersion()
+        {
+            var rml = Montar(out var vieja);
+            try
+            {
+                var yaml = Path.Combine(vieja, LoadFoldersBuild.FileName);
+                File.WriteAllText(yaml, File.ReadAllText(yaml)
+                    .Replace("    Default:", "    Default: \"1.6\"")
+                    .Replace("    Ban:", "    Ban: [\"1.7\"]"));
+
+                LoadFoldersBuild.Write(Mod("3121742525"), vieja);
+
+                var texto = File.ReadAllText(yaml);
+                StringAssert.Contains(texto, "    Default: \"1.6\"");
+                StringAssert.Contains(texto, "    Ban: [\"1.7\"]");
+                StringAssert.Contains(texto, "WorkshopID: \"3121742525\"");
             }
             finally
             {
