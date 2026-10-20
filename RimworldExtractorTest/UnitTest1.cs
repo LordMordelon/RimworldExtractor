@@ -772,6 +772,134 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre los nombres de la municion generica de Combat Extended, que viven en las
+    /// modExtensions de cada municion y no en sus campos de siempre.
+    /// </summary>
+    [TestClass]
+    public class MunicionGenericaTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        /// <summary>Los tres campos salen con la ruta que DefInjected entiende.</summary>
+        [TestMethod]
+        public void ExtraeLosTresCamposDeLaMunicionGenerica()
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml("""
+                <Defs>
+                  <ThingDef>
+                    <defName>Shell_HE</defName>
+                    <label>81mm mortar shell (HE)</label>
+                    <modExtensions>
+                      <li>
+                        <genericLabel>mortar shell (HE)</genericLabel>
+                      </li>
+                    </modExtensions>
+                  </ThingDef>
+                  <RecipeDef>
+                    <defName>MakeShell_HE</defName>
+                    <label>make 81mm mortar shells (HE) x5</label>
+                    <modExtensions>
+                      <li>
+                        <genericLabel>make mortar shells (HE) x5</genericLabel>
+                        <genericDescription>Craft 5 mortar shells (HE).</genericDescription>
+                      </li>
+                    </modExtensions>
+                  </RecipeDef>
+                  <ThingDef>
+                    <defName>Bullet_45ACP_FMJ</defName>
+                    <label>.45 ACP bullet</label>
+                    <projectile>
+                      <genericLabelOverride>pistol</genericLabelOverride>
+                    </projectile>
+                  </ThingDef>
+                </Defs>
+                """);
+
+            List<TranslationEntry> entradas;
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                entradas = Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+
+            CollectionAssert.IsSubsetOf(new[]
+            {
+                "Shell_HE.modExtensions.0.genericLabel",
+                "MakeShell_HE.modExtensions.0.genericLabel",
+                "MakeShell_HE.modExtensions.0.genericDescription",
+                "Bullet_45ACP_FMJ.projectile.genericLabelOverride",
+            }, entradas.Select(x => x.Node).ToList());
+        }
+
+        /// <summary>
+        /// Un Prefabs.dat guardado antes de que existieran los tres campos trae la lista de
+        /// etiquetas sin ellos, y la lista se lee del archivo, no del valor por defecto. Sin
+        /// sumarlos al leer, solo los veria quien borrara su configuracion.
+        /// </summary>
+        [TestMethod]
+        public void UnPrefabsViejoTambienLosExtrae()
+        {
+            var archivo = Path.Combine(Path.GetTempPath(), "prefabs-" + Guid.NewGuid().ToString("N") + ".dat");
+            try
+            {
+                Prefabs.Init();
+                Prefabs.ExtractableTags = new(Prefabs.ExtractableTags.Where(x => !x.StartsWith("generic")));
+                Prefabs.Save(archivo);
+
+                Prefabs.Load(archivo);
+
+                foreach (var tag in new[] { "genericLabel", "genericDescription", "genericLabelOverride" })
+                    Assert.IsTrue(Prefabs.CanExtract(tag, "CualquierDef"), tag);
+            }
+            finally
+            {
+                File.Delete(archivo);
+                Prefabs.Init();
+            }
+        }
+
+        /// <summary>
+        /// Sobre el Combat Extended instalado: los 38 textos de su Defs/ tienen que salir.
+        /// Son 29 genericLabel, 8 genericDescription y un genericLabelOverride, que esta en
+        /// una base abstracta y lo heredan las tres balas de .45 ACP: salen tres entradas.
+        /// </summary>
+        [TestMethod]
+        public void CombatExtendedDevuelveSuMunicionGenerica()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            if (!Directory.Exists(Path.Combine(Prefabs.PathRimworld, "Data", "Core")))
+                Assert.Inconclusive("Este test necesita RimWorld instalado.");
+
+            var ce = ModLister.AllMods.FirstOrDefault(x => x.PackageId == "CETeam.CombatExtended");
+            if (ce == null)
+                Assert.Inconclusive("Este test necesita Combat Extended instalado.");
+
+            var extraibles = ModLister.GetExtractableFolders(ce).AutoSeleccionables()
+                .Where(x => Path.GetFileName(x.FolderName) == "Defs" && !x.FolderName.Contains("ModPatches"))
+                .ToList();
+            var referencias = ModLister.FindAllReferenceMods(ce).ToList();
+
+            var genericos = Extractor.ExtractTranslationData(ce, extraibles, referencias)
+                .Where(x => x.Node.Split('.')[^1].StartsWith("generic"))
+                .ToList();
+
+            Assert.AreEqual(29, genericos.Count(x => x.Node.EndsWith(".genericLabel")), "genericLabel");
+            Assert.AreEqual(8, genericos.Count(x => x.Node.EndsWith(".genericDescription")), "genericDescription");
+            Assert.AreEqual(3, genericos.Count(x => x.Node.EndsWith(".genericLabelOverride")), "genericLabelOverride");
+        }
+    }
+
+    /// <summary>
     /// Cubre las dos formas en que la relectura de los Patches de RML danaba traducciones.
     ///
     /// Son el mismo tipo de defecto que PatchesRoundTripTests: algo que se escribio bien, se

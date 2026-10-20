@@ -176,6 +176,12 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   **al final** y se lee sólo si está (`idx < lines.Length`): así un archivo viejo sigue
   sirviendo. Meterlo en el medio obliga a subir `Version`, y eso descarta el archivo
   entero y le borra la configuración a todo el mundo.
+- **Una etiqueta nueva en la lista por defecto no le llega a nadie.** La lista de etiquetas
+  extraíbles se guarda en `Prefabs.dat` y se lee de ahí, así que un `Prefabs.dat` ya escrito
+  se queda con la vieja. Las etiquetas que se suman van en `Prefabs.EtiquetasAgregadas`, que
+  `Load` agrega si faltan. Así entraron las tres de la munición genérica de Combat Extended
+  (`genericLabel`, `genericDescription` y `genericLabelOverride`); lo cubre
+  `UnPrefabsViejoTambienLosExtrae`.
 - **El tamaño de lo publicado.** Una vez el `.zip` pasó de 2,8 MB a 17,8 MB porque un
   paquete de test arrastró instrumentación de Linux, macOS y ARM. La CI quedó en verde
   igual: el único síntoma fue el tamaño del artefacto. Referencia actual: el Standard pesa

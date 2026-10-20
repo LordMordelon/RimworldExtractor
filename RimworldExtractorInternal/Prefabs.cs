@@ -75,6 +75,27 @@ namespace RimworldExtractorInternal
             ("InteractionDef", "symbol")
         };
 
+        /// <summary>
+        /// Etiquetas que se sumaron a la lista por defecto cuando ya habia Prefabs.dat
+        /// guardados. La lista se lee del archivo, asi que sin esto solo las veria quien
+        /// borrara su configuracion: Load las agrega si faltan.
+        ///
+        /// Las tres son de la municion generica de Combat Extended, la opcion que renombra
+        /// las balas sin el calibre («mortar shell (HE)» en vez de «81mm mortar shell (HE)»).
+        /// Viven en las modExtensions de cada municion y receta, y genericLabelOverride en el
+        /// projectile de las balas de .45 ACP.
+        /// </summary>
+        private static readonly string[] EtiquetasAgregadas =
+        {
+            "genericLabel", "genericDescription", "genericLabelOverride"
+        };
+
+        private static void AgregarEtiquetasFaltantes()
+        {
+            foreach (var tag in EtiquetasAgregadas)
+                _extractionRules.TryAdd(tag, new ExtractionRule(tag));
+        }
+
         public static bool CanExtract(string tagName, string defName, string? className = null)
         {
             if (className != null && NoTraducibles.Contains((className, tagName)))
@@ -191,6 +212,7 @@ namespace RimworldExtractorInternal
             ExtractableTags = new(
                 "label/rulesStrings/description/baseDesc/title/titleShort/customLabel/symbol/jobString/reportString/labelNoun/slateRef/verb/gerund/adjective/member/tips/ideoName/thoughtStageDescriptions/jobReportString/theme/labelShortAdj/labelPlural/letterText/deathMessage/labelShort/letterLabel/helpText/text/baseInspectLine/labelFemale/descriptionShort/beginLetter/ingestCommandString/ingestReportString/titleShortFemale/titleFemale/gerundLabel/pawnLabel/stageName/shortDescription/customEffectDescriptions/endMessage/leaderTitle/pawnSingular/pawnsPlural/desc/recoveryMessage/chargeNoun/cooldownGerund/type/potentialExtraOutcomeDesc/labelNounPretty/headerTip/rejectInputMessage/spectatorGerund/spectatorsLabel/fuelLabel/formatString/useLabel/RMBLabel/permanentLabel/name/missingDesc/worshipRoomLabel/labelAbstract/fuelGizmoLabel/destroyedLabel/outOfFuelMessage/summary/ritualExpectedDesc/customSummary/meatLabel/labelForFullStatList/tooltip/gizmoLabel/onMapInstruction/letterTitle/textEnemy/destroyedOutLabel/beginLetterLabel/labelMale/groupName/gizmoDescription/names/arrivalTextEnemy/letterLabelEnemy/arrivedLetter/calledOffMessage/finishedMessage/approachingReportString/approachOrderString/expectedThingLabelTip/skillLabel/extraPredictedOutcomeDescriptions/modNameReadable/descriptionFuture/textWillArrive/arrivalTextFriendly/letterLabelFriendly/helpTextController/successfullyRemovedHediffMessage/textFriendly/eventLabel/textController/descOverride/shortDescOverride/content/discoveredLetterText/discoveredLetterTitle/beginLetterContinue/resourceLabel/message/overrideLabel/extraTooltip/offMessage/successMessage/effectDesc/letterInfoText/categoryLabel/groupLabel/battleStateLabel/customizationTitle/fixedName/noun/lockedReason/descriptionExtra/labelPrefix/labelMechanoids/ingestReportStringEat/failMessage/valueFormat/structureLabel/labelSocial/labelInBracketsExtraForHediff/ChooseDesc/ChooseLabel/ritualExplanation/resourceDescription/discoverLetterText/countdownLabel/inspectString/completedLetterText/completedLetterTitle/leaderDescription/formatStringUnfinalized/jobReportOverride/discoverLetterLabel/instantlyPermanentLabel/notifyMessage/onCooldownString/invalidTargetPawn/noAssignablePawnsDesc/reportText/statLabel/visualLabel/commandDescriptions/successMessageNoNegativeThought/tipLabelOverride/mainPartAllThreatsLabel/customChildDisallowMessage/ritualExpectedDescNoAdjective/loweredName/cancelLabel/texName/labelOverride/messageText/proficiencyAdjective/stuffAdjective/unit/labelTendedWell/labelTendedWellInner/labelSolidTendedWell/overrideTooltip/royalFavorLabel/extraReportString/spawnInBackstories/customLetterLabel/customLetterText/confirmationDialogText/tip/outcomeDescription/generalDescription/generalTitle/dialogue/activateDescString/activateLabelString/completedLetter/completedLetterLabel/guiLabelString/gizmoDesc/activatedMessageKey/appendString/gizmoDesc1/gizmoDesc2/gizmoLabel1/gizmoLabel"
                     .Split('/'));
+            AgregarEtiquetasFaltantes();
             FullListTranslationTags = new()
             {
                 "rulesFiles", "rulesStrings", "pathList"
@@ -296,6 +318,7 @@ namespace RimworldExtractorInternal
             TranslationLanguage = lines[idx++];
             idx++; // Reservada: CommentOriginal. Ver el comentario de Save().
             ExtractableTags = new(lines[idx++].Split('/'));
+            AgregarEtiquetasFaltantes();
             FullListTranslationTags = new(lines[idx++].Split("/"));
             NodeReplacement = new(lines[idx++].Split('/').Select(x =>
             {
