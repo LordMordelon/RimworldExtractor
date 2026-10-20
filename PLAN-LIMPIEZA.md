@@ -123,14 +123,17 @@ clases enteras: el diff tiene que ser mover, no editar.
 
 ## Decisiones de Angel
 
-1. **Guía de colaboradores (etapa 4).** Recomendación: reescribirla para traducir sobre los XML,
-   con un editor de texto (Notepad++ o VS Code), y avisar al principio que quien prefiera la
-   planilla puede bajar la 0.1.30 desde la página de releases. La otra opción es mandarlos a la
-   0.1.30 sin reescribir nada, pero esa versión no recibe arreglos.
-2. **Opciones de la etapa 2.** Se deciden una por una, con lo que se averigüe de cada una.
-3. **Las 7 releases beta (`1.0.0-beta.1` a `.7`) de GitHub.** Recomendación: dejarlas. No le
-   aparecen a nadie como actualización y borrarlas no se puede deshacer.
-4. **Etapa 5.** Recomendación: hacerla, al final.
+**Plan aprobado el 20-oct-2026**, para hacerlo con la skill `traspaso-continuo`.
+
+1. **Guía de colaboradores (etapa 4): reescribirla para traducir sobre los XML** (Angel,
+   20-oct-2026), con un editor de texto (Notepad++ o VS Code), y avisar al principio que quien
+   prefiera la planilla puede bajar la 0.1.30 desde la página de releases.
+2. **Opciones de la etapa 2.** Se deciden una por una, con lo que se averigüe de cada una: es la
+   pregunta que va a detener la cadena en la etapa 2.
+3. **Las 7 releases beta (`1.0.0-beta.1` a `.7`) de GitHub:** se dejan (recomendación; Angel no
+   pidió borrarlas). No le aparecen a nadie como actualización y borrarlas no se puede deshacer.
+4. **Etapa 5:** se hace, al final (recomendación).
+5. **Subir:** nada durante la cadena. Los commits se acumulan y Angel aprueba la subida una vez.
 
 ## Sesiones (estimación)
 
@@ -138,3 +141,21 @@ clases enteras: el diff tiene que ser mover, no editar.
 - Sesión 2: etapa 2 (averiguar, decidir y sacar) y etapa 3.
 - Sesión 3: etapa 4.
 - Sesión 4, si se aprueba: etapa 5.
+
+## Próxima sesión (20-oct-2026)
+
+**Objetivo:** etapas 0 y 1 del plan, y la 2 hasta la pregunta a Angel.
+
+**Estado:** plan aprobado; nada hecho todavía. Extractor en `master`, con este plan sin subir; la
+última versión publicada es la 1.0.2 (`c161cd0`). En RML no hay nada pendiente de esta limpieza.
+
+**Al empezar (Claude):** etapa 0 (`paths-ignore` en `publish.yml`), etapa 1 con la lista de arriba
+(26 miembros, 60 `using`, 3 comentarios) y su verificación: 92 pruebas y reextracción de control sin
+diff en RML. Después, la etapa 2: averiguar las cinco opciones y preguntarle a Angel con la
+herramienta de preguntas. Cifras de la auditoría del 20-oct; la etapa 1 cabe en una sesión
+(estimación).
+
+**Guías:** `traspaso-continuo` al cerrar.
+
+**Dónde leer:** este plan; `AGENTS.md` del extractor («Verificar la interfaz», «Publicación» y la
+trampa de `Prefabs.dat` leído por posición).
