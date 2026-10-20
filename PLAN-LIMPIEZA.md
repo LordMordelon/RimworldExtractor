@@ -161,40 +161,29 @@ clases enteras: el diff tiene que ser mover, no editar.
 
 - Sesión 1: etapas 0 y 1, y la 2 averiguada y decidida (hecho).
 - Sesión 2: sacar lo decidido de la etapa 2, y etapa 3 (hecho).
-- Sesión 3: etapa 4.
+- Sesión 3: etapa 4 (hecho).
 - Sesión 4, si se aprueba: etapa 5.
 
-## Próxima sesión (20-oct-2026, después de la sesión 2 de la cadena)
+## Próxima sesión (20-oct-2026, después de la sesión 3 de la cadena)
 
-**Objetivo:** etapa 4, la guía para colaboradores de RML, según la decisión 1 de Angel.
+**Objetivo:** etapa 5, ordenar las pruebas, en una sesión nueva que abre Angel (la cadena llegó
+a su tope de tres).
 
-**Estado:** etapas 0 a 3 hechas. La 2 se verificó con las 92 pruebas en verde, la reextracción de
-control de los tres mods de siempre sin ningún cambio en RML, y la ventana de Ajustes renderizada
-en claro y oscuro: sin las opciones que salieron, la sección «Idiomas» quedó sola y la ventana se
-achicó a lo que tiene (antes las dos secciones de la izquierda se repartían el alto). La 3 es solo
-documentación del extractor (`AGENTS.md`, `README.md`, `CAMBIOS.md`) y del `CLAUDE.md` de la
-carpeta de trabajo, que no está en ningún repositorio. Nada subido.
+**Estado:** etapas 0 a 4 hechas, nada subido. La 4 es la guía de RML, en la rama `limpieza-guia`
+de RML (commit `c6fc3e9`, copia aislada `RML/.claude/worktrees/guia`): `TRADUCIR.md` reescrita
+para traducir sobre los XML —bajar la carpeta del mod de RML o sacarla con «Extraer en carpeta»,
+reemplazar los `TODO`, entregar la carpeta comprimida—, con el aviso de la 0.1.30 y un enlace a
+la guía vieja fijado al commit `e3650df`; `README.md` y `AGENTS.md` de RML con el mismo camino. En
+el extractor, `e2ccc57` corrige el README, que todavía llamaba casilla a la traducción rápida.
 
-**Dónde está el trabajo:** rama `limpieza` del extractor, en la copia aislada
-`RimworldExtractor/.claude/worktrees/limpieza`. `master` local tiene solo la etapa 0 (`391d881`).
-La etapa 4 es de RML. En `RML/` hay cambios sin commitear de otra sesión (The Dead Man's Switch,
-`ModList.tsv`, `docs/index.html`): no tocarlos ni agregarlos, y no cambiar de rama ahí, que se los
-llevaría. Trabajar en una copia aislada nueva, con
-`git -C "<ruta de RML>" -c core.longpaths=true worktree add .claude/worktrees/guia -b limpieza-guia master`
-(las rutas de `Data/` pasan los 260 caracteres sin `core.longpaths`), y agregar
-`.claude/worktrees/` al `.git/info/exclude` de RML, como se hizo en el extractor.
+**Antes de empezarla (Angel):**
+1. Leer `RML/.claude/worktrees/guia/TRADUCIR.md` y decir si se entiende.
+2. Decir dónde se entregan las traducciones (la guía lo deja «pendiente de definir»).
+3. Aprobar la subida: extractor `master` y `limpieza`, y RML `limpieza-guia`.
 
-**Al empezar (Claude):**
-- Reescribir `RML/TRADUCIR.md` para traducir sobre los XML con un editor de texto (Notepad++ o VS
-  Code), con el aviso del principio sobre la 0.1.30 para quien prefiera la planilla. Las secciones
-  4, 5, 8, 9 y 11 son solo de la planilla; la 10b ya tiene el modo XML.
-- Lo mismo, en corto, en `RML/README.md` (líneas 84 y 85) y `RML/AGENTS.md` (línea 96).
-- Para el enlace a la 0.1.30, copiarlo de la página de releases real (`gh api`), no armarlo.
+**Al empezar (Claude):** pasar las 18 clases de `UnitTest1.cs` (2.836 líneas) a un archivo por
+tema, moviendo clases enteras; 92 pruebas en verde antes y después. Cabe en una sesión.
 
-**Cuidado:** un push a `master` de RML publica una release solo si cambia `output/`; la guía no
-cambia `output/`, pero igual no se sube nada sin la aprobación de Angel.
+**Guías:** ninguna en especial.
 
-**Guías:** `traspaso-continuo` al cerrar.
-
-**Dónde leer:** este plan («4. La guía para colaboradores de RML» y «Decisiones de Angel»);
-`RML/TRADUCIR.md`; `RML/GLOSARIO.md` solo si la guía lo cita.
+**Dónde leer:** este plan («5. Ordenar las pruebas»).
