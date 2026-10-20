@@ -2124,6 +2124,41 @@ namespace RimworldExtractorTest
     [TestClass]
     public class ActualizadorTests
     {
+        /// <summary>Un cuerpo de release como los que escribe publish.yml.</summary>
+        private const string CuerpoDeRelease =
+            "### [1.0.0](https://github.com/LordMordelon/RimworldExtractor/compare/0.1.30...1.0.0) (2026-10-20)\r\r\n" +
+            "\r\n" +
+            "- Correr «Actualizar todo RML» por consola\r\n" +
+            "- feat!: quitar las planillas Excel y el analizador de traducciones\r\n" +
+            "- fix(gui): ver el `log` en [la ventana](https://example.com)\r\n" +
+            "\r\n" +
+            "Dos descargas que hacen lo mismo:\r\n" +
+            "\r\n" +
+            "- **Portable** (`RimworldExtractor-Portable.exe`): un único archivo.\r\n";
+
+        /// <summary>
+        /// Al ofrecer la actualizacion solo importa que cambio. Las instrucciones de descarga
+        /// sobran, porque la aplicacion se actualiza sola, y el formato de GitHub se veia crudo.
+        /// </summary>
+        [TestMethod]
+        public void LasNotasSonSoloLaListaDeCambios()
+        {
+            CollectionAssert.AreEqual(new[]
+            {
+                "Correr «Actualizar todo RML» por consola",
+                "Quitar las planillas Excel y el analizador de traducciones",
+                "Ver el log en la ventana"
+            }, Actualizador.CambiosDe(CuerpoDeRelease));
+        }
+
+        /// <summary>Sin cuerpo o sin lista no hay cambios que mostrar, y no es un error.</summary>
+        [TestMethod]
+        public void SinListaNoHayCambios()
+        {
+            Assert.AreEqual(0, Actualizador.CambiosDe(null).Count);
+            Assert.AreEqual(0, Actualizador.CambiosDe("Solo un parrafo.").Count);
+        }
+
         /// <summary>El caso normal: lo nuevo queda en su lugar y lo viejo corrido a ".viejo".</summary>
         [TestMethod]
         public void ReemplazaElEjecutableYLasDll()

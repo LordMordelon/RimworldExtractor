@@ -585,8 +585,16 @@
 
         public const string DialogTitleUpdate = "Actualizar";
 
-        public static string UpdateAsk(string current, string latest)
-            => $"Tienes la {current} y la última es la {latest}. ¿Quieres actualizar ahora?";
+        public static string UpdateNewVersion(string latest) => $"Hay una versión nueva: la {latest}";
+
+        public static string UpdateYouHave(string current) => $"Tienes la {current}.";
+
+        public const string UpdateWhatChanged = "Qué cambió";
+
+        public const string UpdateSeeOnGithub = "Ver esta versión en GitHub";
+
+        public const string BtnUpdate = "Actualizar";
+        public const string BtnNotNow = "Ahora no";
 
         public const string UpdateAskRestart =
             "La aplicación se va a cerrar y volver a abrir sola. Lo que tengas configurado se conserva.";

@@ -300,16 +300,10 @@ namespace RimworldExtractorGUI
                 return;
             }
 
-            var mensaje = Strings.UpdateAsk(actual, ultima)
-                          + Environment.NewLine + Environment.NewLine + Strings.UpdateAskRestart;
-            if (_notasDeLaUltima != null)
-                mensaje += Environment.NewLine + Environment.NewLine + _notasDeLaUltima;
-
-            if (Aviso.Preguntar(mensaje, Strings.DialogTitleUpdate) != DialogResult.Yes)
-            {
-                Process.Start("explorer.exe", GithubVersionCheker.ReleasesUrl);
+            // «Ahora no» solo cierra: la pagina de la version queda a un clic, en el enlace del
+            // aviso, en vez de abrirse sola en el navegador.
+            if (!AvisoDeActualizacion.Preguntar(actual, ultima, Actualizador.CambiosDe(_notasDeLaUltima)))
                 return;
-            }
 
             Actualizar(ultima);
         }

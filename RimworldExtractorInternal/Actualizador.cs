@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace RimworldExtractorInternal
 {
@@ -299,6 +300,42 @@ namespace RimworldExtractorInternal
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// La lista de cambios del cuerpo de una release, en texto llano, para mostrarla antes de
+        /// actualizar.
+        ///
+        /// El cuerpo es Markdown pensado para la pagina de GitHub: en la ventana se veia crudo,
+        /// con los ### y los ** a la vista, y con las instrucciones para elegir descarga, que ahi
+        /// sobran porque la aplicacion se actualiza sola. La lista de cambios es la primera lista
+        /// del cuerpo (ver publish.yml), asi que se toma esa y nada mas.
+        /// </summary>
+        public static List<string> CambiosDe(string? cuerpo)
+        {
+            var cambios = new List<string>();
+            if (string.IsNullOrWhiteSpace(cuerpo))
+                return cambios;
+
+            foreach (var linea in cuerpo.ReplaceLineEndings("\n").Split('\n').Select(x => x.Trim()))
+            {
+                if (linea.StartsWith("- ") || linea.StartsWith("* "))
+                    cambios.Add(TextoLlano(linea[2..]));
+                else if (cambios.Count > 0 && linea.Length > 0)
+                    break;
+            }
+
+            return cambios.Where(x => x.Length > 0).ToList();
+        }
+
+        /// <summary>Lo que el Markdown de un renglon de la lista agrega sobre el texto.</summary>
+        private static string TextoLlano(string renglon)
+        {
+            // El prefijo de version ("feat!:", "fix(gui):") es para publish.yml, no para quien lee.
+            var texto = Regex.Replace(renglon, @"^[a-z]+(\([^)]*\))?!?:\s*", "");
+            texto = Regex.Replace(texto, @"\[([^\]]*)\]\([^)]*\)", "$1");
+            texto = texto.Replace("**", "").Replace("`", "").Trim();
+            return texto.Length == 0 ? texto : char.ToUpper(texto[0]) + texto[1..];
         }
 
         /// <summary>"LordMordelon/RimworldExtractor", sacado de la URL para no repetirlo.</summary>

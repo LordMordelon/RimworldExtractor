@@ -141,6 +141,8 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
 
 ## Trampas conocidas
 
+- **El azul de `LinkLabel` no obedece al tema.** Es fijo, y en oscuro casi no se lee. Los enlaces
+  llevan `LinkColor = SystemColors.HotTrack`, que sí cambia con el tema.
 - **`MessageBox` no obedece al tema.** Es un diálogo del propio Windows: con la interfaz
   en oscuro salía en blanco. Los cuadros de mensaje van por `Aviso`
   ([Aviso.cs](RimworldExtractorGUI/Utils/Aviso.cs)), que es una ventana normal de WinForms
@@ -349,6 +351,12 @@ empiece con `feat:` sube el del medio (`0.0.35` → `0.1.0`); y uno con `!` ante
 puntos (`feat!:`, `fix!:`) o con `BREAKING CHANGE` en el cuerpo sube el primero y pone los
 otros dos en cero. Es la única convención de este tipo en el repositorio, y se usa sólo
 cuando se quiere marcar una versión: el resto de los mensajes van en prosa.
+
+**El asunto de cada commit lo lee el usuario.** La release lista los asuntos desde la versión
+anterior, y la aplicación los muestra al ofrecer la actualización (`AvisoDeActualizacion`, con
+`Actualizador.CambiosDe`, que se queda solo con esa lista y le saca el Markdown y el prefijo
+`feat!:`). Por eso el asunto va con las tildes completas, como el texto de `Strings.cs`, aunque
+los comentarios del código las omitan: «cambió de número», no «cambio de numero».
 
 **Ramas.** `master` es la 1.0: la beta se unió el 20-oct-2026 y la rama `1.0-beta` se borró.
 `legacy` guarda la 0.1.x —la del Excel y el analizador— y no publica nada. El mecanismo de
