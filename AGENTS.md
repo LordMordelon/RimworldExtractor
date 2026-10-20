@@ -20,6 +20,7 @@ con licencias distintas: esta herramienta es MIT, RML deriva de código GPL-3.0.
 |---|---|
 | `RimworldExtractorInternal` | Toda la lógica: extracción, lectura y escritura de XML/XLSX, listado de mods, configuración. No depende de WinForms. |
 | `RimworldExtractorGUI` | Los ocho formularios, más los ayudantes de `Utils/`. |
+| `RimworldExtractorLotes` | «Actualizar todo RML» por consola, sin abrir la ventana, para todas las carpetas o solo algunas. No se publica. Ver «Compilar y probar». |
 | `RimworldExtractorTest` | MSTest. Los tests usan **la instalación real de RimWorld de la máquina**, así que se declaran `Inconclusive` si no la encuentran en vez de fallar. |
 
 Archivos que conviene conocer antes de tocar nada:
@@ -44,6 +45,17 @@ a `net10.0`, porque no dependen de WinForms.
 dotnet build RimworldExtractor.sln -c Debug
 dotnet test  RimworldExtractor.sln
 ```
+
+Para reextraer mods de RML sin la ventana, desde esta carpeta y con RML como carpeta hermana:
+
+```
+dotnet run --project RimworldExtractorLotes -c Release -- "The Dead Man's Switch - 3819"   # una carpeta, por su comienzo
+dotnet run --project RimworldExtractorLotes -c Release -- --indice                         # todas, y regenera el indice
+```
+
+Hace lo mismo que el botón, con `ActualizacionPorLotes.Correr`. Sin `--indice` no agrupa ni
+regenera el índice: eso queda para después, con el builder de RML. Toma RimWorld de
+`D:\SteamLibrary`, los valores por defecto de `Prefabs`. Después, mirar el diff en RML.
 
 Dos cosas que muerden:
 

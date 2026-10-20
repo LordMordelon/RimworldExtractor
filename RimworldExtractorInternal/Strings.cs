@@ -204,6 +204,21 @@
         public static string CarpetaRenombrada(string vieja, string nueva)
             => $"{vieja}: el mod cambió de número en el Workshop y su carpeta pasa a llamarse {nueva}.";
 
+        public const string LotesUso =
+            "Uso: RimworldExtractorLotes [--rml <ruta>] [--indice] [carpeta...]\n" +
+            "Cada carpeta es el nombre de una carpeta de Data/ o su comienzo; sin ninguna se actualizan todas.\n" +
+            "--indice agrupa por autor y regenera el índice al terminar.";
+
+        public static string LotesSinRml(string path)
+            => $"No hay una carpeta Data/ en {path}. Indica la carpeta de RML con --rml.";
+
+        public const string LotesNingunaCarpeta =
+            "Ninguna carpeta de Data/ con LoadFolders.Build.yaml coincide con lo pedido.";
+
+        public static string LotesRenglon(string carpeta, string motivo, string detalle,
+            int conservadas, int pendientes, int sinUso, int rescatadas)
+            => $"{carpeta}: {motivo} {detalle} conservadas={conservadas} pendientes={pendientes} sinUso={sinUso} rescatadas={rescatadas}";
+
         public static string BatchModFailed(string folderName, string message)
             => $"{folderName}: falló la actualización y se siguió con el resto. {message}";
 
