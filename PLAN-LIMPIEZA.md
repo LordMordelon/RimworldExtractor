@@ -26,9 +26,9 @@ que no se mencionan en ningún otro archivo.
 
 | # | Etapa | Tamaño | Estado |
 |---|---|---|---|
-| 0 | Que la documentación no publique versiones | chica | pendiente |
-| 1 | Código sin uso confirmado | media | pendiente |
-| 2 | Opciones que quedaron de los flujos viejos | media | pendiente, con decisión |
+| 0 | Que la documentación no publique versiones | chica | hecha (`391d881`) |
+| 1 | Código sin uso confirmado | media | hecha (`613e424`) |
+| 2 | Opciones que quedaron de los flujos viejos | media | averiguada; falta la decisión de Angel |
 | 3 | Documentación del extractor | media | pendiente |
 | 4 | La guía para colaboradores de RML | grande | pendiente, con decisión |
 | 5 | Ordenar las pruebas | media | opcional |
@@ -90,6 +90,27 @@ cada una hoy y en qué camino; después Angel decide si se queda.
 | `FullListTranslationTags` | Opciones, `IO` | Si se usa fuera de la planilla |
 
 Si una sale, sale de la interfaz y del código, y su renglón de `Prefabs.dat` se queda.
+
+**Lo averiguado (20-oct-2026).** El `Prefabs.dat` del extractor de uso diario tiene `EnableTkey`
+en `False`, `PathBaseRefList` vacío, `Policy` en `Overwrite` y `FullListTranslationTags` en el
+valor por defecto: ninguna está fuera de lo que viene de fábrica.
+
+| Opción | Qué hace hoy | Recomendación |
+|---|---|---|
+| `Policy` + `StopCallback*` + `FormStopCallback` | Solo cuenta al «Extraer en carpeta» sobre una carpeta que ya tiene archivos: sobrescribir, dejar el viejo o preguntar archivo por archivo con `FormStopCallback`. Escribir sobre RML la fuerza a sobrescribir | Sacar las tres y sobrescribir siempre. Es una ventana menos que pasar a `TableLayoutPanel` |
+| `PathBaseRefList` | Un archivo con mods que `FormSelectMod` marca como referencia al abrirse. Desde la 1.0 las referencias del mod se agregan solas (lo que era «Extracción completa») | Sacarla de Opciones. Los menús «Guardar/Cargar lista» de `FormSelectMod` pueden quedar |
+| `EnableTkey` | Prendida, nombra las claves de un nodo con atributo `TKey` como `def.TKey.slateRef` en vez de la ruta completa. Está apagada, y prenderla cambiaría el nombre de claves ya traducidas en RML. Su casilla dice «(provisorio)» | Sacarla, dejándola apagada: no cambia nada de lo que se escribe |
+| `FullListTranslationTags` | Se usa en cada escritura sobre RML: las listas `rulesStrings`, `rulesFiles` y `pathList` salen como lista completa en `DefInjected` | Se queda: sacarla cambiaría el formato de las reglas de gramática de RML |
+
+Otras dos cosas que aparecieron al averiguar:
+
+- **Ese `Prefabs.dat` tiene `CurrentVersion` en `1.6`**, y el valor por defecto es `1.7`. En un
+  mod con carpetas `1.6/` y `1.7/`, el extractor de uso diario lee la de `1.6/`; la corrida por
+  lotes, que toma los valores por defecto, lee la de `1.7/`. Se cambia en Opciones.
+- **`TranslationEntry` guarda «extensiones» que nadie lee** (`AddExtension`, que usa
+  `Compat_MVCF`). No se sacaron en la etapa 1 a propósito: el diccionario es un campo del
+  `record`, y sacarlo cambia cuándo dos entradas son iguales. Hay que mirar antes quién compara
+  entradas.
 
 ### 3. Documentación del extractor
 
