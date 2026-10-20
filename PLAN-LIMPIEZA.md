@@ -149,8 +149,9 @@ clases enteras: el diff tiene que ser mover, no editar.
 1. **Guía de colaboradores (etapa 4): reescribirla para traducir sobre los XML** (Angel,
    20-oct-2026), con un editor de texto (Notepad++ o VS Code), y avisar al principio que quien
    prefiera la planilla puede bajar la 0.1.30 desde la página de releases.
-2. **Opciones de la etapa 2.** Se deciden una por una, con lo que se averigüe de cada una: es la
-   pregunta que va a detener la cadena en la etapa 2.
+2. **Opciones de la etapa 2** (Angel, 20-oct-2026, las cuatro como se recomendó): salen `Policy`
+   con `StopCallbackXml`, `StopCallbackTxt` y `FormStopCallback` (se sobrescribe siempre),
+   `PathBaseRefList` y `EnableTkey` (queda apagada). `FullListTranslationTags` se queda.
 3. **Las 7 releases beta (`1.0.0-beta.1` a `.7`) de GitHub:** se dejan (recomendación; Angel no
    pidió borrarlas). No le aparecen a nadie como actualización y borrarlas no se puede deshacer.
 4. **Etapa 5:** se hace, al final (recomendación).
@@ -158,25 +159,40 @@ clases enteras: el diff tiene que ser mover, no editar.
 
 ## Sesiones (estimación)
 
-- Sesión 1: etapas 0 y 1.
-- Sesión 2: etapa 2 (averiguar, decidir y sacar) y etapa 3.
+- Sesión 1: etapas 0 y 1, y la 2 averiguada y decidida (hecho).
+- Sesión 2: sacar lo decidido de la etapa 2, y etapa 3.
 - Sesión 3: etapa 4.
 - Sesión 4, si se aprueba: etapa 5.
 
-## Próxima sesión (20-oct-2026)
+## Próxima sesión (20-oct-2026, después de la sesión 1 de la cadena)
 
-**Objetivo:** etapas 0 y 1 del plan, y la 2 hasta la pregunta a Angel.
+**Objetivo:** sacar las opciones de la etapa 2 que Angel decidió (ver «Decisiones», punto 2) y
+hacer la etapa 3.
 
-**Estado:** plan aprobado; nada hecho todavía. Extractor en `master`, con este plan sin subir; la
-última versión publicada es la 1.0.2 (`c161cd0`). En RML no hay nada pendiente de esta limpieza.
+**Estado:** etapas 0 y 1 hechas y verificadas (92 de 92 pruebas; reextracción de control de
+Amplified Mobility Platform, Vanilla Factions Expanded - Pirates y Combat Extended sin ningún cambio
+en RML). Etapa 2 averiguada y decidida. Nada subido.
 
-**Al empezar (Claude):** etapa 0 (`paths-ignore` en `publish.yml`), etapa 1 con la lista de arriba
-(26 miembros, 60 `using`, 3 comentarios) y su verificación: 92 pruebas y reextracción de control sin
-diff en RML. Después, la etapa 2: averiguar las cinco opciones y preguntarle a Angel con la
-herramienta de preguntas. Cifras de la auditoría del 20-oct; la etapa 1 cabe en una sesión
-(estimación).
+**Dónde está el trabajo:** rama `limpieza` del extractor, en la copia aislada
+`RimworldExtractor/.claude/worktrees/limpieza` (entrar con `EnterWorktree` y esa ruta). `master`
+local tiene solo la etapa 0 (`391d881`); `limpieza` tiene además `613e424` y los dos commits del
+plan. La carpeta está en `.git/info/exclude` del extractor.
+
+**Al empezar (Claude):**
+- Etapa 2: sacar de Opciones y del código `Policy`, `StopCallbackXml`/`StopCallbackTxt` con
+  `FormStopCallback` (escribir siempre sobrescribe), `PathBaseRefList` y `EnableTkey` (apagada).
+  En `Prefabs.dat` sus tres renglones (3, 6 y 17) se siguen escribiendo con un valor fijo
+  —`False`, vacío y `Overwrite`—, como ya se hace con `CommentOriginal` y `PatternVersionWithV`.
+  Toca la ventana de Opciones: renderizarla en claro y oscuro antes de dar la etapa por buena.
+- Etapa 3, la documentación del extractor. Sumar a `AGENTS.md` que la ventana `FormStopCallback`
+  ya no existe (quedan cuatro).
+
+**Cuidado:** desde la copia aislada, `git` sobre RML va con `git -C "<ruta completa de RML>"`, y
+`RimworldExtractorLotes` necesita `--rml "<ruta completa de RML>"`. El `LoadFolders.Build.yaml` de
+Combat Extended queda marcado como modificado después de reextraer aunque el contenido es idéntico
+(mismo hash); no es un cambio.
 
 **Guías:** `traspaso-continuo` al cerrar.
 
-**Dónde leer:** este plan; `AGENTS.md` del extractor («Verificar la interfaz», «Publicación» y la
-trampa de `Prefabs.dat` leído por posición).
+**Dónde leer:** este plan; `AGENTS.md` del extractor («Verificar la interfaz» y la trampa de
+`Prefabs.dat` leído por posición).
