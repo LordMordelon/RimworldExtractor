@@ -64,7 +64,7 @@ Si vas a traducir y no a programar, empieza por la
   está traducido en [RML](https://github.com/LordMordelon/RML) y escribe el resultado ahí:
   conserva lo traducido aunque cambie el texto original —el comentario `EN` se actualiza y
   el cambio se ve en el diff—, deja `TODO` solo en lo nuevo, y lo que el mod ya no tiene
-  sale del árbol a un `UNUSED.xml`. Requiere indicar la carpeta de RML en Opciones.
+  sale del árbol a un `UNUSED.xml`. Requiere indicar la carpeta de RML en Ajustes.
 - **Actualizar todo RML**, un botón en la ventana principal. Hace la traducción rápida de
   todos los mods que RML ya tiene, uno detrás de otro, contra la versión instalada. Es lo que
   hace falta después de una actualización del juego. Los mods que no están instalados
@@ -99,9 +99,20 @@ está en el historial, en el commit que lo sacó.
   eran nuevos. Lo que hace hoy ese trabajo es la traducción rápida, que cruza contra lo
   que ya está en RML en vez de contra una planilla. Rehacerlo sin Excel significaría
   compararlo contra el árbol de `Languages/`, que es un problema distinto.
-- **Los otros tres formatos de extracción** del selector de Opciones: la planilla, el
+- **Los otros tres formatos de extracción** del selector de Ajustes: la planilla, el
   «XML distribuible» sin comentarios y el mismo con el original como valor. Quedó el
   cuarto, que es el que usa RML.
+- **Tres opciones de Ajustes** que solo servían para esos flujos, sacadas en la limpieza
+  que siguió a la 1.0:
+  - Qué hacer con un archivo que ya existe —sobrescribirlo, conservarlo o preguntar uno
+    por uno en una ventana aparte—. Solo contaba al extraer en una carpeta, porque
+    escribir sobre RML ya obligaba a sobrescribir. Ahora se sobrescribe siempre.
+  - La lista de mods de referencia por defecto, que la selección de mods marcaba al
+    abrirse. Desde la 1.0 las referencias del mod se agregan solas. Los menús para guardar
+    y cargar una lista en esa ventana siguen.
+  - La casilla provisoria de `TKey`, que nombraba de otra forma las claves de los nodos con
+    ese atributo. Estaba apagada, y prenderla le cambiaba el nombre a claves ya traducidas
+    en RML.
 
 Lo que **no** cambia es la traducción rápida ni «Actualizar todo RML»: nunca pasaron por
 ese selector.
@@ -110,11 +121,23 @@ ese selector.
 
 Requiere el **SDK de .NET 10**, que es LTS con soporte hasta noviembre de 2028; es el
 mismo SDK que usan las herramientas del repositorio del mod, así que alcanza con uno
-solo para todo. La interfaz apunta a `net10.0-windows` y los otros dos proyectos de la
-solución a `net10.0`.
+solo para todo. La interfaz apunta a `net10.0-windows` y los otros tres proyectos de la
+solución —la lógica, la versión por consola y las pruebas— a `net10.0`.
 
 ```
 dotnet build RimworldExtractor.sln -c Debug
+dotnet test  RimworldExtractor.sln
+```
+
+Las pruebas usan la instalación real de RimWorld (la buscan en `D:\SteamLibrary`): si no la
+encuentran, salen omitidas, que no es lo mismo que pasar.
+
+`RimworldExtractorLotes` hace «Actualizar todo RML» por consola, sin abrir la ventana, con
+RML como carpeta hermana. No se publica; sirve para reextraer y mirar el diff:
+
+```
+dotnet run --project RimworldExtractorLotes -c Release -- "<comienzo del nombre de la carpeta>"
+dotnet run --project RimworldExtractorLotes -c Release -- --indice     # todas, y regenera el índice
 ```
 
 Para el ejecutable de uso diario:
@@ -131,7 +154,8 @@ El resultado queda en `RimworldExtractorGUI/bin/Release/net10.0-windows/win-x64/
 ## Publicar
 
 Cada push a `master` etiqueta una versión nueva y publica una release, con las dos
-variantes de descarga. La rama `legacy` guarda la 0.1.x y no publica nada.
+variantes de descarga, salvo que solo cambie documentación (`.md`). La rama `legacy` guarda
+la 0.1.x y no publica nada.
 Antes de tocar el código conviene leer
 **[AGENTS.md](AGENTS.md)**: están las reglas del proyecto y las trampas que ya costaron
 tiempo una vez.

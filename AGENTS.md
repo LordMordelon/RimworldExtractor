@@ -8,7 +8,9 @@ importa a la hora de tocar el código.
 
 Fork en español latino de [csh1668/RimworldExtractor](https://github.com/csh1668/RimworldExtractor),
 que está en coreano. Extrae los datos traducibles de RimWorld y de sus mods
-(`Defs`, `Keyed`, `Strings`, `Patches`) y los devuelve como XML o como planilla de Excel.
+(`Defs`, `Keyed`, `Strings`, `Patches`) y los escribe como archivos de traducción en XML,
+casi siempre directo sobre RML. La planilla de Excel y el analizador se fueron en la 1.0; el
+README dice qué más se sacó y qué haría falta para volver a tenerlo.
 
 Tiene un repositorio hermano, **RML** (`../RML`), que es el mod de RimWorld que
 empaqueta las traducciones producidas con esta herramienta. Son proyectos separados
@@ -18,8 +20,8 @@ con licencias distintas: esta herramienta es MIT, RML deriva de código GPL-3.0.
 
 | Proyecto | Qué contiene |
 |---|---|
-| `RimworldExtractorInternal` | Toda la lógica: extracción, lectura y escritura de XML/XLSX, listado de mods, configuración. No depende de WinForms. |
-| `RimworldExtractorGUI` | Los ocho formularios, más los ayudantes de `Utils/`. |
+| `RimworldExtractorInternal` | Toda la lógica: extracción, lectura y escritura de XML, escritura sobre RML, listado de mods, configuración. No depende de WinForms. |
+| `RimworldExtractorGUI` | Las cuatro ventanas (`FormMain`, `FormSelectMod`, `FormSettings` y `FormInitialPathSelect`), más los ayudantes de `Utils/`, entre ellos `Aviso`. |
 | `RimworldExtractorLotes` | «Actualizar todo RML» por consola, sin abrir la ventana, para todas las carpetas o solo algunas. No se publica. Ver «Compilar y probar». |
 | `RimworldExtractorTest` | MSTest. Los tests usan **la instalación real de RimWorld de la máquina**, así que se declaran `Inconclusive` si no la encuentran en vez de fallar. |
 
@@ -27,7 +29,7 @@ Archivos que conviene conocer antes de tocar nada:
 
 - **`RimworldExtractorInternal/Strings.cs`** — todo el texto visible, en un solo lugar.
 - **`RimworldExtractorInternal/Prefabs.cs`** — la configuración persistida en `Prefabs.dat`.
-- **`RimworldExtractorInternal/IO.cs`** — lectura y escritura de XML y planillas.
+- **`RimworldExtractorInternal/IO.cs`** — lectura y escritura de los XML de traducción.
 - **`RimworldExtractorGUI/Utils/`** — `AutoAjuste` y `Rejilla` (ver más abajo).
 - **`RimworldExtractorGUI/Resources/generar_logo.py`** — la fuente del logo. El dibujo está
   definido ahí, con geometría y colores, y el script escribe `logo.ico` y `logo.png`. Para
@@ -51,11 +53,14 @@ Para reextraer mods de RML sin la ventana, desde esta carpeta y con RML como car
 ```
 dotnet run --project RimworldExtractorLotes -c Release -- "The Dead Man's Switch - 3819"   # una carpeta, por su comienzo
 dotnet run --project RimworldExtractorLotes -c Release -- --indice                         # todas, y regenera el indice
+dotnet run --project RimworldExtractorLotes -c Release -- --rml "<ruta de RML>" "<carpeta>"  # desde otra carpeta
 ```
 
 Hace lo mismo que el botón, con `ActualizacionPorLotes.Correr`. Sin `--indice` no agrupa ni
 regenera el índice: eso queda para después, con el builder de RML. Toma RimWorld de
-`D:\SteamLibrary`, los valores por defecto de `Prefabs`. Después, mirar el diff en RML.
+`D:\SteamLibrary`, los valores por defecto de `Prefabs`. Sin `--rml` busca RML en `../RML`, así
+que desde una copia aislada (`.claude/worktrees/`) hay que darle la ruta. Después, mirar el diff
+en RML.
 
 Dos cosas que muerden:
 
@@ -106,9 +111,9 @@ textos en coreano. El español ocupa bastante más. El destino es maquetarlos co
 `TableLayoutPanel` en el `.Designer.cs`, como ya está `FormInitialPathSelect`: se descartó
 Avalonia (su previewer no funciona en esta máquina) y también WinUI 3, que no tiene diseñador
 visual, no publica un `.exe` único de forma soportada y obligaría a reescribir la GUI entera.
-Cuando estén los ocho, `AutoAjuste` y `Rejilla` se borran.
+Cuando estén las cuatro, `AutoAjuste` y `Rejilla` se borran.
 
-Mientras tanto, los que faltan usan dos ayudantes que reacomodan todo al arrancar:
+Mientras tanto, las tres que faltan usan dos ayudantes que reacomodan todo al arrancar:
 
 - **`AutoAjuste`** mide cada control con su fuente real, lo ensancha si su texto no
   entra, corre a los vecinos que quedarían tapados y agranda la ventana. Al final fija
@@ -189,7 +194,10 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
 - **`Prefabs.dat` se lee por posición**, no por nombre de campo. Un campo nuevo va
   **al final** y se lee sólo si está (`idx < lines.Length`): así un archivo viejo sigue
   sirviendo. Meterlo en el medio obliga a subir `Version`, y eso descarta el archivo
-  entero y le borra la configuración a todo el mundo.
+  entero y le borra la configuración a todo el mundo. Por lo mismo, una opción que se saca
+  deja su renglón **reservado**: se sigue escribiendo con un valor fijo que una versión
+  anterior sepa leer, y se saltea al leer. Hoy son seis, comentadas en `Prefabs.Save`; lo
+  cubre `LasLineasReservadasMantienenLasPosiciones`.
 - **Una etiqueta nueva en la lista por defecto no le llega a nadie.** La lista de etiquetas
   extraíbles se guarda en `Prefabs.dat` y se lee de ahí, así que un `Prefabs.dat` ya escrito
   se queda con la vieja. Las etiquetas que se suman van en `Prefabs.EtiquetasAgregadas`, que
@@ -358,33 +366,27 @@ anterior, y la aplicación los muestra al ofrecer la actualización (`AvisoDeAct
 `feat!:`). Por eso el asunto va con las tildes completas, como el texto de `Strings.cs`, aunque
 los comentarios del código las omitan: «cambió de número», no «cambio de numero».
 
+**Un push que solo cambia documentación no publica.** `publish.yml` ignora los `**.md`
+(`paths-ignore`), porque si no saldría una versión sin ningún cambio para el usuario. Si el push
+trae también código, publica igual, y la lista de cambios deja afuera los commits que solo
+tocaron documentación.
+
 **Ramas.** `master` es la 1.0: la beta se unió el 20-oct-2026 y la rama `1.0-beta` se borró.
-`legacy` guarda la 0.1.x —la del Excel y el analizador— y no publica nada. El mecanismo de
-betas sigue en el workflow para la próxima: se agrega la rama a `on.push.branches` y se pone su
-versión en `Version_Beta`.
+`legacy` guarda la 0.1.x —la del Excel y el analizador— y no publica nada.
 
-**Fuera de `master` la versión sale como beta**, `1.0.0-beta.N`, y la release se marca
-`prerelease`. Eso la deja fuera de `releases/latest`, que es lo que consulta la aplicación,
-así que a nadie le aparece como actualización.
+**Betas.** El mecanismo sigue en el workflow para la próxima: se agrega la rama a
+`on.push.branches` y se pone su versión en `Version_Beta`, que la declara la rama y no se
+deduce de los commits. Sale `X.Y.Z-beta.N`, marcada `prerelease`, así que queda fuera de
+`releases/latest` y a nadie le aparece como actualización. Tres cosas que hay que mantener
+juntas:
 
-**La versión de una beta no se deduce: la declara la rama**, en el `Version_Beta` del
-workflow. Toda beta de esta rama es `1.0.0-beta.N` —`.4`, `.5`, `.6`…— y todas pertenecen a
-la 1.0.0. Antes se deducía de que hubiera un commit `feat!:` en el rango desde la última
-etiqueta estable, y eso se caía solo: el día que `master` publique una estable que ya incluya
-ese commit, la rama deja de verlo y la beta siguiente saldría `0.x`.
-
-Tres cosas que hay que mantener juntas:
-
-- `N` sale del **máximo** de los `1.0.0-beta.*` que ya existen, con `cut -d. -f4 | sort -n`,
-  y no de contarlos. Contar reutiliza un número si alguna etiqueta se borra, y entonces la
-  release choca con una que todavía está. El `sort -n` tampoco sobra: alfabéticamente
-  `beta.9` es mayor que `beta.12`.
-- La etiqueta base se busca con `--match '[0-9]*' --exclude '*-*'`. El `--exclude` no
-  sobra: el `*` de un glob se come el guión, así que `[0-9]*.[0-9]*.[0-9]*` también casa
-  con `1.0.0-beta.1`. Sigue haciendo falta para el rango del changelog.
+- `N` sale del **máximo** de las betas que ya existen (`cut -d. -f4 | sort -n`), no de
+  contarlas: contar reutiliza un número si se borra una etiqueta, y alfabéticamente `beta.9`
+  es mayor que `beta.12`.
+- La etiqueta base se busca con `--match '[0-9]*' --exclude '*-*'`: sin el `--exclude`, el
+  `*` del glob se come el guión y casa también con `1.0.0-beta.1`.
 - `FormMain.EsBeta` corta la oferta de actualizar cuando la versión que corre lleva guión.
-  Sin eso, una beta ve como «última» a la estable anterior —la comparación es igualdad de
-  cadenas— y el enlace ofrece actualizar hacia atrás.
+  Sin eso, una beta ve como «última» a la estable anterior y ofrece actualizar hacia atrás.
 
 `.github/workflows/publish.yml` corre en cada push a `master` (y a la rama de beta, si hay una):
 etiqueta la versión, compila las dos variantes (estándar y portable) y crea la release.

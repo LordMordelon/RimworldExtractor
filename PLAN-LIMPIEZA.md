@@ -28,12 +28,12 @@ que no se mencionan en ningún otro archivo.
 |---|---|---|---|
 | 0 | Que la documentación no publique versiones | chica | hecha (`391d881`) |
 | 1 | Código sin uso confirmado | media | hecha (`613e424`) |
-| 2 | Opciones que quedaron de los flujos viejos | media | averiguada; falta la decisión de Angel |
-| 3 | Documentación del extractor | media | pendiente |
+| 2 | Opciones que quedaron de los flujos viejos | media | hecha (`bf37447`) |
+| 3 | Documentación del extractor | media | hecha (ver «Sesiones») |
 | 4 | La guía para colaboradores de RML | grande | pendiente, con decisión |
 | 5 | Ordenar las pruebas | media | opcional |
 
-Fuera de este plan, a propósito: pasar las cuatro ventanas que faltan a `TableLayoutPanel` y
+Fuera de este plan, a propósito: pasar las tres ventanas que faltan a `TableLayoutPanel` y
 borrar `AutoAjuste` y `Rejilla` (ver «Maquetación» en `AGENTS.md`). Es un proyecto propio, de
 varias sesiones, y mezclarlo con la limpieza haría imposible revisar el diff.
 
@@ -160,39 +160,41 @@ clases enteras: el diff tiene que ser mover, no editar.
 ## Sesiones (estimación)
 
 - Sesión 1: etapas 0 y 1, y la 2 averiguada y decidida (hecho).
-- Sesión 2: sacar lo decidido de la etapa 2, y etapa 3.
+- Sesión 2: sacar lo decidido de la etapa 2, y etapa 3 (hecho).
 - Sesión 3: etapa 4.
 - Sesión 4, si se aprueba: etapa 5.
 
-## Próxima sesión (20-oct-2026, después de la sesión 1 de la cadena)
+## Próxima sesión (20-oct-2026, después de la sesión 2 de la cadena)
 
-**Objetivo:** sacar las opciones de la etapa 2 que Angel decidió (ver «Decisiones», punto 2) y
-hacer la etapa 3.
+**Objetivo:** etapa 4, la guía para colaboradores de RML, según la decisión 1 de Angel.
 
-**Estado:** etapas 0 y 1 hechas y verificadas (92 de 92 pruebas; reextracción de control de
-Amplified Mobility Platform, Vanilla Factions Expanded - Pirates y Combat Extended sin ningún cambio
-en RML). Etapa 2 averiguada y decidida. Nada subido.
+**Estado:** etapas 0 a 3 hechas. La 2 se verificó con las 92 pruebas en verde, la reextracción de
+control de los tres mods de siempre sin ningún cambio en RML, y la ventana de Ajustes renderizada
+en claro y oscuro: sin las opciones que salieron, la sección «Idiomas» quedó sola y la ventana se
+achicó a lo que tiene (antes las dos secciones de la izquierda se repartían el alto). La 3 es solo
+documentación del extractor (`AGENTS.md`, `README.md`, `CAMBIOS.md`) y del `CLAUDE.md` de la
+carpeta de trabajo, que no está en ningún repositorio. Nada subido.
 
 **Dónde está el trabajo:** rama `limpieza` del extractor, en la copia aislada
-`RimworldExtractor/.claude/worktrees/limpieza` (entrar con `EnterWorktree` y esa ruta). `master`
-local tiene solo la etapa 0 (`391d881`); `limpieza` tiene además `613e424` y los dos commits del
-plan. La carpeta está en `.git/info/exclude` del extractor.
+`RimworldExtractor/.claude/worktrees/limpieza`. `master` local tiene solo la etapa 0 (`391d881`).
+La etapa 4 es de RML. En `RML/` hay cambios sin commitear de otra sesión (The Dead Man's Switch,
+`ModList.tsv`, `docs/index.html`): no tocarlos ni agregarlos, y no cambiar de rama ahí, que se los
+llevaría. Trabajar en una copia aislada nueva, con
+`git -C "<ruta de RML>" -c core.longpaths=true worktree add .claude/worktrees/guia -b limpieza-guia master`
+(las rutas de `Data/` pasan los 260 caracteres sin `core.longpaths`), y agregar
+`.claude/worktrees/` al `.git/info/exclude` de RML, como se hizo en el extractor.
 
 **Al empezar (Claude):**
-- Etapa 2: sacar de Opciones y del código `Policy`, `StopCallbackXml`/`StopCallbackTxt` con
-  `FormStopCallback` (escribir siempre sobrescribe), `PathBaseRefList` y `EnableTkey` (apagada).
-  En `Prefabs.dat` sus tres renglones (3, 6 y 17) se siguen escribiendo con un valor fijo
-  —`False`, vacío y `Overwrite`—, como ya se hace con `CommentOriginal` y `PatternVersionWithV`.
-  Toca la ventana de Opciones: renderizarla en claro y oscuro antes de dar la etapa por buena.
-- Etapa 3, la documentación del extractor. Sumar a `AGENTS.md` que la ventana `FormStopCallback`
-  ya no existe (quedan cuatro).
+- Reescribir `RML/TRADUCIR.md` para traducir sobre los XML con un editor de texto (Notepad++ o VS
+  Code), con el aviso del principio sobre la 0.1.30 para quien prefiera la planilla. Las secciones
+  4, 5, 8, 9 y 11 son solo de la planilla; la 10b ya tiene el modo XML.
+- Lo mismo, en corto, en `RML/README.md` (líneas 84 y 85) y `RML/AGENTS.md` (línea 96).
+- Para el enlace a la 0.1.30, copiarlo de la página de releases real (`gh api`), no armarlo.
 
-**Cuidado:** desde la copia aislada, `git` sobre RML va con `git -C "<ruta completa de RML>"`, y
-`RimworldExtractorLotes` necesita `--rml "<ruta completa de RML>"`. El `LoadFolders.Build.yaml` de
-Combat Extended queda marcado como modificado después de reextraer aunque el contenido es idéntico
-(mismo hash); no es un cambio.
+**Cuidado:** un push a `master` de RML publica una release solo si cambia `output/`; la guía no
+cambia `output/`, pero igual no se sube nada sin la aprobación de Angel.
 
 **Guías:** `traspaso-continuo` al cerrar.
 
-**Dónde leer:** este plan; `AGENTS.md` del extractor («Verificar la interfaz» y la trampa de
-`Prefabs.dat` leído por posición).
+**Dónde leer:** este plan («4. La guía para colaboradores de RML» y «Decisiones de Angel»);
+`RML/TRADUCIR.md`; `RML/GLOSARIO.md` solo si la guía lo cita.

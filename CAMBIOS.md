@@ -33,7 +33,7 @@ escrito en el código —todo pasa por `Strings.cs`— y ningún color va cablea
 | `Utils/AutoAjuste.cs` | Mide cada control con su fuente real y lo ensancha si su texto no entra |
 | `Utils/Rejilla.cs` | Reparte espacio donde los anclajes de WinForms no alcanzan |
 | `Utils/Tema.cs` | Tema claro, oscuro o el de Windows, guardado en `Prefabs.dat` |
-| `Utils/Aviso.cs` | Reemplaza a `MessageBox` en los 20 cuadros de mensaje |
+| `Utils/Aviso.cs` | Reemplaza a `MessageBox` en todos los cuadros de mensaje |
 | `Resources/generar_logo.py` | El logo propio: un planeta con anillo que es a la vez un globo de diálogo. Upstream no tenía ícono |
 
 Las dos últimas existen por motivos concretos. `MessageBox` es un diálogo del propio Windows y no
@@ -49,6 +49,12 @@ Se quitó el empaquetador de imágenes (`FormImageFileCombiner`), que pegaba un 
 `.jpg` para subir archivos a foros coreanos que solo aceptan imágenes. En su lugar de la ventana
 principal está «Actualizar todo RML».
 
+La 1.0 sacó tres ventanas más con los flujos que las usaban —las dos del analizador de traducciones
+(`FormTranslationAnalyzer` y `FormTranslationAnalyzerPathSelect`) y `FormXmlister`, de las
+planillas—, y la limpieza que la siguió, `FormStopCallback`, que preguntaba qué hacer con cada
+archivo que ya existía. Quedan cuatro. Lo que
+se sacó y qué haría falta para rehacerlo está en «Qué se sacó en la 1.0», en el [README](README.md).
+
 ---
 
 ## Traducción rápida
@@ -63,9 +69,9 @@ re-extrae contra la versión instalada y se cruza con lo que ya estaba hecho.
 - **`ActualizacionRml.cs`** — escribe el resultado sobre la carpeta del mod en RML.
 - **`ActualizacionPorLotes.cs`** — hace lo mismo con todos los mods de RML de una vez, desde el
   botón «Actualizar todo RML». Es lo que hace falta después de una actualización del juego.
-- **Formato «XML para traducir a mano»** — deja el original en un comentario y `TODO` donde falta
-  traducir, en vez de dejar el inglés como valor. Un `TODO` sin terminar se ve; el inglés copiado
-  pasa por traducción y nadie lo revisa.
+- **Un solo formato, el XML para traducir a mano** — deja el original en un comentario y `TODO`
+  donde falta traducir, en vez de dejar el inglés como valor. Un `TODO` sin terminar se ve; el
+  inglés copiado pasa por traducción y nadie lo revisa. Desde la 1.0 es el único formato.
 
 ---
 
@@ -105,8 +111,9 @@ lo dijera:
   def no está cargado» de «está pero le falta el nodo interno».
 - **`TraduccionPropia.cs`** — avisa si el mod ya trae su propia traducción al idioma de destino.
 
-Y la opción **«Extracción completa»**, que carga el contenido oficial y los mods relacionados como
-referencia. Sin eso, un mod que le cambia el nombre a algo del juego base extraía cero.
+Y la carga del contenido oficial y de los mods relacionados como referencia, que empezó como la
+casilla **«Extracción completa»** y desde la 1.0 se hace siempre. Sin eso, un mod que le cambia el
+nombre a algo del juego base extraía cero.
 
 ---
 
@@ -119,8 +126,10 @@ referencia. Sin eso, un mod que le cambia el nombre a algo del juego base extra�
 - **Los guiones en los comentarios XML.** La secuencia `--` es ilegal dentro de un comentario, y el
   original lo resolvía reemplazando *todos* los guiones por `ー` (katakana), lo que destruía el
   texto latino: `re-arm` quedaba `reーarm`. Ahora se escapa únicamente la secuencia ilegal.
-- **Los Patches se separan por mod parcheado**, un archivo por cada uno con su nombre, en vez de
-  quedar todos juntos.
+- **Los Patches se separan por mod parcheado**, un archivo por cada uno en vez de quedar todos
+  juntos. El nombre va codificado, como el de los `Keyed` y los `DefInjected`: con el nombre del
+  mod parcheado, nueve carpetas de RML tenían su `Patches/Odyssey.xml` y RimWorld cargaba uno
+  solo.
 - **Un `Console.WriteLine` de depuración** que imprimía cada entrada extraída a stdout.
 - **La relectura de los Patches** se hacía contra una base de defs que la propia extracción ya había
   reemplazado, así que la traducción hecha se perdía sin dejar rastro.
@@ -136,6 +145,7 @@ referencia. Sin eso, un mod que le cambia el nombre a algo del juego base extra�
 
 `.github/workflows/publish.yml` etiqueta la versión a partir de los mensajes de commit, compila las
 dos variantes —portable y estándar— y crea la release. Un commit que empiece con `feat:` sube el
-número del medio.
+número del medio, y uno con `feat!:` el primero. Un push que solo cambia documentación no publica
+nada, y la aplicación muestra la lista de cambios al ofrecer una versión nueva.
 
 El Portable se publica comprimido: pesa 78 MB en vez de 184.
