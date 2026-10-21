@@ -74,7 +74,7 @@ namespace RimworldExtractorInternal
             var isOfficial = translations.Any(x => x.SourceFile != null);
             if (isOfficial)
             {
-                Log.Msg(Strings.OfficialContentKeepsFileNames);
+                Log.Det(Strings.OfficialContentKeepsFileNames);
             }
 
             var reencaminadas = PatchesQueElJuegoPisa(translations);
@@ -697,12 +697,12 @@ namespace RimworldExtractorInternal
             }
 
             if (reencaminadas.Count > 0)
-                Log.Msg(Strings.OfficialTranslationBeatsPatch(reencaminadas.Count));
+                Log.Det(Strings.OfficialTranslationBeatsPatch(reencaminadas.Count));
 
             // El defecto era invisible; dejar invisible lo que queda sin arreglar seria
             // repetirlo. Estas se siguen escribiendo como patch y el juego las va a pisar.
             foreach (var entrada in sinConvertir)
-                Log.Wrn(Strings.OfficialTranslationBeatsPatchUnfixed(
+                Log.WrnDet(Strings.OfficialTranslationBeatsPatchUnfixed(
                     SinPrefijoDePatches(entrada.ClassName), entrada.Node));
 
             return reencaminadas;
@@ -899,7 +899,7 @@ namespace RimworldExtractorInternal
             // Se guarda sin pasar por la politica de duplicados: es un informe que se
             // rehace en cada corrida, y conservar el viejo lo dejaria mintiendo.
             doc.Save(destino);
-            Log.Msg(Strings.UnusedTranslationsSaved(sinUso.Count, destino));
+            Log.Det(Strings.UnusedTranslationsSaved(sinUso.Count, destino));
         }
 
         /// <summary>

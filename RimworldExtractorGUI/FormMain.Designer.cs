@@ -38,6 +38,14 @@
             button1 = new Button();
             linkLabelLatestVersion = new LinkLabel();
             buttonUpdateAllRml = new Button();
+            buttonAbrirLog = new Button();
+            tablaLog = new TableLayoutPanel();
+            labelProgreso = new Label();
+            marcoProgreso = new Panel();
+            progressBar = new ProgressBar();
+            labelAvisos = new Label();
+            richTextBoxAvisos = new RichTextBox();
+            tablaLog.SuspendLayout();
             SuspendLayout();
             // 
             // buttonSelectMod
@@ -81,11 +89,11 @@
             // richTextBoxLog
             // 
             richTextBoxLog.BackColor = SystemColors.ControlText;
-            richTextBoxLog.Location = new Point(12, 245);
+            richTextBoxLog.Dock = DockStyle.Fill;
+            richTextBoxLog.Margin = new Padding(0, 0, 0, 6);
             richTextBoxLog.Name = "richTextBoxLog";
             richTextBoxLog.ReadOnly = true;
             richTextBoxLog.ScrollBars = RichTextBoxScrollBars.ForcedVertical;
-            richTextBoxLog.Size = new Size(776, 244);
             richTextBoxLog.TabIndex = 8;
             richTextBoxLog.Text = "";
             // 
@@ -131,22 +139,105 @@
             buttonUpdateAllRml.UseVisualStyleBackColor = true;
             buttonUpdateAllRml.Click += buttonUpdateAllRml_Click;
             // 
+            // buttonAbrirLog
+            // 
+            // Su posicion final la calcula ApplyStrings, pegado a la izquierda de button1.
+            buttonAbrirLog.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            buttonAbrirLog.Location = new Point(506, 216);
+            buttonAbrirLog.Name = "buttonAbrirLog";
+            buttonAbrirLog.Size = new Size(138, 23);
+            buttonAbrirLog.TabIndex = 13;
+            buttonAbrirLog.UseVisualStyleBackColor = true;
+            buttonAbrirLog.Click += buttonAbrirLog_Click;
+            // 
+            // tablaLog
+            // 
+            // Avance, log y avisos, uno debajo de otro. Los avisos van en filas AutoSize: con
+            // sus controles ocultos miden cero y el log se queda con todo el alto.
+            tablaLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            tablaLog.ColumnCount = 1;
+            tablaLog.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tablaLog.Controls.Add(labelProgreso, 0, 0);
+            tablaLog.Controls.Add(marcoProgreso, 0, 1);
+            tablaLog.Controls.Add(richTextBoxLog, 0, 2);
+            tablaLog.Controls.Add(labelAvisos, 0, 3);
+            tablaLog.Controls.Add(richTextBoxAvisos, 0, 4);
+            tablaLog.Location = new Point(12, 245);
+            tablaLog.Name = "tablaLog";
+            tablaLog.RowCount = 5;
+            tablaLog.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            tablaLog.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            tablaLog.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tablaLog.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            tablaLog.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            tablaLog.Size = new Size(776, 348);
+            tablaLog.TabIndex = 14;
+            // 
+            // labelProgreso
+            // 
+            labelProgreso.AutoSize = true;
+            labelProgreso.Margin = new Padding(0, 0, 0, 4);
+            labelProgreso.Name = "labelProgreso";
+            labelProgreso.TabIndex = 0;
+            // 
+            // marcoProgreso
+            // 
+            // En oscuro la barra no dibuja el tramo vacio. ApplyStrings le da a este panel un
+            // borde de un pixel, para que se vea cuanto falta.
+            marcoProgreso.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            marcoProgreso.Controls.Add(progressBar);
+            marcoProgreso.Margin = new Padding(0, 0, 0, 8);
+            marcoProgreso.Name = "marcoProgreso";
+            marcoProgreso.Size = new Size(776, 18);
+            marcoProgreso.TabIndex = 1;
+            // 
+            // progressBar
+            // 
+            progressBar.Dock = DockStyle.Fill;
+            progressBar.Name = "progressBar";
+            progressBar.Style = ProgressBarStyle.Continuous;
+            progressBar.TabIndex = 1;
+            // 
+            // labelAvisos
+            // 
+            labelAvisos.AutoSize = true;
+            labelAvisos.Margin = new Padding(0, 0, 0, 4);
+            labelAvisos.Name = "labelAvisos";
+            labelAvisos.TabIndex = 3;
+            labelAvisos.Visible = false;
+            // 
+            // richTextBoxAvisos
+            // 
+            richTextBoxAvisos.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            richTextBoxAvisos.Margin = new Padding(0);
+            richTextBoxAvisos.Name = "richTextBoxAvisos";
+            richTextBoxAvisos.DetectUrls = false;
+            richTextBoxAvisos.ReadOnly = true;
+            richTextBoxAvisos.ScrollBars = RichTextBoxScrollBars.Vertical;
+            richTextBoxAvisos.Size = new Size(776, 110);
+            richTextBoxAvisos.TabIndex = 4;
+            richTextBoxAvisos.Text = "";
+            richTextBoxAvisos.Visible = false;
+            // 
             // FormMain
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 496);
+            ClientSize = new Size(800, 600);
+            Controls.Add(tablaLog);
+            Controls.Add(buttonAbrirLog);
             Controls.Add(buttonUpdateAllRml);
             Controls.Add(linkLabelLatestVersion);
             Controls.Add(button1);
             Controls.Add(labelSelectedMods);
-            Controls.Add(richTextBoxLog);
             Controls.Add(label2);
             Controls.Add(label1);
             Controls.Add(button2);
             Controls.Add(buttonSelectMod);
             Name = "FormMain";
             Text = "Rimworld Extractor GUI (림추출기)";
+            tablaLog.ResumeLayout(false);
+            tablaLog.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -161,5 +252,12 @@
         private Button button1;
         private LinkLabel linkLabelLatestVersion;
         private Button buttonUpdateAllRml;
+        private Button buttonAbrirLog;
+        private TableLayoutPanel tablaLog;
+        private Label labelProgreso;
+        private Panel marcoProgreso;
+        private ProgressBar progressBar;
+        private Label labelAvisos;
+        private RichTextBox richTextBoxAvisos;
     }
 }

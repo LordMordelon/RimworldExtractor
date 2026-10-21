@@ -123,7 +123,7 @@ internal static class PatchOperations
         XmlNode? value = curNode["value"];
         if (xpath == null || value == null)
         {
-            Log.Wrn(Strings.MissingXpathOrValue);
+            Log.WrnDet(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 
@@ -134,7 +134,7 @@ internal static class PatchOperations
             var parentNode = selectNode.ParentNode;
             if (parentNode == null)
             {
-                Log.Wrn(Strings.SelectedNodeHasNoParent(selectNode.Name));
+                Log.WrnDet(Strings.SelectedNodeHasNoParent(selectNode.Name));
                 continue;
             }
             var rootDefNode = Extractor.GetRootDefNode(parentNode, out var nodeName);
@@ -169,7 +169,7 @@ internal static class PatchOperations
         XmlNode? value = curNode["value"];
         if (xpath == null || value == null)
         {
-            Log.Wrn(Strings.MissingXpathOrValue);
+            Log.WrnDet(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 
@@ -216,7 +216,7 @@ internal static class PatchOperations
         XmlNode? value = curNode["value"];
         if (xpath == null || value == null)
         {
-            Log.Wrn(Strings.MissingXpathOrValue);
+            Log.WrnDet(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 
@@ -241,7 +241,7 @@ internal static class PatchOperations
             // saltea. Antes se avisaba y se seguia igual, pasando nulos a FindExtractableNodes.
             if (defName is null || className is null)
             {
-                Log.Wrn(Strings.PatchWithoutDefNameOrClassName(xpath));
+                Log.WrnDet(Strings.PatchWithoutDefNameOrClassName(xpath));
                 continue;
             }
             foreach (XmlNode valueChildNode in value.ChildNodes)
@@ -269,7 +269,7 @@ internal static class PatchOperations
         XmlNode? value = curNode["value"];
         if (xpath == null || value == null)
         {
-            Log.Wrn(Strings.MissingXpathOrValue);
+            Log.WrnDet(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 
@@ -293,7 +293,7 @@ internal static class PatchOperations
                 if (defName == null)
                 {
 
-                    Log.Wrn(Strings.PatchWithoutDefNameUnsupported(xpath, value.InnerXml));
+                    Log.WrnDet(Strings.PatchWithoutDefNameUnsupported(xpath, value.InnerXml));
                     continue;
                 }
 
@@ -373,7 +373,7 @@ internal static class PatchOperations
         var attribute = curNode["attribute"]?.InnerText;
         if (xpath == null || (mode != PatchOperationAttributeMode.Remove && value == null) || attribute == null)
         {
-            Log.Wrn(Strings.MissingXpathOrValue);
+            Log.WrnDet(Strings.MissingXpathOrValue);
             yield break; // yield break;
         }
 

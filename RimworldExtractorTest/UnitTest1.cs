@@ -2812,4 +2812,96 @@ namespace RimworldExtractorTest
             CollectionAssert.AreEqual(new[] { "1.10/Defs" }, elegidas);
         }
     }
+
+    /// <summary>
+    /// El log de la ultima extraccion: el archivo trae todo, la ventana solo lo que sirve
+    /// mirar, y lo tecnico llega marcado para que la ventana lo pueda dejar afuera.
+    /// </summary>
+    [TestClass]
+    public class LogDetalladoTests
+    {
+        private static string ArchivoTemporal()
+            => Path.Combine(Path.GetTempPath(), "log-" + Guid.NewGuid().ToString("N") + ".log");
+
+        private static string Leer(string ruta)
+        {
+            Log.CerrarArchivo();
+            try
+            {
+                return File.ReadAllText(ruta);
+            }
+            finally
+            {
+                File.Delete(ruta);
+            }
+        }
+
+        /// <summary>
+        /// Cada extraccion empieza el archivo de cero. Si se agregara al final, con una
+        /// corrida de todo RML encima el archivo de la ultima seria imposible de leer.
+        /// </summary>
+        [TestMethod]
+        public void ElArchivoSoloTieneLaUltimaExtraccion()
+        {
+            var ruta = ArchivoTemporal();
+
+            Log.EmpezarArchivo(ruta);
+            Log.Msg("primera extraccion");
+            Log.EmpezarArchivo(ruta);
+            Log.Msg("segunda extraccion");
+
+            var texto = Leer(ruta);
+            StringAssert.Contains(texto, "segunda extraccion");
+            Assert.IsFalse(texto.Contains("primera extraccion"), texto);
+        }
+
+        /// <summary>
+        /// Lo que la ventana no muestra tiene que estar en el archivo, con el nivel escrito
+        /// en palabras y sin los simbolos que usaba antes, que el Bloc de notas no siempre
+        /// muestra bien.
+        /// </summary>
+        [TestMethod]
+        public void ElArchivoTraeLoTecnicoConElNivelEnPalabras()
+        {
+            var ruta = ArchivoTemporal();
+
+            Log.EmpezarArchivo(ruta);
+            Log.Det("se cargaron los compats");
+            Log.WrnDet("un nodo padre que no aparece");
+            Log.Err("un archivo que no se pudo leer");
+
+            var texto = Leer(ruta);
+            StringAssert.Contains(texto, "se cargaron los compats");
+            StringAssert.Contains(texto, Strings.PrefixWarning + " un nodo padre que no aparece");
+            StringAssert.Contains(texto, Strings.PrefixError + " un archivo que no se pudo leer");
+            Assert.IsFalse(texto.Contains('✖') || texto.Contains('⚠'), texto);
+        }
+
+        /// <summary>
+        /// La ventana recibe todo, pero lo tecnico le llega marcado: si no, no tendria como
+        /// separarlo de lo que si tiene que mostrar.
+        /// </summary>
+        [TestMethod]
+        public void LoTecnicoLlegaMarcadoALaPantalla()
+        {
+            var recibidas = new List<LogEntry>();
+            Log.Pantalla = recibidas.Add;
+            try
+            {
+                Log.Det("detalle");
+                Log.WrnDet("aviso tecnico");
+                Log.Msg("resultado del mod");
+                Log.Wrn("aviso que pide hacer algo");
+            }
+            finally
+            {
+                Log.Pantalla = null;
+            }
+
+            CollectionAssert.AreEqual(
+                new[] { true, true, false, false },
+                recibidas.Select(x => x.SoloArchivo).ToArray());
+            Assert.AreEqual(LogLevel.Warning, recibidas[1].Level);
+        }
+    }
 }

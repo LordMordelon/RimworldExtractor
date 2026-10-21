@@ -19,7 +19,7 @@ namespace RimworldExtractorInternal.Compats
                 var labelNode = root["label"];
                 if (labelNode == null)
                 {
-                    Log.Wrn(Strings.LabelNodeMissing(node.InnerXml));
+                    Log.WrnDet(Strings.LabelNodeMissing(node.InnerXml));
                     continue;
                 }
 

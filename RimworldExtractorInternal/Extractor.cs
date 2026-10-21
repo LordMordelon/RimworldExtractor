@@ -144,7 +144,7 @@ namespace RimworldExtractorInternal
                         extraction.AddRange(ExtractPatches(extractableFolder));
                         break;
                     default:
-                        Log.Wrn(Strings.UnsupportedFolder(extractableFolder.FolderName));
+                        Log.WrnDet(Strings.UnsupportedFolder(extractableFolder.FolderName));
                         continue;
                 }
 
@@ -180,11 +180,11 @@ namespace RimworldExtractorInternal
 
             if (conflictos.Count > 0)
             {
-                Log.Wrn(Strings.DuplicateNodesFound(conflictos.Count));
+                Log.WrnDet(Strings.DuplicateNodesFound(conflictos.Count));
                 foreach (var detalle in conflictos.Take(MaxDuplicadosEnElLog))
-                    Log.Wrn(detalle);
+                    Log.WrnDet(detalle);
                 if (conflictos.Count > MaxDuplicadosEnElLog)
-                    Log.Wrn(Strings.AndMoreOmitted(conflictos.Count - MaxDuplicadosEnElLog));
+                    Log.WrnDet(Strings.AndMoreOmitted(conflictos.Count - MaxDuplicadosEnElLog));
             }
 
             _isOfficialContent = false;
@@ -195,7 +195,7 @@ namespace RimworldExtractorInternal
             // de una por aparicion.
             if (PatchOperations.OperacionesNoSoportadas.Count > 0)
             {
-                Log.Wrn(Strings.UnsupportedPatchOperationsFound(
+                Log.WrnDet(Strings.UnsupportedPatchOperationsFound(
                     PatchOperations.OperacionesNoSoportadas.Values.Sum(),
                     string.Join(", ", PatchOperations.OperacionesNoSoportadas
                         .OrderByDescending(x => x.Value)
@@ -358,7 +358,7 @@ namespace RimworldExtractorInternal
                 if (defName == null)
                 {
                     if (node.Name != "SongDef")
-                        Log.Wrn(Strings.DefNameTagNotFound(node.Name, node.InnerXml));
+                        Log.WrnDet(Strings.DefNameTagNotFound(node.Name, node.InnerXml));
                     continue;
                 }
 

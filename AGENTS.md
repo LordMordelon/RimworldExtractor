@@ -186,7 +186,7 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   vuelta. Las `const` no cuentan: se incrustan como literal y no dejan referencia.
   Compila igual y **falla en silencio**, porque al ser `WinExe` no hay consola donde
   aparezca la excepción; el rastro queda en el visor de eventos de Windows.
-- **`Prefabs.dat` y `log.txt` viven junto al ejecutable**, en `Prefabs.Carpeta`, que sale
+- **`Prefabs.dat` y `ultima-extraccion.log` viven junto al ejecutable**, en `Prefabs.Carpeta`, que sale
   de `Environment.ProcessPath`. No del directorio de trabajo, porque lanzar la aplicación
   desde otra carpeta perdía la configuración y dejaba otro `Prefabs.dat` suelto. Y tampoco de
   `AppContext.BaseDirectory`, porque en el Portable apunta a la carpeta temporal donde se
@@ -322,11 +322,13 @@ Al terminar agrupa y regenera el índice una sola vez.
   van en paralelo; la inserción en `CombinedDefs` **no**, porque el orden decide quién gana
   en `ParentNodeLookUp` y en el `DistinctBy` final.
 
-- **El log no espera a la ventana.** `RichTextBoxWriter` encola las líneas y las pinta de a
+- **El log no espera a la ventana.** `PanelDeLog` encola las entradas y las pinta de a
   tandas con `BeginInvoke`. Antes cada línea hacía un `Invoke` **síncrono** más un `Flush()`
   al disco, leía `Text.Length` —hasta 327.670 caracteres— y llamaba a `ScrollToCaret()`: el
   hilo que extrae avanzaba al ritmo del repintado, y eso era el pegado. Volver a escribir
-  directo en el control lo reinstala.
+  directo en el control lo reinstala. El archivo detallado sí escribe línea por línea
+  (`AutoFlush`), para no perder lo último si la aplicación se cae: medido aparte, 20.000
+  líneas con flush tardan 0,08 s, así que el costo estaba en el `Invoke`, no en el disco.
 
 Medido sobre seis mods reales, el caché solo bajó de 43,9 s a 32,4 s: lo que queda es
 `ImportNode` copiando nodo por nodo al árbol combinado y `DoXmlInheritance` copiándolo entero
@@ -335,6 +337,24 @@ otra vez, que es secuencial por naturaleza. Ahí está la próxima optimización
 Los tests de `PatchesRoundTripTests`, `UnusedSobreviveTests` y `PatchesDeRmlTests` cubren
 estos cuatro casos. Todos se verificaron fallando sin su arreglo: un test de regresión que
 pasa igual sin el arreglo no guarda nada, y ya escribí uno así una vez.
+
+## El log: la ventana y el archivo
+
+La ventana muestra poco a propósito: una línea por mod con su resultado, una barra de avance
+y, aparte, un recuadro con los avisos y errores, que aparece solo si hay alguno. Todo lo demás
+va a `ultima-extraccion.log`, junto al ejecutable, que se empieza de cero en cada extracción
+o «Actualizar todo RML» y se abre con el botón «Abrir log detallado».
+
+- **`Log.Det` y `Log.WrnDet` son lo técnico**: compats cargados, nodos padre que no aparecen,
+  operaciones de patch sin soporte o sin objetivo. Van al archivo y a la consola de
+  `RimworldExtractorLotes`, no a la ventana, que solo cuenta los avisos y al final dice
+  cuántos quedaron en el archivo. `Msg`, `Wrn` y `Err` son lo que el usuario tiene que ver:
+  un `Wrn` es un aviso que pide hacer algo. Un mensaje nuevo se elige con ese criterio.
+- **La ventana recibe entradas, no texto** (`Log.Pantalla`). Antes leía la línea ya armada y
+  deducía el color del símbolo ✖ o ⚠ en una posición fija; ahora el nivel viaja como dato y
+  el archivo lo escribe en palabras, «ADVERTENCIA» o «ERROR».
+- **La extracción de un mod corre en el hilo de la ventana**, así que `MostrarAvance` repinta
+  la barra con `Refresh()`. Sin eso no se movería hasta terminar.
 
 ## Qué no se extrae
 

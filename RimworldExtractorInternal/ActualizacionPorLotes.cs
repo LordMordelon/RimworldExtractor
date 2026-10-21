@@ -78,7 +78,13 @@ namespace RimworldExtractorInternal
 
                     try
                     {
-                        renglones.Add(Actualizar(carpeta, nombre, rmlPath, porPackageId));
+                        var renglon = Actualizar(carpeta, nombre, rmlPath, porPackageId);
+                        renglones.Add(renglon);
+
+                        // Una linea por mod es lo que queda en la ventana; lo de adentro de
+                        // cada extraccion va al log detallado. Los salteados se resumen al final.
+                        if (renglon.Motivo == Motivo.Actualizado)
+                            Log.Msg(Strings.ModResult(nombre, renglon.Conservadas, renglon.Pendientes, renglon.SinUso));
                     }
                     catch (Exception e)
                     {

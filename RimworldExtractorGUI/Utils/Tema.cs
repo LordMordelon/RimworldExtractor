@@ -60,7 +60,7 @@ namespace RimworldExtractorGUI
         /// no se puede relanzar sola, y entonces hay que cerrarla y abrirla a mano.
         ///
         /// El relanzamiento no ocurre aca: primero tiene que terminar de cerrarse esta
-        /// instancia, porque mientras viva tiene tomado log.txt y la nueva no podria
+        /// instancia, porque mientras viva tiene tomado el log detallado y la nueva no podria
         /// crearlo. Lo hace <see cref="RelanzarSiHaceFalta"/> cuando Application.Run vuelve.
         /// </summary>
         internal static bool Reiniciar()
@@ -79,7 +79,7 @@ namespace RimworldExtractorGUI
             if (!_seVaARelanzar || RutaDelEjecutable is null)
                 return;
 
-            // Suelta log.txt antes de que la instancia nueva intente crearlo.
+            // Suelta el log detallado antes de que la instancia nueva intente crearlo.
             Log.CerrarSalida();
 
             Process.Start(new ProcessStartInfo(RutaDelEjecutable) { UseShellExecute = true });

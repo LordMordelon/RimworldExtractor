@@ -150,7 +150,7 @@ dotnet publish RimworldExtractorGUI/RimworldExtractorGUI.csproj -c Release -r wi
 ```
 
 El resultado queda en `RimworldExtractorGUI/bin/Release/net10.0-windows/win-x64/publish/`.
-`Prefabs.dat` (la configuración) y `log.txt` se guardan al lado del ejecutable.
+`Prefabs.dat` (la configuración) y `ultima-extraccion.log` (el log detallado de la última extracción, que el botón «Abrir log detallado» abre) se guardan al lado del ejecutable.
 
 ## Publicar
 

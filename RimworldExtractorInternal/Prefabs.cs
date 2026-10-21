@@ -219,7 +219,7 @@ namespace RimworldExtractorInternal
         }
 
         /// <summary>
-        /// La carpeta del ejecutable, que es donde viven Prefabs.dat y log.txt.
+        /// La carpeta del ejecutable, que es donde viven Prefabs.dat y el log detallado.
         ///
         /// No es el directorio de trabajo: con un acceso directo o lanzando la aplicacion desde
         /// otra carpeta, la configuracion no aparecia, volvia a pedir las rutas y dejaba otro

@@ -24,7 +24,7 @@ namespace RimworldExtractorInternal.Compats
                 var right = (CompatPriorityAttribute?)y.GetType().GetCustomAttribute(typeof(CompatPriorityAttribute));
                 return (left?.Priority ?? 100).CompareTo(right?.Priority ?? 100);
             });
-            Log.Msg(Strings.CompatsLoaded(compats.Count));
+            Log.Det(Strings.CompatsLoaded(compats.Count));
         }
 
         public static IEnumerable<TranslationEntry> DoPostProcessing(IEnumerable<TranslationEntry> entries)

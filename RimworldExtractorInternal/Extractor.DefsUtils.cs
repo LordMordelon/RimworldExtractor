@@ -83,7 +83,7 @@ namespace RimworldExtractorInternal
                             {
                                 if (ParentNodeLookUp.ContainsKey(attributeName))
                                 {
-                                    Log.Wrn(Strings.DuplicateParentNodeName(attributeName));
+                                    Log.WrnDet(Strings.DuplicateParentNodeName(attributeName));
                                 }
                                 ParentNodeLookUp[attributeName] = newNode;
                             }
@@ -364,7 +364,7 @@ namespace RimworldExtractorInternal
                         }
                         else
                         {
-                            Log.Wrn(Strings.ParentNodeNotFound(node["defName"]?.InnerText ?? "UNKNOWN", parentName));
+                            Log.WrnDet(Strings.ParentNodeNotFound(node["defName"]?.InnerText ?? "UNKNOWN", parentName));
                             break;
                         }
                     }

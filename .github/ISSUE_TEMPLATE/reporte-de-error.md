@@ -16,5 +16,5 @@ Qué pasó:
 Qué esperabas que pasara:
 
 
-Tip: adjunta también el `log.txt` que queda en la misma carpeta que el extractor.
+Tip: adjunta también el `ultima-extraccion.log` que queda en la misma carpeta que el extractor (el botón «Abrir log detallado» lo abre).
 Con eso el problema se resuelve mucho más rápido.

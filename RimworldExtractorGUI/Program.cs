@@ -89,7 +89,7 @@ namespace RimworldExtractorGUI
             Application.Run(formMain);
 
             // Si se cambio el tema y se acepto reiniciar, la instancia nueva se abre recien
-            // aca: mientras esta siga viva tiene tomado log.txt y la otra no podria crearlo.
+            // aca: mientras esta siga viva tiene tomado el log detallado y la otra no podria crearlo.
             Tema.RelanzarSiHaceFalta();
         }
 

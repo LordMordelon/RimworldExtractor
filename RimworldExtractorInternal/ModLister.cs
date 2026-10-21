@@ -362,7 +362,7 @@ namespace RimworldExtractorInternal
                 case < 1:
                     modMetadata = null;
                     ModMetadataByPackageIdLookUp[packageId] = null;
-                    Log.Wrn(Strings.ModNotFoundByPackageId(packageId));
+                    Log.WrnDet(Strings.ModNotFoundByPackageId(packageId));
                     return false;
                 case 1:
                     modMetadata = matches[0];
@@ -371,7 +371,7 @@ namespace RimworldExtractorInternal
                 case > 1:
                     modMetadata = matches[0];
                     ModMetadataByPackageIdLookUp[packageId] = modMetadata;
-                    Log.Msg(Strings.DuplicatePackageId(packageId, matches.Count));
+                    Log.Det(Strings.DuplicatePackageId(packageId, matches.Count));
                     return true;
             }
         }

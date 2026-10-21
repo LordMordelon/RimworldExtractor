@@ -22,13 +22,13 @@ namespace RimworldExtractorInternal.Compats
 
                 if (label == null || description == null)
                 {
-                    Log.Wrn(Strings.ScenarioDefMissingLabelOrDescription(node["defName"]?.InnerText ?? "UNKNOWN"));
+                    Log.WrnDet(Strings.ScenarioDefMissingLabelOrDescription(node["defName"]?.InnerText ?? "UNKNOWN"));
                     continue;
                 }
 
                 if (node["scenario"]?["name"] != null || node["scenario"]?["description"] != null)
                 {
-                    Log.Msg(Strings.ScenarioDefAlreadyHasTags(node["defName"]?.InnerText ?? "UNKNOWN"));
+                    Log.Det(Strings.ScenarioDefAlreadyHasTags(node["defName"]?.InnerText ?? "UNKNOWN"));
                     continue;
                 }
 

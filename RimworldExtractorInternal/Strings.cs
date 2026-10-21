@@ -18,13 +18,50 @@
         public const string PrefixWarning = "ADVERTENCIA";
         public const string PrefixMessage = "MENSAJE";
 
-        // Marcan el nivel en cada linea. Los mensajes normales llevan un espacio, para
-        // que el texto quede alineado con el de las advertencias y los errores.
-        public const string LogSymbolError = "✖";    // ✖
-        public const string LogSymbolWarning = "⚠";  // ⚠
-        public const string LogSymbolMessage = " ";
-
         public const string LogCleanedUp = "— se limpio el log para no ocupar tanta memoria —";
+
+        /// <summary>El log detallado de la ultima extraccion, junto al ejecutable.</summary>
+        public const string DetailedLogFileName = "ultima-extraccion.log";
+
+        public const string BtnOpenDetailedLog = "Abrir log detallado";
+
+        public static string WarningsTitle(int count)
+            => count == 1 ? "1 aviso en la última extracción" : $"{count} avisos en la última extracción";
+
+        public static string TechnicalWarningsInDetailedLog(int count)
+            => count == 1
+                ? "1 aviso técnico quedó en el log detallado."
+                : $"{count} avisos técnicos quedaron en el log detallado.";
+
+        public const string ProgressIdle = "Elige un mod para empezar.";
+
+        public static string ProgressStep(int step, int total, string what) => $"Paso {step} de {total}: {what}";
+
+        public const string StepExtracting = "extrayendo los textos del mod";
+        public const string StepMerging = "cruzando con lo que ya tiene RML";
+        public const string StepIndex = "regenerando el índice de RML";
+        public const string StepWritingFolder = "escribiendo la carpeta";
+
+        public static string ProgressMod(int current, int total, string folderName)
+            => $"Mod {current} de {total}: {folderName}";
+
+        public static string ProgressDone(string what) => $"Listo: {what}";
+
+        public static string ProgressDoneBatch(int count) => $"Listo: {count} mods recorridos";
+
+        public const string ProgressIndex = "Regenerando el índice de RML";
+
+        public static string DetailedLogUnavailable(string message)
+            => $"No se pudo abrir el log detallado, así que esta extracción no queda en el archivo: {message}";
+
+        public static string DetailedLogMissing(string path)
+            => $"Todavía no hay log detallado. Se crea al extraer, en:\n{path}";
+
+        public static string ModResult(string modName, int kept, int pending, int unused)
+            => $"{modName}: {kept} conservadas, {pending} sin traducir, {unused} sin uso.";
+
+        public static string ModExtractedToFolder(string modName, int total, string path)
+            => $"{modName}: {total} textos extraídos en {path}";
 
         #endregion
 
@@ -149,9 +186,6 @@
 
         public static string UnusedTranslationsSaved(int count, string path)
             => $"{count} traducciones quedaron sin uso porque su nodo ya no existe en el mod. Se guardaron en {path}";
-
-        public static string QuickUpdateSummary(int kept, int pending, int unused)
-            => $"Traducción rápida: {kept} traducciones conservadas, {pending} sin traducir, {unused} sin uso.";
 
         public static string QuickUpdateWrittenTo(string path)
             => $"La traducción actualizada quedó en {path}";

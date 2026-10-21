@@ -27,7 +27,10 @@ namespace RimworldExtractorGUI
         /// ventana pinta de a tandas, asi que al terminar una corrida larga quedan lineas sin
         /// pintar y el resumen apareceria antes que ellas.
         /// </summary>
-        private RichTextBoxWriter? _salidaDelLog;
+        private PanelDeLog? _salidaDelLog;
+
+        /// <summary>El log detallado: junto al ejecutable, como Prefabs.dat.</summary>
+        private static string RutaDelLogDetallado => Path.Combine(Prefabs.Carpeta, Strings.DetailedLogFileName);
 
         /// <summary>
         /// La ultima version publicada, o null si todavia no se pudo comprobar. La guarda el
@@ -61,8 +64,11 @@ namespace RimworldExtractorGUI
                 e.Cancel = true;
                 Aviso.Mostrar(Strings.BatchStillRunning, Strings.DialogTitleNotice);
             };
-            _salidaDelLog = new RichTextBoxWriter(richTextBoxLog);
-            Log.Out = _salidaDelLog;
+            _salidaDelLog = new PanelDeLog(richTextBoxLog, richTextBoxAvisos, labelAvisos);
+            FormClosed += (_, _) => Log.CerrarArchivo();
+            Log.Pantalla = _salidaDelLog.Agregar;
+            // Hasta la primera extraccion, el log detallado es el del arranque.
+            EmpezarLogDetallado();
             try
             {
                 Prefabs.Load();
@@ -175,8 +181,13 @@ namespace RimworldExtractorGUI
                 return;
             }
 
-            Log.Msg(Strings.ExtractionStarted);
+            Empezar();
+            Log.Det(Strings.ExtractionStarted);
 
+            // Tres pasos sobre RML y dos en carpeta. La extraccion corre en este hilo, asi que
+            // MostrarAvance repinta la barra a mano: si no, no se moveria hasta terminar.
+            var pasos = _quickUpdate ? 3 : 2;
+            MostrarAvance(Strings.ProgressStep(1, pasos, Strings.StepExtracting), 0, pasos);
             var extraction = Extractor.ExtractTranslationData(SelectedMod, SelectedFolders, ReferenceMods);
 
             var outPath = SelectedMod.Identifier.StripInvaildChars();
@@ -188,6 +199,8 @@ namespace RimworldExtractorGUI
                 return;
             }
 
+            MostrarAvance(Strings.ProgressStep(2, pasos, Strings.StepWritingFolder), 1, pasos);
+
             // Sin traduccion rapida el mod sale a una carpeta propia, en el mismo formato
             // que se escribe sobre RML: el original en un comentario y un TODO por valor.
             // Antes habia cuatro formatos a elegir en Opciones, y los otros tres —la
@@ -195,6 +208,7 @@ namespace RimworldExtractorGUI
             IO.ToLanguageXml(extraction, false, XmlCommentStyle.TranslationTemplate, outPath, outPath);
             LoadFoldersBuild.Write(SelectedMod, outPath);
 
+            Log.Msg(Strings.ModExtractedToFolder(SelectedMod.ModName, extraction.Count, Path.GetFullPath(outPath)));
             TerminarExtraccion(extraction, outPath);
         }
 
@@ -205,7 +219,8 @@ namespace RimworldExtractorGUI
         private void TerminarExtraccion(List<TranslationEntry> extraction, string outPath)
         {
             var (cntDefs, cntKeyed, cntStrings, cntPatches) = extraction.Count();
-            Log.Msg(Strings.ExtractionSummary(extraction.Count, cntDefs, cntKeyed, cntStrings, cntPatches));
+            Log.Det(Strings.ExtractionSummary(extraction.Count, cntDefs, cntKeyed, cntStrings, cntPatches));
+            Terminar(Strings.ProgressDone(SelectedMod!.ModName));
 
             var hasError = Log.HasErrorSince(Strings.ExtractionStarted);
             var pregunta = hasError ? Strings.DoneWithErrorsOpenFolder : Strings.DoneOpenFolder;
@@ -227,7 +242,10 @@ namespace RimworldExtractorGUI
         /// </summary>
         private string ActualizarSobreRml(List<TranslationEntry> extraction)
         {
+            MostrarAvance(Strings.ProgressStep(2, 3, Strings.StepMerging), 1, 3);
             var r = ActualizacionRml.Escribir(SelectedMod!, extraction, Prefabs.PathRml);
+
+            MostrarAvance(Strings.ProgressStep(3, 3, Strings.StepIndex), 2, 3);
 
             // Acomoda las traducciones sueltas de un autor que ya tiene su carpeta. Va antes
             // de regenerar y no despues: mover una carpeta le cambia la ruta, y el indice
@@ -245,8 +263,8 @@ namespace RimworldExtractorGUI
             // log manda a una carpeta que ya no existe y el boton de abrirla no abre nada.
             var destino = LoadFoldersBuild.CarpetaDe(SelectedMod!, Prefabs.PathRml);
 
-            Log.Msg(Strings.QuickUpdateSummary(r.Conservadas, r.Pendientes, r.SinUso));
-            Log.Msg(Strings.QuickUpdateWrittenTo(destino));
+            Log.Msg(Strings.ModResult(SelectedMod!.ModName, r.Conservadas, r.Pendientes, r.SinUso));
+            Log.Det(Strings.QuickUpdateWrittenTo(destino));
 
             return destino;
         }
@@ -403,7 +421,7 @@ namespace RimworldExtractorGUI
         /// Corre en segundo plano para que la ventana siga respondiendo y el log se vea avanzar:
         /// son cientos de mods. Es seguro porque ActualizacionRml.Escribir fuerza la
         /// sobrescritura, asi que nunca abre el dialogo de archivo duplicado desde otro hilo, y
-        /// RichTextBoxWriter ya pasa cada linea al hilo de la interfaz.
+        /// PanelDeLog ya pasa cada linea al hilo de la interfaz.
         /// </summary>
         private async void buttonUpdateAllRml_Click(object sender, EventArgs e)
         {
@@ -432,22 +450,28 @@ namespace RimworldExtractorGUI
 
             _actualizandoRml = true;
             HabilitarAcciones(false);
+            Empezar();
             try
             {
+                // Un paso por mod y uno mas para el indice, que tarda lo que varios mods.
                 var renglones = await Task.Run(() =>
                 {
-                    var r = ActualizacionPorLotes.Correr(rml,
-                        (i, n, nombre) => Log.Msg(Strings.BatchProgress(i, n, nombre)));
+                    var r = ActualizacionPorLotes.Correr(rml, (i, n, nombre) =>
+                    {
+                        Log.Det(Strings.BatchProgress(i, n, nombre));
+                        MostrarAvance(Strings.ProgressMod(i, n, nombre), i - 1, n + 1);
+                    });
 
                     // Una sola vez al final y en el mismo orden que la traduccion rapida: primero
                     // se acomoda Data/ y despues el indice sale con las rutas definitivas.
+                    MostrarAvance(Strings.ProgressIndex, r.Count, r.Count + 1);
                     Agrupador.Reagrupar(rml);
                     LoadFoldersBuild.Regenerar(rml);
                     return r;
                 });
 
                 InformarLote(renglones);
-                _salidaDelLog?.Vaciar();
+                Terminar(Strings.ProgressDoneBatch(renglones.Count));
                 Aviso.Mostrar(Strings.BatchDone, Strings.DialogTitleDone);
             }
             catch (Exception ex)
@@ -494,8 +518,89 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void HabilitarAcciones(bool habilitar)
         {
-            foreach (var boton in Controls.OfType<Button>())
+            // El log detallado si se puede abrir: es justamente lo que se mira mientras corre.
+            foreach (var boton in Controls.OfType<Button>().Where(x => x != buttonAbrirLog))
                 boton.Enabled = habilitar;
+        }
+
+        /// <summary>
+        /// Arranca una extraccion: el log detallado y el recuadro de avisos vuelven a empezar,
+        /// para que traigan solo la que esta por correr.
+        /// </summary>
+        private void Empezar()
+        {
+            _salidaDelLog?.Empezar();
+            EmpezarLogDetallado();
+        }
+
+        private static void EmpezarLogDetallado()
+        {
+            try
+            {
+                Log.EmpezarArchivo(RutaDelLogDetallado);
+            }
+            catch (Exception e)
+            {
+                // Otra instancia abierta lo tiene tomado. Se extrae igual: el archivo es para
+                // mirar despues, y la ventana sigue mostrando lo importante.
+                Log.Wrn(Strings.DetailedLogUnavailable(e.Message));
+            }
+        }
+
+        /// <summary>
+        /// El cierre comun: cuenta lo tecnico que quedo en el archivo y deja la barra llena.
+        /// </summary>
+        private void Terminar(string rotulo)
+        {
+            var tecnicos = _salidaDelLog?.AvisosTecnicos ?? 0;
+            if (tecnicos > 0)
+                Log.Msg(Strings.TechnicalWarningsInDetailedLog(tecnicos));
+
+            _salidaDelLog?.Vaciar();
+            MostrarAvance(rotulo, 1, 1);
+        }
+
+        /// <summary>
+        /// Pone el rotulo y la barra. Desde otro hilo va por BeginInvoke, sin esperar a la
+        /// ventana, por lo mismo que el log. Desde el de la ventana repinta en el momento:
+        /// la extraccion de un mod lo tiene ocupado, y sin Refresh no se veria ningun paso.
+        /// </summary>
+        private void MostrarAvance(string rotulo, int valor, int maximo)
+        {
+            void Aplicar()
+            {
+                labelProgreso.Text = rotulo;
+                progressBar.Maximum = Math.Max(1, maximo);
+                progressBar.Value = Math.Clamp(valor, 0, progressBar.Maximum);
+                labelProgreso.Refresh();
+                progressBar.Refresh();
+            }
+
+            if (InvokeRequired)
+                BeginInvoke(Aplicar);
+            else
+                Aplicar();
+        }
+
+        private void buttonAbrirLog_Click(object sender, EventArgs e)
+        {
+            var ruta = RutaDelLogDetallado;
+            if (!File.Exists(ruta))
+            {
+                Aviso.Mostrar(Strings.DetailedLogMissing(ruta), Strings.DialogTitleNotice);
+                return;
+            }
+
+            try
+            {
+                // Con el programa que Windows tenga para los .log, que casi siempre es el
+                // Bloc de notas.
+                Process.Start(new ProcessStartInfo(ruta) { UseShellExecute = true });
+            }
+            catch (Exception)
+            {
+                Process.Start("notepad.exe", ruta);
+            }
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -510,9 +615,8 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void ApplyStrings()
         {
-            // Anclajes: van antes de todo porque AutoAjuste ensancha la ventana, y con
-            // esto el panel de log se estira con ella en vez de dejar un hueco.
-            richTextBoxLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            // Anclajes: van antes de todo porque AutoAjuste ensancha la ventana. El panel de
+            // log va dentro de tablaLog, que se estira con la ventana desde el Designer.
             labelSelectedMods.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             label1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             label2.Anchor = AnchorStyles.Top | AnchorStyles.Left;
@@ -526,9 +630,19 @@ namespace RimworldExtractorGUI
             label1.Text = Strings.LabelMainDescription;
             buttonUpdateAllRml.Text = Strings.BtnUpdateAllRml;
             labelSelectedMods.Text = Strings.LabelNoModSelected;
+            labelProgreso.Text = Strings.ProgressIdle;
+            buttonAbrirLog.Text = Strings.BtnOpenDetailedLog;
 
             // El Designer lo deja negro fijo; que acompanie al tema.
-            richTextBoxLog.BackColor = RichTextBoxWriter.ColorFondo;
+            richTextBoxLog.BackColor = PanelDeLog.ColorFondo;
+            richTextBoxAvisos.BackColor = PanelDeLog.ColorFondo;
+
+            // En oscuro la barra pinta solo lo avanzado y el resto se confunde con el fondo.
+            if (Tema.Luminancia(SystemColors.Control) < 128)
+            {
+                marcoProgreso.Padding = new Padding(1);
+                marcoProgreso.BackColor = SystemColors.ControlDark;
+            }
 
             // LinkLabel trae un azul fijo que sobre fondo oscuro casi no se lee.
             linkLabelLatestVersion.LinkColor = Tema.ColorDeEnlace;
@@ -565,11 +679,15 @@ namespace RimworldExtractorGUI
             // y el enlace ocupa el resto, que ademas le viene bien porque el aviso de
             // "no se pudo comprobar la version" no entraba en su ancho original.
             // Va despues del autoajuste, que es lo que fija el ancho final de la ventana.
+            // El boton del log detallado se suma a la franja pegado al de reportar problemas,
+            // con el ancho de su texto, y el enlace se queda con lo que sobra entre los dos.
             const int separacion = 6;
             label2.Width = AutoAjuste.AnchoNecesario(label2);
+            buttonAbrirLog.Width = AutoAjuste.AnchoNecesario(buttonAbrirLog);
+            buttonAbrirLog.Left = button1.Left - separacion - buttonAbrirLog.Width;
             linkLabelLatestVersion.Left = label2.Right + separacion;
             linkLabelLatestVersion.Width = Math.Max(
-                0, button1.Left - separacion - linkLabelLatestVersion.Left);
+                0, buttonAbrirLog.Left - separacion - linkLabelLatestVersion.Left);
         }
 
         /// <summary>

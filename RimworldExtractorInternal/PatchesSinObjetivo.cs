@@ -36,7 +36,7 @@ namespace RimworldExtractorInternal
                 .Distinct()
                 .ToList();
 
-            Log.Wrn(Strings.PatchesWithoutTarget(xpaths.Count));
+            Log.WrnDet(Strings.PatchesWithoutTarget(xpaths.Count));
 
             if (faltantes.Count == 0)
                 return;
@@ -54,16 +54,16 @@ namespace RimworldExtractorInternal
                 var (porMod, sinIdentificar) = BuscarDuenios(ausentes, mod);
 
                 if (porMod.Count > 0)
-                    Log.Wrn(Strings.PatchesMissingModsAre(string.Join(", ", porMod)));
+                    Log.WrnDet(Strings.PatchesMissingModsAre(string.Join(", ", porMod)));
 
                 if (sinIdentificar.Count > 0)
-                    Log.Wrn(Strings.PatchesUnidentifiedDefs(Resumir(sinIdentificar)));
+                    Log.WrnDet(Strings.PatchesUnidentifiedDefs(Resumir(sinIdentificar)));
 
-                Log.Wrn(Strings.PatchesWithoutTargetHint);
+                Log.WrnDet(Strings.PatchesWithoutTargetHint);
             }
 
             if (conNodoQueNoExiste > 0)
-                Log.Wrn(Strings.PatchesTargetNodeMissing(conNodoQueNoExiste));
+                Log.WrnDet(Strings.PatchesTargetNodeMissing(conNodoQueNoExiste));
         }
 
         /// <summary>Los defName que habia cargados cuando se extrajeron los defs.</summary>

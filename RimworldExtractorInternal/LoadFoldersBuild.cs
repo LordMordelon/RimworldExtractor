@@ -41,7 +41,7 @@ namespace RimworldExtractorInternal
             File.WriteAllText(destino, Contents(mod, VersionDe(destino)));
             // Si ya se escribió dentro de RML no hay nada que copiar, y decirlo confunde:
             // la línea siguiente del log informa que la traducción quedó justamente ahí.
-            Log.Msg(EstaDentroDeRml(rootDirPath)
+            Log.Det(EstaDentroDeRml(rootDirPath)
                 ? Strings.LoadFoldersYamlWrittenInRml()
                 : Strings.LoadFoldersYamlWritten(FolderNameFor(mod)));
             return true;
@@ -260,7 +260,7 @@ namespace RimworldExtractorInternal
                 var codigo = Correr(proyecto, rmlPath, out var salida);
                 if (codigo == 0)
                 {
-                    Log.Msg(Strings.LoadFoldersRebuilt);
+                    Log.Det(Strings.LoadFoldersRebuilt);
                     return;
                 }
 
