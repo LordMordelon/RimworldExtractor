@@ -169,6 +169,14 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   carpetas pasa por `AutoSeleccionables`. Comparar con `== Prefabs.CurrentVersion`, como
   hacia el original, dejaba sin carpeta de version a casi todos los mods el dia que salio
   la 1.7. Lo cubren los tests de `VersionQueCargaTests`.
+- **Un mod sin `Defs` propios tambien necesita la base.** Si solo trae `Patches`, como Better
+  Transhumanists, sus patches modifican defs del juego o de otros mods, y la base de referencia
+  se cargaba solo cuando el mod tenia `Defs`: salia «nada que extraer» sin ningun error.
+- **Un archivo de `Patches` tapa a otro con la misma ruta relativa**, como cualquier archivo de
+  un mod: el juego carga el de la carpeta de version y no el de la raiz (`PatchesTapados`).
+  Aplicar los dos apila las operaciones que agregan elementos a una lista, y la extraccion
+  inventa etapas que en el juego no existen. Las carpetas condicionales de `LoadFolders.xml` no
+  entran. Los dos casos los cubre `ModSoloDePatchesTests`.
 - **Guiones en comentarios XML.** La secuencia `--` es ilegal dentro de un comentario
   XML. El original resolvía eso reemplazando *todos* los guiones por `ー` (katakana),
   lo que destruía el texto latino (`re-arm` → `reーarm`). Ahora se escapa únicamente la

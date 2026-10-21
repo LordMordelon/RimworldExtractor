@@ -103,9 +103,14 @@ namespace RimworldExtractorInternal
             selectedFolders = selectedFolders
                 .OrderBy(x => x.VersionInfo == versionQueCarga ? 0 : 1)
                 .ToList();
+            _patchesTapados = PatchesTapados(selectedFolders, versionQueCarga);
 
+            // Un mod sin Defs propios tambien necesita la base si trae Patches: sus patches
+            // modifican defs ajenos, y sin cargarlos no encuentran nada. Better Transhumanists
+            // es solo eso, unas etapas agregadas a un pensamiento de Ideology, y salia sin texto.
             var defs = selectedFolders.Where(x => Path.GetFileName(x.FolderName) == "Defs").ToList();
-            if (defs.Count > 0)
+            var traePatches = selectedFolders.Any(x => Path.GetFileName(x.FolderName) == "Patches");
+            if (defs.Count > 0 || (traePatches && refDefs.Count > 0))
             {
                 prePatches.AddRange(selectedFolders.Where(x => Path.GetFileName(x.FolderName) == "Patches").ToList());
                 PrepareDefs(defs, refDefs, prePatches);
@@ -456,6 +461,41 @@ namespace RimworldExtractorInternal
         }
 
 
+        /// <summary>Los archivos de Patches que el juego no carga porque otra carpeta los tapa.</summary>
+        private static HashSet<string> _patchesTapados = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Los archivos de Patches que otra carpeta del mod tapa con la misma ruta relativa. El
+        /// juego recorre las carpetas de la mas prioritaria a la menos, version, Common y raiz,
+        /// y de cada ruta relativa carga solo la primera que encuentra: es lo mismo que hace
+        /// con los Defs y los Languages. Aplicar los dos patches no da lo mismo cuando agregan
+        /// elementos a una lista, que se apilan. Las carpetas condicionales de LoadFolders.xml
+        /// no tapan ni se tapan, porque dependen de que mods tenga el jugador.
+        /// </summary>
+        private static HashSet<string> PatchesTapados(List<ExtractableFolder> carpetas, string? versionQueCarga)
+        {
+            var tapados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var vistas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var patches = carpetas
+                .Where(x => Path.GetFileName(x.FolderName) == "Patches" && x.RequiredPackageId == null)
+                .OrderBy(x => x.VersionInfo == versionQueCarga ? 0 : x.VersionInfo == "Common" ? 1 : 2);
+
+            foreach (var carpeta in patches)
+            {
+                if (!Directory.Exists(carpeta.FullPath))
+                    continue;
+
+                foreach (var archivo in IO.DescendantFiles(carpeta.FullPath).Where(x => x.ToLower().EndsWith(".xml")))
+                {
+                    if (!vistas.Add(Path.GetRelativePath(carpeta.FullPath, archivo)))
+                        tapados.Add(Path.GetFullPath(archivo));
+                }
+            }
+
+            return tapados;
+        }
+
         internal static IEnumerable<TranslationEntry> ExtractPatches(ExtractableFolder patches, bool prePatchMode = false)
         {
             var rawExtraction = ExtractPatchesInternal(patches, prePatchMode).ToList();
@@ -492,6 +532,9 @@ namespace RimworldExtractorInternal
             doc.AppendElement("Patch");
             foreach (var filePath in IO.DescendantFiles(patchesRoot).Where(x => x.ToLower().EndsWith(".xml")))
             {
+                if (_patchesTapados.Contains(Path.GetFullPath(filePath)))
+                    continue;
+
                 var childDoc = IO.ReadXml(filePath);
                 foreach (XmlNode node in childDoc.DocumentElement!.ChildNodes)
                 {

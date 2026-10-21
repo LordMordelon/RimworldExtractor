@@ -2779,6 +2779,115 @@ namespace RimworldExtractorTest
         }
     }
 
+    /// <summary>
+    /// Un mod que no trae Defs propios y solo modifica los del juego con Patches. Better
+    /// Transhumanists es asi: le agrega etapas a un pensamiento de Ideology. La extraccion
+    /// cargaba las referencias solo si el mod tenia Defs, asi que sus patches no encontraban
+    /// el def y el mod salia con «nada que extraer».
+    /// </summary>
+    [TestClass]
+    public class ModSoloDePatchesTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        [TestMethod]
+        public void ExtraeLosPatchesDeUnModSinDefsPropios()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            if (!Directory.Exists(Path.Combine(Prefabs.PathRimworld, "Data", "Core")))
+                Assert.Inconclusive("Este test necesita RimWorld instalado.");
+
+            var raiz = Path.Combine(Path.GetTempPath(), "ModSoloDePatches-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.Combine(raiz, "Patches"));
+            File.WriteAllText(Path.Combine(raiz, "Patches", "Prueba.xml"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <xpath>/Defs/ThingDef[defName="Steel"]/label</xpath>
+                    <value>
+                      <label>acero de prueba</label>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+
+            try
+            {
+                var mod = new ModMetadata(raiz, "1", "Solo patches", "prueba.solopatches", false);
+                var extraibles = ModLister.GetExtractableFolders(mod).AutoSeleccionables();
+                var referencias = ModLister.FindAllReferenceMods(mod).ToList();
+
+                var extraccion = Extractor.ExtractTranslationData(mod, extraibles, referencias);
+
+                Assert.IsTrue(extraccion.Any(x => x.Node.EndsWith("Steel.label") && x.Original == "acero de prueba"),
+                    "el patch sobre un def del juego no se extrajo: " +
+                    string.Join(", ", extraccion.Select(x => $"{x.ClassName}:{x.Node}")));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// El mismo archivo de Patches en la raiz y en la carpeta de la version. El juego carga
+        /// solo el de la version, como con cualquier archivo de igual ruta relativa. Better
+        /// Transhumanists trae asi su patch principal, que agrega ocho etapas: aplicando los dos,
+        /// la extraccion inventaba ocho etapas mas que en el juego no existen.
+        /// </summary>
+        [TestMethod]
+        public void ElPatchDeLaVersionTapaAlDeLaRaizConElMismoNombre()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            if (!Directory.Exists(Path.Combine(Prefabs.PathRimworld, "Data", "Core")))
+                Assert.Inconclusive("Este test necesita RimWorld instalado.");
+
+            var raiz = Path.Combine(Path.GetTempPath(), "ModSoloDePatches-" + Guid.NewGuid().ToString("N"));
+            void Patch(string carpeta, string label)
+            {
+                Directory.CreateDirectory(Path.Combine(raiz, carpeta));
+                File.WriteAllText(Path.Combine(raiz, carpeta, "Prueba.xml"), $"""
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <Patch>
+                      <Operation Class="PatchOperationAdd">
+                        <xpath>/Defs/ThoughtDef[defName="AteWithoutTable"]/stages</xpath>
+                        <value>
+                          <li>
+                            <label>{label}</label>
+                          </li>
+                        </value>
+                      </Operation>
+                    </Patch>
+                    """);
+            }
+            Patch("Patches", "de la raiz");
+            Patch(Path.Combine("1.4", "Patches"), "de la version");
+
+            try
+            {
+                var mod = new ModMetadata(raiz, "1", "Solo patches", "prueba.solopatches", false);
+                var extraibles = ModLister.GetExtractableFolders(mod).AutoSeleccionables();
+                var referencias = ModLister.FindAllReferenceMods(mod).ToList();
+
+                var originales = Extractor.ExtractTranslationData(mod, extraibles, referencias)
+                    .Select(x => x.Original)
+                    .ToList();
+
+                CollectionAssert.Contains(originales, "de la version");
+                CollectionAssert.DoesNotContain(originales, "de la raiz",
+                    "se aplico tambien el patch de la raiz, que el juego no carga");
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+    }
+
     [TestClass]
     public class ModsConPackageIdTests
     {
