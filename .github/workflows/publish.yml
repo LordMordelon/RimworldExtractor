@@ -27,7 +27,7 @@ jobs:
       Project: RimworldExtractorGUI/RimworldExtractorGUI.csproj
       Script_Path: tools.py
       # Que version hornea esta rama. Se declara y no se deduce: ver "Calcular la version".
-      Version_Beta: 1.0.0
+      Version_Beta: 1.0.3
 
     steps:
     - name: Checkout repository
