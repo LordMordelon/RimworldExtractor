@@ -1026,6 +1026,77 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre la carta que avisa que un automatroide camuflado quedo a la vista. Su titulo y su
+    /// texto viven en el CompProperties_Camouflage del framework Fortified (lo usan el nóctulo y
+    /// el jaeger de The Dead Man's Switch II), y salian en ingles en el juego.
+    /// </summary>
+    [TestClass]
+    public class CartaDeCamuflajeTests
+    {
+        /// <summary>Los dos campos de la carta salen del comp del def.</summary>
+        [TestMethod]
+        public void ExtraeLaCartaDelCamuflaje()
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml("""
+                <Defs>
+                  <ThingDef>
+                    <defName>DMS_Mech_Jaeger</defName>
+                    <label>jaeger</label>
+                    <comps>
+                      <li Class="Fortified.CompProperties_Camouflage">
+                        <ticksUntilRecover>1200</ticksUntilRecover>
+                        <detectedLetterLabel>Jaeger revealed</detectedLetterLabel>
+                        <detectedLetterDesc>An enemy automatroid has appeared out of thin air!</detectedLetterDesc>
+                      </li>
+                    </comps>
+                  </ThingDef>
+                </Defs>
+                """);
+
+            List<TranslationEntry> entradas;
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                entradas = Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+
+            Assert.AreEqual(1, entradas.Count(x => x.Node.EndsWith(".detectedLetterLabel") && x.Original == "Jaeger revealed"));
+            Assert.AreEqual(1, entradas.Count(x => x.Node.EndsWith(".detectedLetterDesc")));
+        }
+
+        /// <summary>Un Prefabs.dat anterior a los dos campos tambien los extrae.</summary>
+        [TestMethod]
+        public void UnPrefabsViejoTambienExtraeLaCarta()
+        {
+            var archivo = Path.Combine(Path.GetTempPath(), "prefabs-" + Guid.NewGuid().ToString("N") + ".dat");
+            try
+            {
+                Prefabs.Init();
+                Prefabs.ExtractableTags = new(Prefabs.ExtractableTags.Where(x => !x.StartsWith("detectedLetter")));
+                Prefabs.Save(archivo);
+
+                Prefabs.Load(archivo);
+
+                foreach (var tag in new[] { "detectedLetterLabel", "detectedLetterDesc" })
+                    Assert.IsTrue(Prefabs.CanExtract(tag, "CualquierDef"), tag);
+            }
+            finally
+            {
+                File.Delete(archivo);
+                Prefabs.Init();
+            }
+        }
+    }
+
+    /// <summary>
     /// Cubre las dos formas en que la relectura de los Patches de RML danaba traducciones.
     ///
     /// Son el mismo tipo de defecto que PatchesRoundTripTests: algo que se escribio bien, se

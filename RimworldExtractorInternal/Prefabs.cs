@@ -74,10 +74,14 @@ namespace RimworldExtractorInternal
         /// las balas sin el calibre («mortar shell (HE)» en vez de «81mm mortar shell (HE)»).
         /// Viven en las modExtensions de cada municion y receta, y genericLabelOverride en el
         /// projectile de las balas de .45 ACP.
+        ///
+        /// Las dos detectedLetter son la carta de un automatroide camuflado que queda a la
+        /// vista, en el CompProperties_Camouflage del framework Fortified.
         /// </summary>
         private static readonly string[] EtiquetasAgregadas =
         {
-            "genericLabel", "genericDescription", "genericLabelOverride"
+            "genericLabel", "genericDescription", "genericLabelOverride",
+            "detectedLetterLabel", "detectedLetterDesc"
         };
 
         private static void AgregarEtiquetasFaltantes()
