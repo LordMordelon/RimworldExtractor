@@ -125,6 +125,9 @@ namespace RimworldExtractorGUI
 
         private void buttonSelectMod_Click(object sender, EventArgs e)
         {
+            // Empieza aca y no al extraer: el dialogo ya resuelve los mods de referencia, y lo
+            // que avisa ahi —un mod que no esta instalado— tambien es de esta extraccion.
+            Empezar();
             var formSelectMod = new FormSelectMod();
             formSelectMod.StartPosition = FormStartPosition.CenterParent;
             if (formSelectMod.ShowDialog(this) == DialogResult.OK)
@@ -181,7 +184,6 @@ namespace RimworldExtractorGUI
                 return;
             }
 
-            Empezar();
             Log.Det(Strings.ExtractionStarted);
 
             // Tres pasos sobre RML y dos en carpeta. La extraccion corre en este hilo, asi que
@@ -459,8 +461,18 @@ namespace RimworldExtractorGUI
                     var r = ActualizacionPorLotes.Correr(rml, (i, n, nombre) =>
                     {
                         Log.Det(Strings.BatchProgress(i, n, nombre));
+                        // Lo que avise este mod sale en el recuadro con su nombre adelante.
+                        _salidaDelLog?.CambiarContexto(nombre);
                         MostrarAvance(Strings.ProgressMod(i, n, nombre), i - 1, n + 1);
+                    },
+                    alTerminar: renglon =>
+                    {
+                        // Una linea por mod es lo que queda en la ventana; los salteados se
+                        // resumen al final, en InformarLote.
+                        if (renglon.Motivo == ActualizacionPorLotes.Motivo.Actualizado)
+                            Log.Msg(Strings.ModResult(renglon.Carpeta, renglon.Conservadas, renglon.Pendientes, renglon.SinUso));
                     });
+                    _salidaDelLog?.CambiarContexto(null);
 
                     // Una sola vez al final y en el mismo orden que la traduccion rapida: primero
                     // se acomoda Data/ y despues el indice sale con las rutas definitivas.
@@ -479,7 +491,9 @@ namespace RimworldExtractorGUI
                 // Los fallos de un mod ya los ataja Correr. Esto es lo que queda fuera de ese
                 // cuidado —leer la lista de mods instalados, por ejemplo—, y en un handler
                 // async sin atajar cierra la aplicacion entera.
+                _salidaDelLog?.CambiarContexto(null);
                 Log.Err(Strings.ErrorMessagePrefix(ex.Message));
+                MostrarAvance(Strings.ProgressStopped, 0, 1);
                 Aviso.Mostrar(Strings.ErrorMessagePrefix(ex.Message), Strings.DialogTitleNotice);
             }
             finally
@@ -599,7 +613,14 @@ namespace RimworldExtractorGUI
             }
             catch (Exception)
             {
-                Process.Start("notepad.exe", ruta);
+                try
+                {
+                    Process.Start("notepad.exe", $"\"{ruta}\"");
+                }
+                catch (Exception e2)
+                {
+                    Aviso.Mostrar(Strings.DetailedLogCouldNotOpen(ruta, e2.Message), Strings.DialogTitleNotice);
+                }
             }
         }
 

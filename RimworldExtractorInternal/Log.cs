@@ -60,7 +60,10 @@ namespace RimworldExtractorInternal
         {
             lock (_candado)
             {
+                // En null antes de abrir: si la ruta esta tomada y el constructor tira, el
+                // aviso que sigue no puede ir a parar a un archivo ya cerrado.
                 _archivo?.Dispose();
+                _archivo = null;
                 _archivo = new StreamWriter(ruta, false, new System.Text.UTF8Encoding(false)) { AutoFlush = true };
             }
         }

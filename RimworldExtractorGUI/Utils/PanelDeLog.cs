@@ -22,7 +22,14 @@ namespace RimworldExtractorGUI
         /// doscientos mods eso avanza al ritmo del repintado. Con la cola, quien escribe deja
         /// la linea y sigue; la ventana pinta de a tandas cuando puede.
         /// </summary>
-        private readonly Queue<LogEntry> _pendientes = new();
+        private readonly Queue<(LogEntry Entrada, string? Contexto)> _pendientes = new();
+
+        /// <summary>
+        /// El mod que se esta extrayendo en una corrida por lotes, o null. Se guarda con cada
+        /// entrada al encolarla y no al pintarla: la ventana pinta mas tarde, cuando el lote ya
+        /// puede ir por otro mod.
+        /// </summary>
+        private string? _contexto;
 
         /// <summary>Si ya hay un volcado en camino. Sin esto se encolaria uno por linea.</summary>
         private bool _volcadoPedido;
@@ -66,6 +73,16 @@ namespace RimworldExtractorGUI
         }
 
         /// <summary>
+        /// A que mod se le atribuyen los avisos que lleguen desde ahora. En el lote el
+        /// recuadro junta los de cientos de mods, y sin el nombre no se sabe de cual es cada uno.
+        /// </summary>
+        public void CambiarContexto(string? mod)
+        {
+            lock (_lock)
+                _contexto = mod;
+        }
+
+        /// <summary>
         /// Lo llama Log en cada entrada, desde el hilo que sea.
         /// </summary>
         public void Agregar(LogEntry entrada)
@@ -79,7 +96,7 @@ namespace RimworldExtractorGUI
                     return;
                 }
 
-                _pendientes.Enqueue(entrada);
+                _pendientes.Enqueue((entrada, _contexto));
                 if (_volcadoPedido)
                     return;
                 _volcadoPedido = true;
@@ -132,7 +149,7 @@ namespace RimworldExtractorGUI
         /// </summary>
         private void Volcar()
         {
-            LogEntry[] tanda;
+            (LogEntry Entrada, string? Contexto)[] tanda;
             lock (_lock)
             {
                 _volcadoPedido = false;
@@ -144,7 +161,7 @@ namespace RimworldExtractorGUI
             }
 
             var huboAvisos = false;
-            foreach (var entrada in tanda)
+            foreach (var (entrada, contexto) in tanda)
             {
                 if (entrada.Level == LogLevel.Message)
                 {
@@ -152,7 +169,7 @@ namespace RimworldExtractorGUI
                 }
                 else
                 {
-                    Pintar(_avisos, entrada);
+                    Pintar(_avisos, contexto == null ? entrada : entrada with { Message = $"{contexto}: {entrada.Message}" });
                     _visibles++;
                     huboAvisos = true;
                 }

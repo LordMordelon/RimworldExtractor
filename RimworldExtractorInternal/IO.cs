@@ -702,7 +702,7 @@ namespace RimworldExtractorInternal
             // El defecto era invisible; dejar invisible lo que queda sin arreglar seria
             // repetirlo. Estas se siguen escribiendo como patch y el juego las va a pisar.
             foreach (var entrada in sinConvertir)
-                Log.WrnDet(Strings.OfficialTranslationBeatsPatchUnfixed(
+                Log.Wrn(Strings.OfficialTranslationBeatsPatchUnfixed(
                     SinPrefijoDePatches(entrada.ClassName), entrada.Node));
 
             return reencaminadas;

@@ -2878,6 +2878,34 @@ namespace RimworldExtractorTest
         }
 
         /// <summary>
+        /// Si la ruta del archivo esta tomada —otra instancia abierta—, abrirlo falla, pero el
+        /// log tiene que seguir andando: la ventana avisa con un Log.Wrn justo despues, y si
+        /// el archivo anterior quedara cerrado pero puesto, ese aviso tiraria y cortaria la
+        /// extraccion.
+        /// </summary>
+        [TestMethod]
+        public void UnArchivoTomadoNoRompeElLog()
+        {
+            var primera = ArchivoTemporal();
+            var tomada = ArchivoTemporal();
+            Log.EmpezarArchivo(primera);
+            try
+            {
+                using (new FileStream(tomada, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    Assert.ThrowsExactly<IOException>(() => Log.EmpezarArchivo(tomada));
+                    Log.Wrn("no se pudo abrir el log detallado");
+                }
+            }
+            finally
+            {
+                Log.CerrarArchivo();
+                File.Delete(primera);
+                File.Delete(tomada);
+            }
+        }
+
+        /// <summary>
         /// La ventana recibe todo, pero lo tecnico le llega marcado: si no, no tendria como
         /// separarlo de lo que si tiene que mostrar.
         /// </summary>

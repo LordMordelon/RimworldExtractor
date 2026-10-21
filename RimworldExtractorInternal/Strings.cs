@@ -51,6 +51,11 @@
 
         public const string ProgressIndex = "Regenerando el índice de RML";
 
+        public const string ProgressStopped = "Se detuvo por un error: está en los avisos de abajo.";
+
+        public static string DetailedLogCouldNotOpen(string path, string message)
+            => $"No se pudo abrir el log detallado ({message}). Está en:\n{path}";
+
         public static string DetailedLogUnavailable(string message)
             => $"No se pudo abrir el log detallado, así que esta extracción no queda en el archivo: {message}";
 

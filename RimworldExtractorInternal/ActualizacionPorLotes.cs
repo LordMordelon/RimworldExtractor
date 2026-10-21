@@ -43,8 +43,9 @@ namespace RimworldExtractorInternal
         /// Si se pasa, solo se actualizan las carpetas para las que devuelve true. Sirve para
         /// correr una tanda en vez de todo.
         /// </param>
+        /// <param name="alTerminar">Se llama despues de cada mod, con su renglon.</param>
         public static List<Renglon> Correr(string rmlPath, Action<int, int, string>? avisar = null,
-            Func<string, bool>? filtro = null)
+            Func<string, bool>? filtro = null, Action<Renglon>? alTerminar = null)
         {
             var renglones = new List<Renglon>();
             var carpetas = Carpetas(rmlPath, filtro);
@@ -80,11 +81,7 @@ namespace RimworldExtractorInternal
                     {
                         var renglon = Actualizar(carpeta, nombre, rmlPath, porPackageId);
                         renglones.Add(renglon);
-
-                        // Una linea por mod es lo que queda en la ventana; lo de adentro de
-                        // cada extraccion va al log detallado. Los salteados se resumen al final.
-                        if (renglon.Motivo == Motivo.Actualizado)
-                            Log.Msg(Strings.ModResult(nombre, renglon.Conservadas, renglon.Pendientes, renglon.SinUso));
+                        alTerminar?.Invoke(renglon);
                     }
                     catch (Exception e)
                     {
