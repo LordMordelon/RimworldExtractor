@@ -249,6 +249,23 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   una ruta vieja por índice se relee ahí por el verbo, y sumarla también por el índice dejaría
   la copia para siempre.
 
+- **Un comp se nombra por su clase, no por su posición**: `comps.CompCamouflage.detectedLetterDesc`,
+  no `comps.11.detectedLetterDesc`. Es como lo nombra el juego (el `compClass` es su TranslationHandle)
+  y como está escrita la traducción oficial. La posición depende de los mods activos: The Dead Man's
+  Switch II le agrega dos comps a sus automatroides cuando está Combat Extended, el juego no
+  encontraba el campo y la carta del nóctulo salía en inglés, sin avisar. El `compClass` casi nunca
+  está en el XML, lo fija el constructor del `CompProperties`: `ClasesDeComp` lo lee del IL de los
+  `.dll` del juego y de los mods, sin cargarlos. Si no puede, el comp sigue por posición. Tres cosas
+  van con esto: la entrada guarda su clave vieja en `NodoAnterior`, para que el cruce recupere lo que
+  RML tenía con la posición; un Patches busca ese comp por `li[@Class="…"]` (`TranslationEntry.Xpath`),
+  porque el nombre no está en el XML; y dos elementos con el mismo handle llevan su orden detrás de
+  un guion (`CompRefuelable-1`), como en el juego. Al pasar a la clave nueva apareció que varios
+  `UNUSED.xml` ya tenían traducciones viejas con esa misma clave, que coincidían exacto y le ganaban
+  a la que estaba en uso con la posición: por eso el cruce marca lo que viene del UNUSED
+  (`Apartada`) y lo usa solo si no hay nada en uso para ese nodo. Las herramientas (`tools.0.label`) siguen por
+  posición aunque el juego las nombra por su etiqueta. Lo cubren los tests de `CompsPorNombreTests`,
+  uno de ellos contra las claves de la traducción oficial de Core.
+
 - **El orden de lectura decide quién gana.** `TranslationMerge.Clave` unifica
   `Patches.ThingDef` con `ThingDef` a propósito, así que un mismo nodo traducido de las dos
   formas colisiona y gana el que se lee último. Por eso los `Patches` se leen **primero** y

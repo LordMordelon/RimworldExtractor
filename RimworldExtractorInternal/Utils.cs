@@ -195,10 +195,14 @@ namespace RimworldExtractorInternal
                 {
                     tokens[i] = $"li[{k + 1}]";
                 }
-                // Si se uso un TranslationHandle
+                // Si se uso un TranslationHandle. Con un guion y un numero es uno de varios con
+                // el mismo handle, y el numero dice cual (ver Extractor.Nombres).
                 else if (!char.IsLower(tokens[i][0]))
                 {
-                    tokens[i] = $"*[.//*[contains(text(), '{tokens[i]}')]]";
+                    var varios = Regex.Match(tokens[i], @"^(.+)-(\d+)$");
+                    tokens[i] = varios.Success
+                        ? $"*[.//*[contains(text(), '{varios.Groups[1].Value}')]][{int.Parse(varios.Groups[2].Value) + 1}]"
+                        : $"*[.//*[contains(text(), '{tokens[i]}')]]";
                 }
             }
 

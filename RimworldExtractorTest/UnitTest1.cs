@@ -2110,6 +2110,8 @@ namespace RimworldExtractorTest
         [TestMethod]
         public void SigueDescartandoLoQueNoPuedeReconstruir()
         {
+            // Sin los .dll no se sabe que nombre tiene el comp de esa clase (ver CompsPorNombreTests).
+            ClasesDeComp.Usar(Array.Empty<string>());
             Assert.IsNull(LeerPatchSuelto(
                 "/Defs/ThingDef[defName=\"Algo\"]/comps/li[@Class=\"CompProperties_Refuelable\"]/fuelLabel",
                 "fuelLabel", "combustible"));
@@ -3110,6 +3112,296 @@ namespace RimworldExtractorTest
                 new[] { true, true, false, false },
                 recibidas.Select(x => x.SoloArchivo).ToArray());
             Assert.AreEqual(LogLevel.Warning, recibidas[1].Level);
+        }
+    }
+
+    /// <summary>
+    /// Los comps se nombran por su clase, como los nombra el juego, y no por su posicion.
+    ///
+    /// La posicion depende de que mods esten activos: The Dead Man's Switch II le agrega dos comps
+    /// a sus automatroides cuando esta Combat Extended, y con eso DMS_Mech_Noctula.comps.11 pasaba
+    /// a ser otro comp. El juego no encontraba el campo y la carta del noctulo salia en ingles,
+    /// sin avisar. La clase del comp casi nunca esta en el XML: la fija el constructor de su
+    /// CompProperties, y por eso se lee de los .dll.
+    /// </summary>
+    [TestClass]
+    public class CompsPorNombreTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        private static string DllDelJuego => Path.Combine(Prefabs.PathRimworld, "Assembly-CSharp.dll");
+
+        private static string DllDeFortified => Path.Combine(Prefabs.PathWorkshop, "3498575851", "1.7",
+            "Assemblies", "Fortified.dll");
+
+        private const string Jaeger = """
+            <Defs>
+              <ThingDef>
+                <defName>DMS_Mech_Jaeger</defName>
+                <label>jaeger</label>
+                <comps>
+                  <li>
+                    <compClass>CompColorable</compClass>
+                  </li>
+                  <li Class="CompProperties_Refuelable">
+                    <fuelLabel>Chemfuel</fuelLabel>
+                  </li>
+                  <li Class="Fortified.CompProperties_Camouflage">
+                    <detectedLetterLabel>Jaeger revealed</detectedLetterLabel>
+                    <detectedLetterDesc>An enemy automatroid has appeared out of thin air!</detectedLetterDesc>
+                  </li>
+                </comps>
+              </ThingDef>
+            </Defs>
+            """;
+
+        [TestMethod]
+        public void LeeLaClaseQueLeAsignaElConstructor()
+        {
+            ConLosDll(() =>
+            {
+                Assert.AreEqual("CompCamouflage", ClasesDeComp.Nombre("Fortified.CompProperties_Camouflage"));
+                // Sin namespace, como lo escriben los XML del juego.
+                Assert.AreEqual("CompRefuelable", ClasesDeComp.Nombre("CompProperties_Refuelable"));
+                Assert.AreEqual("HediffComp_TendDuration", ClasesDeComp.Nombre("HediffCompProperties_TendDuration"));
+                // Lo que no es un comp no tiene nombre, aunque exista.
+                Assert.IsNull(ClasesDeComp.Nombre("VerbProperties"));
+                Assert.IsNull(ClasesDeComp.Nombre("NoExiste.CompProperties_Algo"));
+            });
+        }
+
+        /// <summary>El caso del jaeger: la carta va por el nombre del comp y recuerda su posicion vieja.</summary>
+        [TestMethod]
+        public void UnCompSinCompClassSeNombraPorSuClase()
+        {
+            var entradas = ConLosDll(() => Extraer(Jaeger));
+
+            var carta = entradas.Single(x => x.Node.EndsWith(".detectedLetterDesc"));
+            Assert.AreEqual("DMS_Mech_Jaeger.comps.CompCamouflage.detectedLetterDesc", carta.Node);
+            Assert.AreEqual("DMS_Mech_Jaeger.comps.2.detectedLetterDesc", carta.NodoAnterior);
+
+            var combustible = entradas.Single(x => x.Node.EndsWith(".fuelLabel"));
+            Assert.AreEqual("DMS_Mech_Jaeger.comps.CompRefuelable.fuelLabel", combustible.Node);
+        }
+
+        /// <summary>Si no hay .dll que leer, todo queda como antes: por posicion y sin nombre viejo.</summary>
+        [TestMethod]
+        public void SinLosDllSigueSiendoPorPosicion()
+        {
+            Prefabs.Init();
+            ClasesDeComp.Usar(Array.Empty<string>());
+
+            var carta = Extraer(Jaeger).Single(x => x.Node.EndsWith(".detectedLetterDesc"));
+            Assert.AreEqual("DMS_Mech_Jaeger.comps.2.detectedLetterDesc", carta.Node);
+            Assert.IsNull(carta.NodoAnterior);
+        }
+
+        /// <summary>
+        /// Dos comps con el mismo nombre llevan su orden detras de un guion, como en el juego
+        /// (TranslationHandleUtility.GetBestHandleWithIndexForListElement).
+        /// </summary>
+        [TestMethod]
+        public void DosCompsConElMismoNombreLlevanSuOrden()
+        {
+            var entradas = ConLosDll(() => Extraer("""
+                <Defs>
+                  <ThingDef>
+                    <defName>Tanque</defName>
+                    <comps>
+                      <li Class="CompProperties_Refuelable"><fuelLabel>Chemfuel</fuelLabel></li>
+                      <li Class="CompProperties_Refuelable"><fuelLabel>Wood</fuelLabel></li>
+                    </comps>
+                  </ThingDef>
+                </Defs>
+                """));
+
+            CollectionAssert.AreEquivalent(
+                new[] { "Tanque.comps.CompRefuelable-0.fuelLabel", "Tanque.comps.CompRefuelable-1.fuelLabel" },
+                entradas.Select(x => x.Node).ToArray());
+        }
+
+        /// <summary>
+        /// Lo que estaba traducido con la posicion pasa al nombre, y no queda en UNUSED. El ingles
+        /// cambio a proposito: el rescate por texto no lo salvaria, solo el nombre viejo.
+        /// </summary>
+        [TestMethod]
+        public void LaTraduccionPorPosicionPasaAlNombre()
+        {
+            var nueva = new TranslationEntry("ThingDef", "DMS_Mech_Jaeger.comps.CompCamouflage.detectedLetterDesc",
+                "An enemy automatroid has appeared!", null, null, null)
+            {
+                NodoAnterior = "DMS_Mech_Jaeger.comps.11.detectedLetterDesc"
+            };
+            var vieja = new TranslationEntry("ThingDef", "DMS_Mech_Jaeger.comps.11.detectedLetterDesc",
+                "An enemy automatroid has appeared out of thin air!", "¡Un automatroide enemigo apareció de la nada!",
+                null, null);
+
+            var (resultado, sinUso, _) = TranslationMerge.Merge(new[] { nueva }, new[] { vieja });
+
+            Assert.AreEqual("¡Un automatroide enemigo apareció de la nada!", resultado.Single().Translated);
+            Assert.AreEqual(0, sinUso.Count, "la traduccion vieja quedo apartada como si sobrara");
+        }
+
+        /// <summary>
+        /// El caso de Ushankas Luciferium Expansion: el UNUSED ya tenia una traduccion vieja con la
+        /// clave por nombre, y en uso estaba la de la clave por posicion. La apartada coincidia
+        /// exacto con la clave nueva y le ganaba a la que estaba en uso, que se iba al UNUSED.
+        /// </summary>
+        [TestMethod]
+        public void LaApartadaConLaClaveNuevaNoLeGanaALaQueEstaEnUso()
+        {
+            var nueva = new TranslationEntry("ThingDef", "Bomba.comps.CompLuciferiumPump.jobString", "activate",
+                null, null, null) { NodoAnterior = "Bomba.comps.3.jobString" };
+            var apartada = new TranslationEntry("ThingDef", "Bomba.comps.CompLuciferiumPump.jobString", "activate",
+                "activando bomba médica de luciferio", null, null) { Apartada = true };
+            var enUso = new TranslationEntry("ThingDef", "Bomba.comps.3.jobString", "activate", "activar", null, null);
+
+            var (resultado, sinUso, _) = TranslationMerge.Merge(new[] { nueva }, new[] { apartada, enUso });
+
+            Assert.AreEqual("activar", resultado.Single().Translated);
+            Assert.AreEqual("activando bomba médica de luciferio", sinUso.Single().Translated,
+                "la apartada tiene que seguir apartada");
+        }
+
+        /// <summary>
+        /// El caso de GravTech: el mismo nodo llega en uso con la clave nueva y con la vieja (un
+        /// Patches de RML releido por su xpath literal), con el mismo texto. La vieja no sobra:
+        /// es la misma traduccion, y no tiene que aparecer como copia en el UNUSED.
+        /// </summary>
+        [TestMethod]
+        public void LaCopiaConLaClaveViejaNoQuedaEnElUnused()
+        {
+            var nueva = new TranslationEntry("Patches.HediffDef", "GravHands.comps.HediffComp_VerbGiver.tools.0.label",
+                "grav fist", null, null, null) { NodoAnterior = "GravHands.comps.0.tools.0.label" };
+            var conLaNueva = nueva with { Translated = "gravipuño", NodoAnterior = null };
+            var conLaVieja = conLaNueva with { Node = "GravHands.comps.0.tools.0.label" };
+
+            var (resultado, sinUso, _) = TranslationMerge.Merge(new[] { nueva }, new[] { conLaVieja, conLaNueva });
+
+            Assert.AreEqual("gravipuño", resultado.Single().Translated);
+            Assert.AreEqual(0, sinUso.Count, "quedo una copia de la misma traduccion en el UNUSED");
+        }
+
+        /// <summary>
+        /// Un Patches no puede buscar el comp por un nombre que el XML no tiene: va por su Class,
+        /// y la relectura vuelve al mismo nodo.
+        /// </summary>
+        [TestMethod]
+        public void ElPatchBuscaElCompPorSuClaseYSeRelee()
+        {
+            var carta = ConLosDll(() => Extraer(Jaeger)).Single(x => x.Node.EndsWith(".detectedLetterDesc"));
+
+            Assert.AreEqual(
+                "/Defs/ThingDef[defName=\"DMS_Mech_Jaeger\"]/comps/li[@Class=\"Fortified.CompProperties_Camouflage\"]/detectedLetterDesc",
+                carta.Xpath);
+
+            var leida = ConLosDll(() => LeerPatchSuelto(carta.Xpath!, "detectedLetterDesc", "carta"));
+            Assert.IsNotNull(leida, "no se pudo releer el xpath por Class");
+            Assert.AreEqual(carta.Node, leida.Node);
+        }
+
+        /// <summary>
+        /// La prueba contra el juego: los comps de Core salen con la misma clave que usa la
+        /// traduccion oficial, que es la que genera el propio RimWorld.
+        /// </summary>
+        [TestMethod]
+        public void LosCompsDeCoreSalenComoEnLaTraduccionOficial()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+            var core = ModLister.OfficialMods.FirstOrDefault(x => x.PackageId.Equals("ludeon.rimworld", StringComparison.OrdinalIgnoreCase));
+            if (core == null || !File.Exists(DllDelJuego))
+                Assert.Inconclusive("Este test necesita RimWorld instalado.");
+
+            TraduccionOficial.Limpiar();
+            var extraibles = ModLister.GetExtractableFolders(core).AutoSeleccionables();
+            // Las herramientas de un comp quedan afuera: el juego tambien las nombra, por su
+            // etiqueta (tools.fist.label), pero el extractor todavia las nombra por posicion.
+            var comps = Extractor.ExtractTranslationData(core, extraibles, null)
+                .Where(x => x.Node.Contains(".comps.") && !x.Node.Contains(".tools."))
+                .ToList();
+
+            var sinOficial = comps.Where(x => !TraduccionOficial.Cubre(x.ClassName, x.Node)).ToList();
+            Assert.IsTrue(comps.Count > 50, $"solo salieron {comps.Count} campos de comps de Core");
+            Assert.AreEqual(0, sinOficial.Count,
+                "claves de comps que la traduccion oficial no tiene: " +
+                string.Join(", ", sinOficial.Take(10).Select(x => x.Node)));
+        }
+
+        private static T ConLosDll<T>(Func<T> hacer)
+        {
+            Prefabs.Init();
+            if (!File.Exists(DllDelJuego) || !File.Exists(DllDeFortified))
+                Assert.Inconclusive("Este test necesita RimWorld y Fortified Features Framework instalados.");
+
+            ClasesDeComp.Usar(new[] { DllDelJuego, DllDeFortified });
+            try
+            {
+                return hacer();
+            }
+            finally
+            {
+                ClasesDeComp.Usar(Array.Empty<string>());
+            }
+        }
+
+        private static void ConLosDll(Action hacer) => ConLosDll(() => { hacer(); return 0; });
+
+        private static List<TranslationEntry> Extraer(string defs)
+        {
+            var doc = new XmlDocument();
+            doc.LoadXml(defs);
+
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                return Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+        }
+
+        /// <summary>Como el de DesarmarXpathTests: lo relee con la base vacia, solo por la lectura literal.</summary>
+        private static TranslationEntry? LeerPatchSuelto(string xpath, string etiqueta, string traduccion)
+        {
+            Prefabs.TranslationLanguage = Idioma;
+
+            var raiz = Path.Combine(Path.GetTempPath(), "xp-" + Guid.NewGuid().ToString("N"));
+            var patches = Path.Combine(raiz, "Patches");
+            Directory.CreateDirectory(patches);
+
+            File.WriteAllText(Path.Combine(patches, "OtroMod.xml"), $"""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>{System.Security.SecurityElement.Escape(xpath)}</xpath>
+                    <value>
+                      <{etiqueta}>{traduccion}</{etiqueta}>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                var vacia = new XmlDocument();
+                vacia.LoadXml("<Defs />");
+                Extractor.RegistrarBaseCompleta(vacia);
+                Extractor.CombinedDefs = vacia;
+
+                return IO.FromLanguageXml(raiz).FirstOrDefault(x => x.Translated == traduccion);
+            }
+            finally
+            {
+                Extractor.RegistrarBaseCompleta(null);
+                Extractor.CombinedDefs = previo;
+                if (Directory.Exists(raiz)) Directory.Delete(raiz, true);
+            }
         }
     }
 }

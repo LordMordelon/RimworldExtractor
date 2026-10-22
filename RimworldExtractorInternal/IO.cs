@@ -246,7 +246,8 @@ namespace RimworldExtractorInternal
                     {
                         li.AppendAttribute("Class", "PatchOperationReplace");
                         li.AppendElement("success", "Always");
-                        li.AppendElement("xpath", Utils.GetXpath(translation.ClassName[(translation.ClassName.IndexOf('.') + 1)..], translation.Node));
+                        li.AppendElement("xpath", translation.Xpath
+                            ?? Utils.GetXpath(translation.ClassName[(translation.ClassName.IndexOf('.') + 1)..], translation.Node));
                         li.AppendElement("value", value =>
                         {
                             // El original va pegado al nodo que hay que traducir, no arriba
@@ -815,11 +816,27 @@ namespace RimworldExtractorInternal
                 }
 
                 // El predicado que GetXpath arma para un TranslationHandle: adentro esta el
-                // handle, que es justo el token del nodo.
-                var handle = Regex.Match(tokens[i], @"^\*\[\.//\*\[contains\(text\(\), '([^']*)'\)\]\]$");
+                // handle, que es justo el token del nodo. Con [N] detras es uno de varios con
+                // el mismo handle, y el token lleva el orden: Handle-(N-1).
+                var handle = Regex.Match(tokens[i], @"^\*\[\.//\*\[contains\(text\(\), '([^']*)'\)\]\](?:\[(\d+)\])?$");
                 if (handle.Success)
                 {
-                    tokens[i] = handle.Groups[1].Value;
+                    tokens[i] = handle.Groups[2].Success
+                        ? $"{handle.Groups[1].Value}-{int.Parse(handle.Groups[2].Value) - 1}"
+                        : handle.Groups[1].Value;
+                    continue;
+                }
+
+                // Un comp buscado por su Class (TranslationEntry.Xpath): el token es el nombre que
+                // el juego le da a esa clase. Con [N] detras habria que saber cuantos comps tienen
+                // ese mismo nombre, y desde el xpath no se puede: se descarta.
+                var clase = Regex.Match(tokens[i], @"^li\[@Class=""([^""]+)""\]$");
+                if (clase.Success)
+                {
+                    var nombre = ClasesDeComp.Nombre(clase.Groups[1].Value);
+                    if (nombre == null)
+                        return null;
+                    tokens[i] = nombre;
                     continue;
                 }
 
@@ -937,7 +954,7 @@ namespace RimworldExtractorInternal
                         continue;
 
                     apartadas.Add(new TranslationEntry(clase, nodo,
-                        entrada.GetAttribute("original"), entrada.InnerText, null, null));
+                        entrada.GetAttribute("original"), entrada.InnerText, null, null) { Apartada = true });
                 }
             }
             catch (Exception e)

@@ -147,8 +147,12 @@ namespace RimworldExtractorInternal
                         var nodeName = $"{defName}.{curPath}";
                         if (curNormalizedPath != null)
                             nodeName = curPath;
-                        var translation = new TranslationEntry(className, nodeName, curNode.InnerText, null, requiredMods, fileName);
-                        yield return translation;
+                        var (anterior, xpath) = RutasDeRespaldo(curNode, defName, className, nodeName);
+                        yield return new TranslationEntry(className, nodeName, curNode.InnerText, null, requiredMods, fileName)
+                        {
+                            NodoAnterior = anterior,
+                            Xpath = xpath
+                        };
                     }
                     continue;
                 }
@@ -167,11 +171,123 @@ namespace RimworldExtractorInternal
         /// un patch que entra a un elemento de lista se releia como verbs.0.label y se extraia
         /// como verbs.Verb_ShootCE.label: no cruzaban y quedaba una copia en UNUSED.
         /// </summary>
-        private static string NombreEnLaRuta(XmlNode node)
+        private static string NombreEnLaRuta(XmlNode node) => Nombres(node).Nuevo;
+
+        /// <summary>
+        /// Las formas de nombrar un nodo: la de la clave (Nuevo), la que se usaba antes de nombrar
+        /// los comps por su clase (Anterior, null si ninguna clave vieja le corresponde), y su tramo
+        /// de xpath. PorClase dice si el nombre salio de ClasesDeComp, que es el unico caso en que
+        /// el xpath no se puede armar desde la clave.
+        ///
+        /// Como en el juego, dos elementos con el mismo handle llevan su orden detras de un guion:
+        /// CompRefuelable-0, CompRefuelable-1. Antes los dos salian con el mismo nombre y uno tapaba
+        /// al otro; la clave vieja era la del primero, que es el que el juego encontraba.
+        /// </summary>
+        private static (string Nuevo, string? Anterior, string Xpath, bool PorClase) Nombres(XmlNode node)
         {
             if (!node.IsListNode())
-                return node.Name;
-            return MatchTranslationHandle(node, out var handle) ? handle : GetIdxOfListNode(node).ToString();
+                return (node.Name, node.Name, node.Name, false);
+
+            var indice = GetIdxOfListNode(node);
+            var explicito = MatchTranslationHandle(node, out var deXml);
+            var handle = explicito ? deXml : NombrePorClase(node);
+            if (handle == null)
+                return (indice.ToString(), indice.ToString(), $"li[{indice + 1}]", false);
+
+            var (orden, iguales) = OrdenEntre(node, x => Handle(x) == handle);
+            var nuevo = iguales > 1 ? $"{handle}-{orden}" : handle;
+
+            if (explicito)
+            {
+                var predicado = $"*[.//*[contains(text(), '{handle}')]]";
+                return (nuevo, orden == 0 ? handle : null,
+                    iguales > 1 ? $"{predicado}[{orden + 1}]" : predicado, false);
+            }
+
+            var clase = node.Attributes!["Class"]!.Value;
+            var (ordenDeClase, deLaMismaClase) = OrdenEntre(node, x => x.Attributes?["Class"]?.Value == clase);
+            var xpath = $"li[@Class=\"{clase}\"]";
+            return (nuevo, indice.ToString(),
+                deLaMismaClase > 1 ? $"{xpath}[{ordenDeClase + 1}]" : xpath, true);
+        }
+
+        private static string? Handle(XmlNode node) =>
+            MatchTranslationHandle(node, out var handle) ? handle : NombrePorClase(node);
+
+        /// <summary>El nombre de un comp que no trae compClass en el XML: lo fija su clase.</summary>
+        private static string? NombrePorClase(XmlNode node)
+        {
+            var clase = node.Attributes?["Class"]?.Value;
+            return string.IsNullOrWhiteSpace(clase) ? null : ClasesDeComp.Nombre(clase);
+        }
+
+        /// <summary>En que lugar esta el nodo entre sus hermanos li que cumplen la condicion, y cuantos son.</summary>
+        private static (int Orden, int Total) OrdenEntre(XmlNode node, Func<XmlNode, bool> igual)
+        {
+            var orden = 0;
+            var total = 0;
+            foreach (XmlNode hermano in node.ParentNode!.ChildNodes)
+            {
+                if (!hermano.IsListNode() || !igual(hermano))
+                    continue;
+                if (hermano == node)
+                    orden = total;
+                total++;
+            }
+
+            return (orden, total);
+        }
+
+        /// <summary>
+        /// La clave vieja y el xpath de una entrada, subiendo desde su nodo hasta el def. La clave
+        /// vieja es para que el cruce encuentre lo que RML ya tenia; el xpath, solo si algun tramo
+        /// se nombro por la clase del comp. Si la ruta que se rearma no coincide con la clave, no
+        /// se devuelve nada: una clave vieja equivocada pondria una traduccion en otro campo.
+        /// </summary>
+        private static (string? Anterior, string? Xpath) RutasDeRespaldo(XmlNode nodo, string defName,
+            string className, string clave)
+        {
+            var nuevos = new List<string>();
+            var anteriores = new List<string?>();
+            var xpaths = new List<string>();
+            var porClase = false;
+
+            for (var actual = nodo; ; actual = actual.ParentNode)
+            {
+                if (actual == null || actual.NodeType != XmlNodeType.Element)
+                    return (null, null);
+                if (actual["defName"] != null)
+                {
+                    if (actual["defName"]!.InnerText != defName)
+                        return (null, null);
+                    break;
+                }
+
+                var (nuevo, anterior, xpath, deClase) = Nombres(actual);
+                nuevos.Add(nuevo);
+                anteriores.Add(anterior);
+                xpaths.Add(xpath);
+                porClase |= deClase;
+            }
+
+            nuevos.Reverse();
+            if ($"{defName}.{string.Join('.', nuevos)}" != clave)
+                return (null, null);
+
+            string? claveAnterior = null;
+            if (anteriores.All(x => x != null))
+            {
+                anteriores.Reverse();
+                claveAnterior = $"{defName}.{string.Join('.', anteriores)}";
+                if (claveAnterior == clave)
+                    claveAnterior = null;
+            }
+
+            if (!porClase)
+                return (claveAnterior, null);
+
+            xpaths.Reverse();
+            return (claveAnterior, $"/Defs/{className}[defName=\"{defName}\"]/{string.Join('/', xpaths)}");
         }
 
         private static IEnumerable<TranslationEntry> FindExtractableNodesXmlExtensionSettings(string defName, string className,

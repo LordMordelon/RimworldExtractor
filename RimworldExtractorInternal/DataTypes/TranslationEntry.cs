@@ -23,6 +23,9 @@
                 this.RequiredMods = new RequiredMods(other.RequiredMods);
             }
             SourceFile = other.SourceFile;
+            NodoAnterior = other.NodoAnterior;
+            Xpath = other.Xpath;
+            Apartada = other.Apartada;
 
             _extensions = new Dictionary<string, object>();
             foreach (var otherExtension in other._extensions)
@@ -32,6 +35,26 @@
         }
 
         private readonly Dictionary<string, object> _extensions = new();
+
+        /// <summary>
+        /// El nodo como se escribia antes de nombrar los comps por su clase, con la posicion en
+        /// vez del nombre (ver ClasesDeComp). Null si es el mismo. Sirve para que el cruce
+        /// encuentre lo que RML ya tenia traducido con la clave vieja.
+        /// </summary>
+        public string? NodoAnterior { get; init; }
+
+        /// <summary>
+        /// El xpath para escribir esta entrada como Patches, cuando no se puede armar desde el
+        /// nodo: un comp nombrado por su clase no tiene ese nombre en el XML, y se busca por su
+        /// atributo Class. Null para todo lo demas, que sigue saliendo de Utils.GetXpath.
+        /// </summary>
+        public string? Xpath { get; init; }
+
+        /// <summary>
+        /// Si se leyo del UNUSED.xml. El cruce la usa solo si no hay una en uso para el mismo
+        /// nodo: una traduccion apartada nunca le gana a lo que esta en uso.
+        /// </summary>
+        public bool Apartada { get; init; }
 
         public TranslationEntry AddExtension(string key, object extension)
         {

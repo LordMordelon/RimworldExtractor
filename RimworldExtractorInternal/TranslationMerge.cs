@@ -43,19 +43,41 @@ namespace RimworldExtractorInternal
             {
                 var clave = Clave(nueva);
 
-                // Primero la de la misma forma de entrega; si no esta traducida, la de la otra.
-                var previa = exactas.GetValueOrDefault((nueva.ClassName, nueva.Node));
-                if (string.IsNullOrEmpty(previa?.Translated))
-                    previa = previas.GetValueOrDefault(clave);
+                // En orden: la de la misma forma de entrega, la de la otra, y las mismas dos con
+                // la clave de antes de nombrar los comps por su clase (comps.11 en vez de
+                // comps.CompCamouflage), que es como RML tenia todo lo traducido hasta entonces.
+                var anterior = nueva.NodoAnterior != null ? nueva with { Node = nueva.NodoAnterior } : null;
+                var candidatas = new[]
+                    {
+                        exactas.GetValueOrDefault((nueva.ClassName, nueva.Node)),
+                        previas.GetValueOrDefault(clave),
+                        anterior == null ? null : exactas.GetValueOrDefault((anterior.ClassName, anterior.Node)),
+                        anterior == null ? null : previas.GetValueOrDefault(Clave(anterior))
+                    }
+                    .Where(x => !string.IsNullOrEmpty(x?.Translated))
+                    .Select(x => x!)
+                    .ToList();
 
-                if (previa != null && !string.IsNullOrEmpty(previa.Translated))
+                // Una apartada solo si no hay ninguna en uso. Hace falta desde que los comps van
+                // por su clase: en Ushankas el UNUSED tenia una traduccion vieja con la clave
+                // nueva, que coincidia exacto y le ganaba a la que estaba en uso con la vieja.
+                var previa = candidatas.FirstOrDefault(x => !x.Apartada) ?? candidatas.FirstOrDefault();
+
+                if (previa != null)
                 {
                     // Se conserva la traduccion y se toma el original nuevo: si el texto en
                     // ingles cambio, el comentario EN queda actualizado y el cambio se ve en
                     // el diff, que es donde se revisa.
                     resultado.Add(nueva with { Translated = previa.Translated });
-                    usadas.Add(clave);
-                    usadasExactas.Add((previa.ClassName, previa.Node));
+
+                    // Las otras con el mismo texto son la misma traduccion del mismo nodo, y no
+                    // sobra ninguna: en GravTech llegaba con las dos claves, y la vieja quedaba
+                    // como copia en el UNUSED. Una con otro texto si queda, y se ve en el diff.
+                    foreach (var usada in candidatas.Where(x => x.Translated == previa.Translated))
+                    {
+                        usadas.Add(Clave(usada));
+                        usadasExactas.Add((usada.ClassName, usada.Node));
+                    }
                 }
                 else
                 {

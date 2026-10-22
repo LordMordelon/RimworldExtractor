@@ -90,6 +90,10 @@ namespace RimworldExtractorInternal
             var extraction = new List<TranslationEntry>();
             Reset();
 
+            // Los comps se nombran por su clase, que sale de los .dll de este mod y de los que
+            // usa. Queda puesto despues de extraer: la relectura de RML tambien los nombra.
+            ClasesDeComp.Usar(ClasesDeComp.DllsDe(modMetadata, referenceMods));
+
             // Un mod puede traer el mismo texto dos veces: en el Languages/ de la raiz y en el
             // de su carpeta de version. No siempre dicen lo mismo —Simple Sidearms tiene
             // "Weapon dropping criteria" en la raiz y "Weapon fumble criteria" en v1.6— y la
