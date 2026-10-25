@@ -898,6 +898,81 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// El juego le pone al verbo el nombre del arma cuando es el unico y no trae label
+    /// (ThingDef.PostLoad), sea cual sea su clase. La escopeta de asalto de The Dead Man's
+    /// Switch II usa Verb_LaunchProjectile_AmmoSwitch y su boton salia en ingles.
+    /// </summary>
+    [TestClass]
+    public class NombreDelVerboTests
+    {
+        [TestMethod]
+        public void ElVerboUnicoTomaElNombreDelArmaSeaCualSeaSuClase()
+        {
+            var entradas = Extraer("""
+                <Defs>
+                  <ThingDef>
+                    <defName>Escopeta</defName>
+                    <label>Mech Assault Shotgun</label>
+                    <verbs>
+                      <li>
+                        <verbClass>Fortified.Verb_LaunchProjectile_AmmoSwitch</verbClass>
+                      </li>
+                    </verbs>
+                  </ThingDef>
+                </Defs>
+                """);
+
+            var verbo = entradas.SingleOrDefault(x =>
+                x.Node == "Escopeta.verbs.Verb_LaunchProjectile_AmmoSwitch.label");
+            Assert.IsNotNull(verbo, "el verbo unico no recibio el nombre del arma");
+            Assert.AreEqual("Mech Assault Shotgun", verbo.Original);
+        }
+
+        /// <summary>Con dos verbos el juego no le pone nombre a ninguno; los de disparo siguen como antes.</summary>
+        [TestMethod]
+        public void ConVariosVerbosSoloLosDeDisparoComoAntes()
+        {
+            var entradas = Extraer("""
+                <Defs>
+                  <ThingDef>
+                    <defName>Doble</defName>
+                    <label>arma doble</label>
+                    <verbs>
+                      <li><verbClass>Verb_LaunchProjectile</verbClass></li>
+                      <li><verbClass>Verb_Shoot</verbClass></li>
+                    </verbs>
+                  </ThingDef>
+                </Defs>
+                """);
+
+            Assert.IsFalse(entradas.Any(x => x.Node.Contains("Verb_LaunchProjectile")),
+                "con dos verbos el juego no le pone nombre al que no es de disparo");
+            Assert.IsTrue(entradas.Any(x => x.Node == "Doble.verbs.Verb_Shoot.label"),
+                "el de disparo dejo de recibir el nombre");
+        }
+
+        private static List<TranslationEntry> Extraer(string defs)
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml(defs);
+            RimworldExtractorInternal.Compats.CompatManager.DoPreProcessing(doc);
+
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                return Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+        }
+    }
+
+    /// <summary>
     /// Cubre los nombres de la municion generica de Combat Extended, que viven en las
     /// modExtensions de cada municion y no en sus campos de siempre.
     /// </summary>
