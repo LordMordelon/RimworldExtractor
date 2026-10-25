@@ -59,10 +59,14 @@ namespace RimworldExtractorInternal
         ///
         /// Medido sobre las 525 entradas de "symbol" de RML: las 32 de InteractionDef son
         /// rutas, y ninguna de las otras 493 lo es.
+        ///
+        /// shortLabel es un texto en Alpha Prefabs y en Vanilla Furniture Expanded - Props and
+        /// Decor, pero en los grupos de Nice Health Tab es un interruptor que vale «true».
         /// </summary>
         private static readonly HashSet<(string Clase, string Tag)> NoTraducibles = new()
         {
-            ("InteractionDef", "symbol")
+            ("InteractionDef", "symbol"),
+            ("NiceHealthTab.WholeBodyGroup", "shortLabel")
         };
 
         /// <summary>
@@ -78,11 +82,15 @@ namespace RimworldExtractorInternal
         /// Las dos detectedLetter son la carta de un automatroide camuflado que queda a la
         /// vista, en el CompProperties_Camouflage del framework Fortified, y detectedMessage
         /// el aviso de arriba a la izquierda que sale con ella («A noctula has appeared!»).
+        ///
+        /// shortLabel y labelForDefaultVariation son del PrefabDef de Alpha Prefabs: el nombre
+        /// de la cuadricula del catalogo y la primera opcion de «Pedir ahora con...».
         /// </summary>
         private static readonly string[] EtiquetasAgregadas =
         {
             "genericLabel", "genericDescription", "genericLabelOverride",
-            "detectedLetterLabel", "detectedLetterDesc", "detectedMessage"
+            "detectedLetterLabel", "detectedLetterDesc", "detectedMessage",
+            "shortLabel", "labelForDefaultVariation"
         };
 
         private static void AgregarEtiquetasFaltantes()

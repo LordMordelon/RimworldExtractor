@@ -1175,6 +1175,107 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre los dos nombres de un prefabricado de Alpha Prefabs que salian en ingles: el corto
+    /// de la cuadricula del catalogo («Small base») y el de la variante por defecto, primera
+    /// opcion de «Pedir ahora con...» («Facing South»).
+    /// </summary>
+    [TestClass]
+    public class AlphaPrefabsTests
+    {
+        [TestMethod]
+        public void ExtraeElNombreCortoYElDeLaVariantePorDefecto()
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml("""
+                <Defs>
+                  <AlphaPrefabs.PrefabDef>
+                    <defName>AP_Prefab_Bedroom_1</defName>
+                    <label>small 1-person bedroom</label>
+                    <shortLabel>small single</shortLabel>
+                    <labelForDefaultVariation>Facing South</labelForDefaultVariation>
+                  </AlphaPrefabs.PrefabDef>
+                </Defs>
+                """);
+
+            List<TranslationEntry> entradas;
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                entradas = Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+
+            Assert.AreEqual(1, entradas.Count(x => x.Node.EndsWith(".shortLabel") && x.Original == "small single"));
+            Assert.AreEqual(1, entradas.Count(x => x.Node.EndsWith(".labelForDefaultVariation") && x.Original == "Facing South"));
+        }
+
+        /// <summary>
+        /// En Nice Health Tab, shortLabel es un interruptor (true/false) de sus grupos, no un texto:
+        /// traducirlo romperia el def.
+        /// </summary>
+        [TestMethod]
+        public void ElShortLabelDeNiceHealthTabNoSeExtrae()
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml("""
+                <Defs>
+                  <NiceHealthTab.WholeBodyGroup>
+                    <defName>GroupInfections</defName>
+                    <label>infections</label>
+                    <shortLabel>true</shortLabel>
+                  </NiceHealthTab.WholeBodyGroup>
+                </Defs>
+                """);
+
+            List<TranslationEntry> entradas;
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                entradas = Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+
+            Assert.AreEqual(0, entradas.Count(x => x.Node.EndsWith(".shortLabel")));
+            Assert.AreEqual(1, entradas.Count(x => x.Node.EndsWith(".label")));
+        }
+
+        /// <summary>Un Prefabs.dat anterior a los dos campos tambien los extrae.</summary>
+        [TestMethod]
+        public void UnPrefabsViejoTambienLosExtrae()
+        {
+            var archivo = Path.Combine(Path.GetTempPath(), "prefabs-" + Guid.NewGuid().ToString("N") + ".dat");
+            try
+            {
+                Prefabs.Init();
+                Prefabs.ExtractableTags = new(Prefabs.ExtractableTags.Where(x => x != "shortLabel" && x != "labelForDefaultVariation"));
+                Prefabs.Save(archivo);
+
+                Prefabs.Load(archivo);
+
+                foreach (var tag in new[] { "shortLabel", "labelForDefaultVariation" })
+                    Assert.IsTrue(Prefabs.CanExtract(tag, "CualquierDef"), tag);
+            }
+            finally
+            {
+                File.Delete(archivo);
+                Prefabs.Init();
+            }
+        }
+    }
+
+    /// <summary>
     /// Cubre las dos formas en que la relectura de los Patches de RML danaba traducciones.
     ///
     /// Son el mismo tipo de defecto que PatchesRoundTripTests: algo que se escribio bien, se

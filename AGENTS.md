@@ -387,7 +387,9 @@ Además de las reglas por etiqueta de `Prefabs`, hay dos exclusiones por conteni
 
 - **`InteractionDef.symbol`**, en `Prefabs.NoTraducibles`, porque sus valores son rutas de
   textura. Va por `(clase, etiqueta)` y no por etiqueta suelta: los `symbol` de `GeneDef` y
-  `RuleDef` sí son palabras.
+  `RuleDef` sí son palabras. Por lo mismo está `NiceHealthTab.WholeBodyGroup.shortLabel`, que vale
+  `true`: `shortLabel` es texto en Alpha Prefabs (el nombre de la cuadrícula del catálogo) y en
+  Vanilla Furniture Expanded - Props and Decor.
 - **Los defs de `category` `Mote`**, en `ExtractDefsInternal`. Son los iconos que flotan
   sobre el colono y su etiqueta no se muestra nunca. Se mira la categoría y no el
   `ParentName`, porque las cadenas de herencia varían.
