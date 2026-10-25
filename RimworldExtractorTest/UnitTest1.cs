@@ -1125,6 +1125,7 @@ namespace RimworldExtractorTest
                         <ticksUntilRecover>1200</ticksUntilRecover>
                         <detectedLetterLabel>Jaeger revealed</detectedLetterLabel>
                         <detectedLetterDesc>An enemy automatroid has appeared out of thin air!</detectedLetterDesc>
+                        <detectedMessage>A jaeger has appeared!</detectedMessage>
                       </li>
                     </comps>
                   </ThingDef>
@@ -1145,9 +1146,11 @@ namespace RimworldExtractorTest
 
             Assert.AreEqual(1, entradas.Count(x => x.Node.EndsWith(".detectedLetterLabel") && x.Original == "Jaeger revealed"));
             Assert.AreEqual(1, entradas.Count(x => x.Node.EndsWith(".detectedLetterDesc")));
+            Assert.AreEqual(1, entradas.Count(x => x.Node.EndsWith(".detectedMessage") && x.Original == "A jaeger has appeared!"),
+                "el aviso de arriba a la izquierda salia en ingles");
         }
 
-        /// <summary>Un Prefabs.dat anterior a los dos campos tambien los extrae.</summary>
+        /// <summary>Un Prefabs.dat anterior a los campos de la carta tambien los extrae.</summary>
         [TestMethod]
         public void UnPrefabsViejoTambienExtraeLaCarta()
         {
@@ -1155,12 +1158,12 @@ namespace RimworldExtractorTest
             try
             {
                 Prefabs.Init();
-                Prefabs.ExtractableTags = new(Prefabs.ExtractableTags.Where(x => !x.StartsWith("detectedLetter")));
+                Prefabs.ExtractableTags = new(Prefabs.ExtractableTags.Where(x => !x.StartsWith("detected")));
                 Prefabs.Save(archivo);
 
                 Prefabs.Load(archivo);
 
-                foreach (var tag in new[] { "detectedLetterLabel", "detectedLetterDesc" })
+                foreach (var tag in new[] { "detectedLetterLabel", "detectedLetterDesc", "detectedMessage" })
                     Assert.IsTrue(Prefabs.CanExtract(tag, "CualquierDef"), tag);
             }
             finally

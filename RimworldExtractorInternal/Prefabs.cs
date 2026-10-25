@@ -76,12 +76,13 @@ namespace RimworldExtractorInternal
         /// projectile de las balas de .45 ACP.
         ///
         /// Las dos detectedLetter son la carta de un automatroide camuflado que queda a la
-        /// vista, en el CompProperties_Camouflage del framework Fortified.
+        /// vista, en el CompProperties_Camouflage del framework Fortified, y detectedMessage
+        /// el aviso de arriba a la izquierda que sale con ella («A noctula has appeared!»).
         /// </summary>
         private static readonly string[] EtiquetasAgregadas =
         {
             "genericLabel", "genericDescription", "genericLabelOverride",
-            "detectedLetterLabel", "detectedLetterDesc"
+            "detectedLetterLabel", "detectedLetterDesc", "detectedMessage"
         };
 
         private static void AgregarEtiquetasFaltantes()
