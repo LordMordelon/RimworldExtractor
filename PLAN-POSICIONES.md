@@ -44,6 +44,10 @@ no se rompan al reextraer.
 **Decisiones de Angel:**
 - Tarea 1: si el extractor tiene que reconocer la versión testing por su nombre (recomendado: sí, la
   condición por nombre funciona con las dos versiones de CE) o si se agrega su packageId a mano.
+  **Actualizado el 25-oct-2026** en `../RML/Data/Combat Extended - 2890901044/PLAN-CE-AJUSTES.md`
+  (punto 1): la propuesta ahora es que RML pida CE igual que el mod (por nombre o por packageId), y en
+  la misma tarea va la falla del cruce que dejó en `TODO` tres `chargeNoun` de MobileDragoon. Desde el
+  25-oct los `Patches/` con la condición por packageId ya están commiteados en RML (decisión de Angel).
 - Tarea 3: si se corrige «fusil gauss» por «disparo de baja potencia» (recomendado: sí).
 
 **Guías:** `traspaso` al terminar cada una. No hay tareas de GitHub abiertas para esto.
