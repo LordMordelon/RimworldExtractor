@@ -90,7 +90,8 @@ namespace RimworldExtractorInternal
         {
             "genericLabel", "genericDescription", "genericLabelOverride",
             "detectedLetterLabel", "detectedLetterDesc", "detectedMessage",
-            "shortLabel", "labelForDefaultVariation"
+            "shortLabel", "labelForDefaultVariation",
+            "defaultLabel", "defaultDesc"
         };
 
         private static void AgregarEtiquetasFaltantes()

@@ -1276,6 +1276,77 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// defaultLabel y defaultDesc: el boton de un comp. En Cinders of the Embergarden es
+    /// «Change to walking mode» de las torretas que se paran, y salia en ingles en el juego
+    /// porque el extractor no conocia las dos etiquetas. Medido sobre RML el 27-oct-2026: solo
+    /// Cinders las usa, 24 veces, y siempre con texto.
+    /// </summary>
+    [TestClass]
+    public class BotonDeCompTests
+    {
+        [TestMethod]
+        public void ExtraeElTextoDelBotonDeUnComp()
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml("""
+                <Defs>
+                  <ThingDef>
+                    <defName>Cinder_ErodedAutocannon</defName>
+                    <label>eroded autocannon</label>
+                    <comps>
+                      <li Class="Embergarden.CompProperties_Transformable">
+                        <compClass>Embergarden.Comp_TurretTransformable</compClass>
+                        <defaultLabel>Change to walking mode</defaultLabel>
+                        <defaultDesc>Order the turret to "stand up" and relocate.</defaultDesc>
+                      </li>
+                    </comps>
+                  </ThingDef>
+                </Defs>
+                """);
+
+            List<TranslationEntry> entradas;
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                entradas = Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+
+            Assert.AreEqual("Change to walking mode", entradas.Single(x => x.Node.EndsWith(".defaultLabel")).Original);
+            Assert.AreEqual("Order the turret to \"stand up\" and relocate.", entradas.Single(x => x.Node.EndsWith(".defaultDesc")).Original);
+        }
+
+        /// <summary>Un Prefabs.dat anterior a las dos etiquetas tambien las extrae.</summary>
+        [TestMethod]
+        public void UnPrefabsViejoTambienLasExtrae()
+        {
+            var archivo = Path.Combine(Path.GetTempPath(), "prefabs-" + Guid.NewGuid().ToString("N") + ".dat");
+            try
+            {
+                Prefabs.Init();
+                Prefabs.ExtractableTags = new(Prefabs.ExtractableTags.Where(x => x != "defaultLabel" && x != "defaultDesc"));
+                Prefabs.Save(archivo);
+
+                Prefabs.Load(archivo);
+
+                foreach (var tag in new[] { "defaultLabel", "defaultDesc" })
+                    Assert.IsTrue(Prefabs.CanExtract(tag, "CualquierDef"), tag);
+            }
+            finally
+            {
+                File.Delete(archivo);
+                Prefabs.Init();
+            }
+        }
+    }
+
+    /// <summary>
     /// Cubre las dos formas en que la relectura de los Patches de RML danaba traducciones.
     ///
     /// Son el mismo tipo de defecto que PatchesRoundTripTests: algo que se escribio bien, se
