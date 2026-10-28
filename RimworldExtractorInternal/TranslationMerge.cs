@@ -41,19 +41,16 @@ namespace RimworldExtractorInternal
 
             foreach (var nueva in nuevas)
             {
-                var clave = Clave(nueva);
-
                 // En orden: la de la misma forma de entrega, la de la otra, y las mismas dos con
-                // la clave de antes de nombrar los comps por su clase (comps.11 en vez de
-                // comps.CompCamouflage), que es como RML tenia todo lo traducido hasta entonces.
-                var anterior = nueva.NodoAnterior != null ? nueva with { Node = nueva.NodoAnterior } : null;
-                var candidatas = new[]
+                // las claves de antes: la de antes de nombrar los comps por su clase (comps.11 en
+                // vez de comps.CompCamouflage) y la de antes de nombrar los defs por su etiqueta
+                // (VEF.Weapons.LaserBeamDef en vez de ThingDef). Asi tenia RML todo lo traducido.
+                var candidatas = ConClavesAnteriores(nueva)
+                    .SelectMany(x => new[]
                     {
-                        exactas.GetValueOrDefault((nueva.ClassName, nueva.Node)),
-                        previas.GetValueOrDefault(clave),
-                        anterior == null ? null : exactas.GetValueOrDefault((anterior.ClassName, anterior.Node)),
-                        anterior == null ? null : previas.GetValueOrDefault(Clave(anterior))
-                    }
+                        exactas.GetValueOrDefault((x.ClassName, x.Node)),
+                        previas.GetValueOrDefault(Clave(x))
+                    })
                     .Where(x => !string.IsNullOrEmpty(x?.Translated))
                     .Select(x => x!)
                     .ToList();
@@ -214,6 +211,28 @@ namespace RimworldExtractorInternal
         /// de forma de entrega, y entonces se perderia: iria a UNUSED y volveria a salir como
         /// TODO. Es la misma traduccion, asi que la clave la ignora.
         /// </summary>
+        /// <summary>
+        /// La entrada, y despues la misma con cada clave anterior que tenga: el nodo de antes de
+        /// los comps por su clase, la clase de antes de los defs por su etiqueta, y las dos juntas.
+        /// </summary>
+        private static IEnumerable<TranslationEntry> ConClavesAnteriores(TranslationEntry nueva)
+        {
+            yield return nueva;
+
+            var nodos = new[] { nueva.Node, nueva.NodoAnterior };
+            var prefijo = nueva.ClassName.StartsWith(PrefijoDePatches, System.StringComparison.Ordinal)
+                ? PrefijoDePatches
+                : "";
+            var clases = new[] { nueva.ClassName, nueva.ClaseAnterior == null ? null : prefijo + nueva.ClaseAnterior };
+
+            foreach (var clase in clases)
+            foreach (var nodo in nodos)
+            {
+                if (clase != null && nodo != null && (clase, nodo) != (nueva.ClassName, nueva.Node))
+                    yield return nueva with { ClassName = clase, Node = nodo };
+            }
+        }
+
         private static (string, string) Clave(TranslationEntry entrada)
         {
             var clase = entrada.ClassName.StartsWith(PrefijoDePatches, System.StringComparison.Ordinal)

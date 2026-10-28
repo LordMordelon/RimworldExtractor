@@ -148,7 +148,8 @@ internal static class PatchOperations
                     continue;
                 }
                 foreach (var translation in Extractor.FindExtractableNodes(curRootDefNode["defName"]!.InnerText,
-                             curRootDefNode.Attributes?["Class"]?.Value ?? curRootDefNode.Name, selectNodeImported, nodeName))
+                             Extractor.ClaseDelDef(curRootDefNode), selectNodeImported, nodeName,
+                             Extractor.ClaseAnteriorDelDef(curRootDefNode)))
                 {
                     yield return translation with
                     {
@@ -195,7 +196,8 @@ internal static class PatchOperations
                 XmlNode selectNodeImported = modExtensionNode.AppendChild(Extractor.CombinedDefs!.ImportNode(valueChildNode, true))!;
                 var curRootDefNode = rootDefNode ?? selectNodeImported;
                 foreach (var translation in Extractor.FindExtractableNodes(curRootDefNode["defName"]!.InnerText,
-                             curRootDefNode.Attributes?["Class"]?.Value ?? curRootDefNode.Name, selectNodeImported, nodeName))
+                             Extractor.ClaseDelDef(curRootDefNode), selectNodeImported, nodeName,
+                             Extractor.ClaseAnteriorDelDef(curRootDefNode)))
                 {
                     yield return translation with
                     {
@@ -230,13 +232,10 @@ internal static class PatchOperations
             var parentNode = selectNode.ParentNode!;
             var rootDefNode = Extractor.GetRootDefNode(parentNode, out var nodeName);
             var defName = rootDefNode?["defName"]?.InnerText;
-            var className = (rootDefNode?.Attributes?["Class"]?.Value ?? rootDefNode?.Name);
-                            
+            var defNode = rootDefNode ?? selectNode;
             if (rootDefNode == null)
-            {
                 defName = selectNode["defName"]?.InnerText;
-                className = (selectNode.Attributes?["Class"]?.Value ?? selectNode.Name);
-            }
+            var className = Extractor.ClaseDelDef(defNode);
             // Sin defName ni className no hay con que nombrar la traduccion: se avisa y se
             // saltea. Antes se avisaba y se seguia igual, pasando nulos a FindExtractableNodes.
             if (defName is null || className is null)
@@ -247,7 +246,8 @@ internal static class PatchOperations
             foreach (XmlNode valueChildNode in value.ChildNodes)
             {
                 XmlNode selectNodeImported = parentNode.InsertBefore(Extractor.CombinedDefs!.ImportNode(valueChildNode, true), selectNode)!;
-                foreach (var translation in Extractor.FindExtractableNodes(defName, className, selectNodeImported, nodeName))
+                foreach (var translation in Extractor.FindExtractableNodes(defName, className, selectNodeImported, nodeName,
+                             Extractor.ClaseAnteriorDelDef(defNode)))
                 {
                     yield return translation with
                     {
@@ -298,7 +298,8 @@ internal static class PatchOperations
                 }
 
                 foreach (var translation in Extractor.FindExtractableNodes(defName,
-                             curRootDefNode.Attributes?["Class"]?.Value ?? curRootDefNode.Name, selectNodeImported, nodeName))
+                             Extractor.ClaseDelDef(curRootDefNode), selectNodeImported, nodeName,
+                             Extractor.ClaseAnteriorDelDef(curRootDefNode)))
                 {
                     if (translation.ClassName == "Keyed")
                     {

@@ -24,6 +24,7 @@
             }
             SourceFile = other.SourceFile;
             NodoAnterior = other.NodoAnterior;
+            ClaseAnterior = other.ClaseAnterior;
             Xpath = other.Xpath;
             Apartada = other.Apartada;
 
@@ -42,6 +43,13 @@
         /// encuentre lo que RML ya tenia traducido con la clave vieja.
         /// </summary>
         public string? NodoAnterior { get; init; }
+
+        /// <summary>
+        /// La clase como se escribia antes de nombrar los defs por su etiqueta: el atributo Class
+        /// del def, sin el prefijo de patches. Null si es la misma. Como NodoAnterior, sirve para
+        /// que el cruce encuentre lo que RML ya tenia con la clave vieja (ver Extractor.ClaseDelDef).
+        /// </summary>
+        public string? ClaseAnterior { get; init; }
 
         /// <summary>
         /// El xpath para escribir esta entrada como Patches, cuando no se puede armar desde el

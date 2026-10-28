@@ -397,10 +397,8 @@ namespace RimworldExtractorInternal
                 if (node["category"]?.InnerText.Trim() == "Mote")
                     continue;
 
-                var className = node.Attributes?["Class"]?.Value ?? node.Name;
-                className = className[..1].ToUpper() + className[1..];
-
-                foreach (var translationEntry in FindExtractableNodes(defName, className, node))
+                foreach (var translationEntry in FindExtractableNodes(defName, ClaseDelDef(node), node,
+                             claseAnterior: ClaseAnteriorDelDef(node)))
                 {
                     yield return translationEntry with
                     {

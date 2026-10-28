@@ -3654,4 +3654,316 @@ namespace RimworldExtractorTest
             }
         }
     }
+
+    /// <summary>
+    /// Cubre la clase con que se nombra un def: su etiqueta, como la lee el juego, y no su
+    /// atributo Class.
+    ///
+    /// El juego busca el tipo por la etiqueta (DirectXmlLoader.DefFromNode) y el xpath de un
+    /// patch recorre el XML, donde el def tambien se llama por su etiqueta. Con el Class, el
+    /// xpath de Zoology traia una coma y no era valido, los de los rasgos de armas de Combat
+    /// Extended no encontraban nada, y Custom Weapons Expanded guardaba sus rasgos en una
+    /// carpeta con un tipo de CE que sin CE no existe. Ver PLAN-CLASE-DEL-DEF.md.
+    /// </summary>
+    [TestClass]
+    public class ClaseDelDefTests
+    {
+        private const string Idioma = "SpanishLatin (Español(Latinoamérica))";
+
+        [TestCleanup]
+        public void Limpiar()
+        {
+            TraduccionOficial.Limpiar();
+            Extractor.DefsDeContenidoOficial.Clear();
+        }
+
+        /// <summary>
+        /// El caso de Zoology: un patch agrega un def con el Class con ensamblado. El xpath que
+        /// se escribe tiene que ser valido y encontrar el def.
+        /// </summary>
+        [TestMethod]
+        public void UnDefConClaseConEnsambladoSaleConUnXpathQueLoEncuentra()
+        {
+            var raiz = Montar("""
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationAdd">
+                    <xpath>Defs</xpath>
+                    <value>
+                      <LifeStagePenetrationDef Class="ZoologyMod.LifeStagePenetrationDef, ZoologyMod">
+                        <defName>AnimalBabyTiny</defName>
+                        <label>animal baby tiny AP factors</label>
+                      </LifeStagePenetrationDef>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+            try
+            {
+                var entrada = ConLaBase("<Defs />", () => Extraer(raiz))
+                    .Single(x => x.Node == "AnimalBabyTiny.label");
+                Assert.AreEqual("Patches.LifeStagePenetrationDef", entrada.ClassName);
+                Assert.AreEqual("ZoologyMod.LifeStagePenetrationDef, ZoologyMod", entrada.ClaseAnterior);
+
+                var xpath = XpathEscrito(entrada with { Translated = "factores" });
+                Assert.AreEqual("/Defs/LifeStagePenetrationDef[defName=\"AnimalBabyTiny\"]/label", xpath);
+
+                var doc = new XmlDocument();
+                doc.LoadXml("""
+                    <Defs>
+                      <LifeStagePenetrationDef Class="ZoologyMod.LifeStagePenetrationDef, ZoologyMod">
+                        <defName>AnimalBabyTiny</defName>
+                        <label>animal baby tiny AP factors</label>
+                      </LifeStagePenetrationDef>
+                    </Defs>
+                    """);
+                Assert.AreEqual(1, doc.SelectNodes(xpath)!.Count, "el xpath no encuentra el def");
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// El caso de Combat Extended: un patch le pone Class a un WeaponTraitDef y otro le
+        /// cambia la descripcion. Sigue siendo un WeaponTraitDef en el XML.
+        /// </summary>
+        [TestMethod]
+        public void UnClasePuestoPorPatchNoCambiaLaClase()
+        {
+            var raiz = Montar(PatchDeCe);
+            try
+            {
+                var entrada = ConLaBase(CargadorExtendido, () => Extraer(raiz))
+                    .Single(x => x.Node == "ExtendedMagazine.description");
+                Assert.AreEqual("Patches.WeaponTraitDef", entrada.ClassName);
+                Assert.AreEqual("CombatExtended.CustomWeaponTraitDef", entrada.ClaseAnterior);
+                Assert.AreEqual("/Defs/WeaponTraitDef[defName=\"ExtendedMagazine\"]/description",
+                    XpathEscrito(entrada with { Translated = "x" }));
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        /// <summary>
+        /// Un def de Defs con Class: sale con la clase de la etiqueta, que es la carpeta de
+        /// DefInjected que el juego encuentra aunque el mod del Class no este.
+        /// </summary>
+        [TestMethod]
+        public void UnDefConClaseSaleConLaClaseDeLaEtiqueta()
+        {
+            Prefabs.Init();
+            var doc = new XmlDocument();
+            doc.LoadXml("""
+                <Defs>
+                  <ThingDef Class="VEF.Weapons.LaserBeamDef">
+                    <defName>VWEL_Bullet_Laser</defName>
+                    <label>laser beam</label>
+                  </ThingDef>
+                </Defs>
+                """);
+
+            var previo = Extractor.CombinedDefs;
+            List<TranslationEntry> entradas;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                entradas = Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+
+            var entrada = entradas.Single(x => x.Node == "VWEL_Bullet_Laser.label");
+            Assert.AreEqual("ThingDef", entrada.ClassName);
+            Assert.AreEqual("VEF.Weapons.LaserBeamDef", entrada.ClaseAnterior);
+        }
+
+        /// <summary>
+        /// Lo que RML ya tenia con la clase vieja no se pierde: ni lo de DefInjected, en la
+        /// carpeta con el Class, ni el xpath con coma de Zoology. Cada traduccion pasa a su lugar
+        /// nuevo y no queda nada en UNUSED.
+        /// </summary>
+        [TestMethod]
+        public void LoTraducidoConLaClaseViejaPasaALaNueva()
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var rml = Path.Combine(Path.GetTempPath(), "rml-clase-" + Guid.NewGuid().ToString("N"));
+            var carpeta = Path.Combine(rml, "Data", "Algo - 123");
+            var vieja = Path.Combine(carpeta, "Languages", "SpanishLatin", "DefInjected", "VEF.Weapons.LaserBeamDef");
+            Directory.CreateDirectory(vieja);
+            File.WriteAllText(Path.Combine(vieja, "x.xml"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <LanguageData>
+                  <!-- EN: laser beam -->
+                  <VWEL_Bullet_Laser.label>rayo láser</VWEL_Bullet_Laser.label>
+                </LanguageData>
+                """);
+            Directory.CreateDirectory(Path.Combine(carpeta, "Patches"));
+            File.WriteAllText(Path.Combine(carpeta, "Patches", "x.xml"), """
+                <?xml version="1.0" encoding="utf-8"?>
+                <Patch>
+                  <Operation Class="PatchOperationReplace">
+                    <success>Always</success>
+                    <xpath>/Defs/ZoologyMod.LifeStagePenetrationDef, ZoologyMod[defName="AnimalBabyTiny"]/label</xpath>
+                    <value>
+                      <!-- EN: animal baby tiny AP factors -->
+                      <label>factores de PA de cría animal diminuta</label>
+                    </value>
+                  </Operation>
+                </Patch>
+                """);
+
+            var extraccion = new List<TranslationEntry>
+            {
+                new("ThingDef", "VWEL_Bullet_Laser.label", "laser beam", null, null, null)
+                    { ClaseAnterior = "VEF.Weapons.LaserBeamDef" },
+                new("Patches.LifeStagePenetrationDef", "AnimalBabyTiny.label", "animal baby tiny AP factors", null, null, null)
+                    { ClaseAnterior = "ZoologyMod.LifeStagePenetrationDef, ZoologyMod" }
+            };
+            var mod = new ModMetadata(@"D:\mods\algo", "123", "Algo", "alguien.algo", false);
+
+            try
+            {
+                var resultado = ConLaBase("<Defs />", () => ActualizacionRml.Escribir(mod, extraccion, rml));
+
+                Assert.AreEqual(2, resultado.Conservadas, "se perdio lo traducido con la clase vieja");
+                Assert.AreEqual(0, resultado.Pendientes);
+                Assert.IsFalse(File.Exists(Path.Combine(carpeta, "UNUSED.xml")), "quedo algo apartado");
+                Assert.IsFalse(Directory.Exists(vieja), "quedo la carpeta con la clase vieja");
+
+                var nueva = Path.Combine(carpeta, "Languages", "SpanishLatin", "DefInjected", "ThingDef");
+                StringAssert.Contains(Juntar(nueva), "rayo láser");
+                var patches = Juntar(Path.Combine(carpeta, "Patches"));
+                StringAssert.Contains(patches, "/Defs/LifeStagePenetrationDef[defName=\"AnimalBabyTiny\"]/label");
+                StringAssert.Contains(patches, "factores de PA de cría animal diminuta");
+            }
+            finally
+            {
+                Directory.Delete(rml, true);
+            }
+        }
+
+        /// <summary>
+        /// La traduccion oficial de Odyssey traduce la descripcion del cargador extendido, y CE
+        /// la cambia por patch: el patch se aplica y la oficial lo pisa. Con la clase del Class
+        /// no se encontraba la clave oficial (WeaponTraitDef) y quedaba como patch.
+        /// </summary>
+        [TestMethod]
+        public void UnRasgoOficialConClasePuestaPorPatchSaleComoDefInjected()
+        {
+            var raiz = Montar(PatchDeCe);
+            try
+            {
+                var entrada = ConLaBase(CargadorExtendido, () => Extraer(raiz))
+                    .Single(x => x.Node == "ExtendedMagazine.description");
+
+                Extractor.DefsDeContenidoOficial.Add("ExtendedMagazine");
+                TraduccionOficial.Sembrar(new[] { ("WeaponTraitDef", "ExtendedMagazine.description", 0) });
+
+                var salida = Path.Combine(raiz, "salida");
+                IO.ToLanguageXml(new List<TranslationEntry> { entrada with { Translated = "cargador de CE" } },
+                    false, XmlCommentStyle.TranslationTemplate, "UnMod", salida);
+
+                StringAssert.Contains(
+                    Juntar(Path.Combine(salida, "Languages", Utils.CarpetaDelIdiomaDestino(), "DefInjected", "WeaponTraitDef")),
+                    "cargador de CE", "tenia que salir como DefInjected, que es lo unico que le gana a la oficial");
+                Assert.AreEqual("", Juntar(Path.Combine(salida, "Patches")), "quedo un patch que el juego va a pisar");
+            }
+            finally
+            {
+                Directory.Delete(raiz, true);
+            }
+        }
+
+        private const string CargadorExtendido = """
+            <Defs>
+              <WeaponTraitDef>
+                <defName>ExtendedMagazine</defName>
+                <label>extended magazine</label>
+                <description>This weapon fires 50% more shots per burst.</description>
+              </WeaponTraitDef>
+            </Defs>
+            """;
+
+        private const string PatchDeCe = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Patch>
+              <Operation Class="PatchOperationAttributeSet">
+                <xpath>Defs/WeaponTraitDef[defName="ExtendedMagazine"]</xpath>
+                <attribute>Class</attribute>
+                <value>CombatExtended.CustomWeaponTraitDef</value>
+              </Operation>
+              <Operation Class="PatchOperationReplace">
+                <xpath>Defs/WeaponTraitDef[defName="ExtendedMagazine"]/description</xpath>
+                <value>
+                  <description>This weapon's magazine holds 50% more ammunition than normal.</description>
+                </value>
+              </Operation>
+            </Patch>
+            """;
+
+        private static List<TranslationEntry> Extraer(string raiz) =>
+            Extractor.ExtractPatches(new ExtractableFolder(ModMetadata.Emptry, Path.Combine(raiz, "Patches"), null)).ToList();
+
+        /// <summary>El xpath con que se escribe una entrada de Patches.</summary>
+        private static string XpathEscrito(TranslationEntry entrada)
+        {
+            var salida = Path.Combine(Path.GetTempPath(), "xpath-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                IO.ToLanguageXml(new List<TranslationEntry> { entrada }, false, XmlCommentStyle.TranslationTemplate,
+                    "UnMod", salida);
+                var doc = new XmlDocument();
+                doc.LoadXml(Juntar(Path.Combine(salida, "Patches")));
+                return doc.SelectSingleNode("//xpath")!.InnerText;
+            }
+            finally
+            {
+                if (Directory.Exists(salida)) Directory.Delete(salida, true);
+            }
+        }
+
+        private static string Juntar(string carpeta) =>
+            Directory.Exists(carpeta)
+                ? string.Join("\n", Directory.GetFiles(carpeta, "*.xml", SearchOption.AllDirectories).Select(File.ReadAllText))
+                : "";
+
+        /// <summary>Corre algo con la base de defs que se le pase, tambien como base completa.</summary>
+        private static T ConLaBase<T>(string defs, Func<T> hacer)
+        {
+            var previo = Extractor.CombinedDefs;
+            var doc = new XmlDocument();
+            doc.LoadXml(defs);
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                Extractor.RegistrarBaseCompleta(doc);
+                return hacer();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+                Extractor.RegistrarBaseCompleta(null);
+            }
+        }
+
+        /// <summary>Un mod de mentira con solo la carpeta Patches escrita.</summary>
+        private static string Montar(string patch)
+        {
+            Prefabs.Init();
+            Prefabs.TranslationLanguage = Idioma;
+
+            var raiz = Path.Combine(Path.GetTempPath(), "rml-clase-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path.Combine(raiz, "Patches"));
+            File.WriteAllText(Path.Combine(raiz, "Patches", "Mod.xml"), patch);
+            return raiz;
+        }
+    }
 }

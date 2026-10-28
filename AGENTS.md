@@ -267,6 +267,18 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   posición aunque el juego las nombra por su etiqueta. Lo cubren los tests de `CompsPorNombreTests`,
   uno de ellos contra las claves de la traducción oficial de Core.
 
+- **Un def se nombra por su etiqueta, no por su `Class`**: `<ThingDef Class="VEF.Weapons.LaserBeamDef">`
+  es `ThingDef`. Es `Extractor.ClaseDelDef`, y lo usan la extracción de `Defs` y la de `Patches`. El juego
+  busca el tipo por la etiqueta (`DirectXmlLoader.DefFromNode`) y mete cada def también en la base de sus
+  clases padre, así que la carpeta `DefInjected/ThingDef` lo encuentra siempre; el xpath también recorre el
+  XML por la etiqueta. Con el `Class`, el xpath de Zoology traía el ensamblado detrás de una coma
+  (`ZoologyMod.LifeStagePenetrationDef, ZoologyMod`) y no era válido, los rasgos de armas a los que Combat
+  Extended les pone `Class` por patch no se encontraban ni se veía que la oficial los pisaba, y Custom
+  Weapons Expanded guardaba sus rasgos en una carpeta con un tipo de CE que, sin CE, el juego descarta
+  entera. Lo que RML tenía con la clase vieja se recupera por `ClaseAnterior`, como `NodoAnterior` en los
+  comps. `Prefabs.NodeReplacement` quedó con reemplazos de clase entera que ya no hacen falta; no se
+  sacaron porque viven en `Prefabs.dat`. Lo cubren los tests de `ClaseDelDefTests`.
+
 - **El orden de lectura decide quién gana.** `TranslationMerge.Clave` unifica
   `Patches.ThingDef` con `ThingDef` a propósito, así que un mismo nodo traducido de las dos
   formas colisiona y gana el que se lee último. Por eso los `Patches` se leen **primero** y

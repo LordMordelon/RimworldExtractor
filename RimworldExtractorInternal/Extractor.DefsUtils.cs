@@ -98,7 +98,8 @@ namespace RimworldExtractorInternal
             }
         }
 
-        internal static IEnumerable<TranslationEntry> FindExtractableNodes(string defName, string className, XmlNode rootNode, string? curNormalizedPath = null)
+        internal static IEnumerable<TranslationEntry> FindExtractableNodes(string defName, string className, XmlNode rootNode, string? curNormalizedPath = null,
+            string? claseAnterior = null)
         {
             if (className == "XmlExtensions.SettingsMenuDef")
             {
@@ -151,6 +152,7 @@ namespace RimworldExtractorInternal
                         yield return new TranslationEntry(className, nodeName, curNode.InnerText, null, requiredMods, fileName)
                         {
                             NodoAnterior = anterior,
+                            ClaseAnterior = claseAnterior,
                             Xpath = xpath
                         };
                     }
@@ -578,6 +580,36 @@ namespace RimworldExtractorInternal
                 XmlOverwriteRecursive(existingChildNode, otherChildNode);
             }
         }
+
+        /// <summary>
+        /// La clase con que se nombra un def: su etiqueta, como la lee el juego.
+        ///
+        /// DirectXmlLoader.DefFromNode busca el tipo por la etiqueta; el Class solo dice que
+        /// subclase instanciar. Y DefDatabase mete cada def tambien en la base de sus clases
+        /// padre, asi que una carpeta de DefInjected con la etiqueta lo encuentra siempre, este o
+        /// no el mod del Class. El xpath de un patch tambien recorre el XML por la etiqueta.
+        ///
+        /// Por el Class se rompia todo eso: el xpath de Zoology traia el ensamblado detras
+        /// de una coma y no era valido, los de los rasgos de armas a los que Combat Extended les
+        /// pone Class por patch no encontraban nada, y Custom Weapons Expanded guardaba sus rasgos
+        /// en una carpeta con un tipo de CE, que sin CE el juego descarta entera.
+        /// </summary>
+        internal static string ClaseDelDef(XmlNode def) => ConMayuscula(def.Name);
+
+        /// <summary>
+        /// El Class del def si no es la etiqueta: la clase con que RML lo tenia guardado antes
+        /// de <see cref="ClaseDelDef"/>. Ver TranslationEntry.ClaseAnterior.
+        /// </summary>
+        internal static string? ClaseAnteriorDelDef(XmlNode def)
+        {
+            var clase = def.Attributes?["Class"]?.Value;
+            if (string.IsNullOrEmpty(clase))
+                return null;
+            clase = ConMayuscula(clase);
+            return clase == ClaseDelDef(def) ? null : clase;
+        }
+
+        private static string ConMayuscula(string texto) => texto[..1].ToUpper() + texto[1..];
 
         internal static XmlNode? GetRootDefNode(XmlNode node, out string? nodeName)
         {
