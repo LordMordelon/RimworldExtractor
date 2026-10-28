@@ -1,5 +1,19 @@
 # Plan: nombrar cada def por su etiqueta, no por su `Class`
 
+## Estado (28-oct-2026)
+
+- **Hecho, sin subir.** Extractor: `9867b67` (arreglo, `ClaseAnterior`, 5 pruebas; la tanda completa en verde,
+  119 de 121, con las 2 omitidas de siempre). RML: `d8f3a5a6`, las nueve carpetas reextraídas. En cada una dan las
+  mismas traducciones antes y después (contadas por def y valor), 0 `TODO` y ningún `UNUSED.xml` cambia; las tres
+  comprobaciones del diff salen vacías. `output/` rearmado con `-copia`.
+- **Falta Combat Extended.** `RimworldExtractorLotes` lo salta (`NoInstalado CETeam.CombatExtended`): busca la carpeta
+  por su número, 2890901044, y en este PC está el CE no oficial, 3822862833. Además CE no se reextrae desde el 17-oct,
+  así que la reextracción traería todo lo acumulado desde entonces (los comps por su clase, entre otros). Va junto con
+  la tarea 1 de [PLAN-POSICIONES.md](PLAN-POSICIONES.md) (la condición del CE no oficial). Hasta entonces quedan como
+  estaban: los 2 xpath de `ExtendedMagazine` y `GrenadeLauncher`, y su paso a `DefInjected` para ganarle a la oficial.
+- **Falta probar en el juego (Angel):** con Custom Weapons Expanded **sin** CE, que el rasgo «Bioquemador» salga en
+  español; y que no haya errores rojos nuevos en el log al cargar.
+
 El 28-oct-2026 una extracción de Zoology dejó en el log cinco líneas así:
 
 ```
