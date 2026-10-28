@@ -3656,6 +3656,87 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre las dos listas con que el juego inventa el titulo de un arma unica: el tipo de arma
+    /// (namerLabels, del CompProperties_UniqueWeapon) y un adjetivo de uno de sus rasgos
+    /// (traitAdjectives, del WeaponTraitDef). En Cinders salia «Greatsword twisted».
+    /// </summary>
+    [TestClass]
+    public class TituloDeArmaTests
+    {
+        [TestMethod]
+        public void ExtraeLasDosListasDelTitulo()
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml("""
+                <Defs>
+                  <ThingDef>
+                    <defName>Cinder_Greatsword</defName>
+                    <label>greatsword</label>
+                    <comps>
+                      <li Class="CompProperties_UniqueWeapon">
+                        <namerLabels>
+                          <li>greatsword</li>
+                          <li>claymore</li>
+                        </namerLabels>
+                      </li>
+                    </comps>
+                  </ThingDef>
+                  <WeaponTraitDef>
+                    <defName>Cinder_Tentacle</defName>
+                    <label>tentacle</label>
+                    <traitAdjectives>
+                      <li>tentacle</li>
+                      <li>twisted</li>
+                    </traitAdjectives>
+                  </WeaponTraitDef>
+                </Defs>
+                """);
+
+            List<TranslationEntry> entradas;
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                entradas = Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+
+            CollectionAssert.AreEquivalent(new[] { "greatsword", "claymore" },
+                entradas.Where(x => x.Node.Contains(".namerLabels.")).Select(x => x.Original).ToList());
+            CollectionAssert.AreEquivalent(new[] { "Cinder_Tentacle.traitAdjectives.0", "Cinder_Tentacle.traitAdjectives.1" },
+                entradas.Where(x => x.Node.Contains(".traitAdjectives.")).Select(x => x.Node).ToList());
+        }
+
+        /// <summary>Un Prefabs.dat anterior a las dos etiquetas tambien las extrae.</summary>
+        [TestMethod]
+        public void UnPrefabsViejoTambienLasExtrae()
+        {
+            var archivo = Path.Combine(Path.GetTempPath(), "prefabs-" + Guid.NewGuid().ToString("N") + ".dat");
+            try
+            {
+                Prefabs.Init();
+                Prefabs.ExtractableTags = new(Prefabs.ExtractableTags.Where(x => x != "namerLabels" && x != "traitAdjectives"));
+                Prefabs.Save(archivo);
+
+                Prefabs.Load(archivo);
+
+                foreach (var tag in new[] { "namerLabels", "traitAdjectives" })
+                    Assert.IsTrue(Prefabs.CanExtract(tag, "CualquierDef"), tag);
+            }
+            finally
+            {
+                File.Delete(archivo);
+                Prefabs.Init();
+            }
+        }
+    }
+
+    /// <summary>
     /// Cubre la clase con que se nombra un def: su etiqueta, como la lee el juego, y no su
     /// atributo Class.
     ///

@@ -85,13 +85,18 @@ namespace RimworldExtractorInternal
         ///
         /// shortLabel y labelForDefaultVariation son del PrefabDef de Alpha Prefabs: el nombre
         /// de la cuadricula del catalogo y la primera opcion de «Pedir ahora con...».
+        ///
+        /// namerLabels y traitAdjectives son las dos listas con que el juego inventa el titulo
+        /// de un arma unica (CompUniqueWeapon): el tipo de arma y un adjetivo de uno de sus
+        /// rasgos. En Cinders salia «Greatsword twisted». Las dos son [MustTranslate] en el juego.
         /// </summary>
         private static readonly string[] EtiquetasAgregadas =
         {
             "genericLabel", "genericDescription", "genericLabelOverride",
             "detectedLetterLabel", "detectedLetterDesc", "detectedMessage",
             "shortLabel", "labelForDefaultVariation",
-            "defaultLabel", "defaultDesc"
+            "defaultLabel", "defaultDesc",
+            "namerLabels", "traitAdjectives"
         };
 
         private static void AgregarEtiquetasFaltantes()
