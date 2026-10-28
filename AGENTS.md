@@ -212,7 +212,9 @@ ejemplo, nunca aparece en el render aunque en pantalla se vea.
   `Load` agrega si faltan. Así entraron las tres de la munición genérica de Combat Extended
   (`genericLabel`, `genericDescription` y `genericLabelOverride`); lo cubre
   `UnPrefabsViejoTambienLosExtrae`. Igual entraron `defaultLabel` y `defaultDesc`, el botón de un comp (Cinders:
-  «Change to walking mode»), que salía en inglés en el juego; lo cubre `BotonDeCompTests`.
+  «Change to walking mode»), que salía en inglés en el juego; lo cubre `BotonDeCompTests`. Y `namerLabels` y
+  `traitAdjectives`, las dos listas con que el juego inventa el título de un arma única («Greatsword twisted» en
+  Cinders); lo cubre `TituloDeArmaTests`.
 - **El tamaño de lo publicado.** Una vez el `.zip` pasó de 2,8 MB a 17,8 MB porque un
   paquete de test arrastró instrumentación de Linux, macOS y ARM. La CI quedó en verde
   igual: el único síntoma fue el tamaño del artefacto. Referencia actual: el Standard pesa
