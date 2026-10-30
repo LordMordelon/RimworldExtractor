@@ -89,6 +89,9 @@ namespace RimworldExtractorInternal
         /// namerLabels y traitAdjectives son las dos listas con que el juego inventa el titulo
         /// de un arma unica (CompUniqueWeapon): el tipo de arma y un adjetivo de uno de sus
         /// rasgos. En Cinders salia «Greatsword twisted». Las dos son [MustTranslate] en el juego.
+        ///
+        /// tierLabels es el nombre de cada etapa de un edificio de Hegemony («growing patch» es el
+        /// nivel 1 de la granja); salia en ingles en la cuadricula de edificios.
         /// </summary>
         private static readonly string[] EtiquetasAgregadas =
         {
@@ -96,7 +99,8 @@ namespace RimworldExtractorInternal
             "detectedLetterLabel", "detectedLetterDesc", "detectedMessage",
             "shortLabel", "labelForDefaultVariation",
             "defaultLabel", "defaultDesc",
-            "namerLabels", "traitAdjectives"
+            "namerLabels", "traitAdjectives",
+            "tierLabels"
         };
 
         private static void AgregarEtiquetasFaltantes()

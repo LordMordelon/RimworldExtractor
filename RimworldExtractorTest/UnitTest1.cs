@@ -3737,6 +3737,50 @@ namespace RimworldExtractorTest
     }
 
     /// <summary>
+    /// Cubre tierLabels, el nombre de cada etapa de un edificio de Hegemony: la cuadricula de la
+    /// ventana muestra «growing patch» en el nivel 1 de la granja. Sin la etiqueta, los 792
+    /// nombres salian en ingles y la traduccion no los tenia.
+    /// </summary>
+    [TestClass]
+    public class EtapasDeEdificioTests
+    {
+        [TestMethod]
+        public void ExtraeLosNombresDeCadaEtapa()
+        {
+            Prefabs.Init();
+
+            var doc = new XmlDocument();
+            doc.LoadXml("""
+                <Defs>
+                  <FactionTerritories2.BuildingDef>
+                    <defName>FT2_Farm</defName>
+                    <label>farm</label>
+                    <tierLabels>
+                      <li>growing patch</li>
+                      <li>farm</li>
+                    </tierLabels>
+                  </FactionTerritories2.BuildingDef>
+                </Defs>
+                """);
+
+            List<TranslationEntry> entradas;
+            var previo = Extractor.CombinedDefs;
+            try
+            {
+                Extractor.CombinedDefs = doc;
+                entradas = Extractor.ExtractDefs().ToList();
+            }
+            finally
+            {
+                Extractor.CombinedDefs = previo;
+            }
+
+            CollectionAssert.AreEquivalent(new[] { "FT2_Farm.tierLabels.0", "FT2_Farm.tierLabels.1" },
+                entradas.Where(x => x.Node.Contains(".tierLabels.")).Select(x => x.Node).ToList());
+        }
+    }
+
+    /// <summary>
     /// Cubre la clase con que se nombra un def: su etiqueta, como la lee el juego, y no su
     /// atributo Class.
     ///
