@@ -2085,6 +2085,7 @@ namespace RimworldExtractorTest
         {
             TraduccionOficial.Limpiar();
             Extractor.DefsDeContenidoOficial.Clear();
+            Extractor.DuenioPorDefName.Clear();
         }
 
         /// <summary>
@@ -2160,6 +2161,52 @@ namespace RimworldExtractorTest
                     "large astrofuel tank", "tanque grande de astrobustible", requiere, null));
 
             StringAssert.Contains(patches, "tanque grande de astrobustible");
+            Assert.AreEqual("", defInjected, "se convirtio una traduccion condicional");
+        }
+
+        /// <summary>
+        /// Una condicion que pide el mismo DLC dueño del def no condiciona nada: sin ese DLC el
+        /// def no existe. Progression Robotics le cambia el nombre al «mechband dish» de Biotech
+        /// dentro de un FindMod «Biotech», y como patch el juego lo pisaba con el oficial.
+        /// </summary>
+        [TestMethod]
+        public void ConLaCondicionDelDlcDuenioSaleComoDefInjected()
+        {
+            Extractor.DefsDeContenidoOficial.Add("MechbandDish");
+            Extractor.DuenioPorDefName["MechbandDish"] = "Biotech";
+            TraduccionOficial.Sembrar(new[] { ("ThingDef", "MechbandDish.label", 0) });
+
+            var requiere = new RequiredMods();
+            requiere.AddAllowedByModName("Biotech");
+
+            var (defInjected, patches) = Escribir(
+                new TranslationEntry("Patches.ThingDef", "MechbandDish.label",
+                    "apocriton invoker", "invocador de apocritón", requiere, null));
+
+            StringAssert.Contains(defInjected, "invocador de apocritón",
+                "la condicion del propio DLC no tenia que frenar la conversion");
+            Assert.AreEqual("", patches, "quedo un patch que el juego va a pisar");
+        }
+
+        /// <summary>
+        /// Si la condicion pide otro DLC, si condiciona: con Biotech y sin Royalty el patch no se
+        /// aplica, y un DefInjected si se aplicaria.
+        /// </summary>
+        [TestMethod]
+        public void ConLaCondicionDeOtroDlcSigueSiendoPatch()
+        {
+            Extractor.DefsDeContenidoOficial.Add("MechbandDish");
+            Extractor.DuenioPorDefName["MechbandDish"] = "Biotech";
+            TraduccionOficial.Sembrar(new[] { ("ThingDef", "MechbandDish.label", 0) });
+
+            var requiere = new RequiredMods();
+            requiere.AddAllowedByModName("Royalty");
+
+            var (defInjected, patches) = Escribir(
+                new TranslationEntry("Patches.ThingDef", "MechbandDish.label",
+                    "apocriton invoker", "invocador de apocritón", requiere, null));
+
+            StringAssert.Contains(patches, "invocador de apocritón");
             Assert.AreEqual("", defInjected, "se convirtio una traduccion condicional");
         }
 

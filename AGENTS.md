@@ -315,7 +315,10 @@ escribió bien, se releyó mal, no falló nada, y el daño solo se vio mirando e
   `IO.PatchesQueElJuegoPisa` reencamina lo que corresponde. Quedan afuera a propósito dos
   casos, y los dos se avisan en el log: lo que viene con `RequiredMods`, porque un
   `DefInjected` no puede ser condicional, y las listas incompletas, porque una inyección de
-  lista reemplaza la lista entera y emitirla con menos elementos no aplica ni esos. Lo
+  lista reemplaza la lista entera y emitirla con menos elementos no aplica ni esos. Una
+  condición que pide el mismo DLC dueño del def no cuenta como condición (`PideSoloAlDuenio`):
+  sin ese DLC el def no existe. Así venía Progression Robotics, que cambia nombres de Biotech
+  dentro de un `FindMod` «Biotech», y el juego los pisaba con los oficiales. Lo
   cubren los tests de `TraduccionOficialPisaTests`. Apareció con `LargeChemfuelTank` de
   Odyssey y afectaba a 50 operaciones de RML.
 

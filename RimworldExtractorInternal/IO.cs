@@ -620,6 +620,24 @@ namespace RimworldExtractorInternal
         ///
         /// Devuelve las claves ClassName+Node a reencaminar, y avisa por las que no se pueden.
         /// </summary>
+        /// <summary>
+        /// Si la condicion de la entrada solo pide el mod dueño de su def. Pasa con un
+        /// FindMod «Biotech» alrededor de un patch sobre un def de Biotech (Progression
+        /// Robotics): se cumple siempre que el def existe, asi que no condiciona nada.
+        /// Cada grupo de lo pedido tiene que nombrar al dueño, y no puede haber excluidos.
+        /// </summary>
+        private static bool PideSoloAlDuenio(TranslationEntry entrada)
+        {
+            if (entrada.RequiredMods == null || entrada.RequiredMods.CountDisallowed > 0)
+                return false;
+            if (!Extractor.DuenioPorDefName.TryGetValue(entrada.DefName, out var duenio))
+                return false;
+
+            return entrada.RequiredMods.AllowedMods.All(grupo => grupo
+                .Split(RequiredMods.OR_IDENTIFIER)
+                .Any(nombre => string.Equals(nombre.Trim(), duenio, StringComparison.OrdinalIgnoreCase)));
+        }
+
         private static HashSet<string> PatchesQueElJuegoPisa(List<TranslationEntry> translations)
         {
             var reencaminadas = new HashSet<string>();
@@ -637,10 +655,11 @@ namespace RimworldExtractorInternal
 
                 // Un PatchOperationFindMod es condicional y un DefInjected no puede serlo:
                 // inyectarlo sin condicion aplicaria la traduccion de un texto que sin ese mod
-                // no existe.
+                // no existe. Salvo que pida el mismo DLC dueño del def, que sin el no existe.
                 var esCondicional = entrada.RequiredMods != null
                                     && (entrada.RequiredMods.CountAllowed > 0
-                                        || entrada.RequiredMods.CountDisallowed > 0);
+                                        || entrada.RequiredMods.CountDisallowed > 0)
+                                    && !PideSoloAlDuenio(entrada);
 
                 if (!Extractor.DefsDeContenidoOficial.Contains(entrada.DefName))
                     continue;
